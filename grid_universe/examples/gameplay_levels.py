@@ -59,7 +59,7 @@ SHIELD_USAGE = 5
 # -------------------------
 # Constants
 # -------------------------
-TURN_LIMIT = 100
+TURN_LIMIT = 50
 
 # -------------------------
 # Helpers
@@ -547,317 +547,57 @@ def build_level_power_boots(seed: int = 112) -> State:
 
 
 # -------------------------
-# L13: Capstone — integrated deterministic puzzle
+# L13: Capstone — integrated gameplay mechanics
 # -------------------------
 
 
 def build_level_capstone(seed: int = 113) -> State:
     level = Level(
-        width=9,
-        height=9,
+        width=7,
+        height=7,
         move_fn=default_move_fn,
         objective_fn=exit_objective_fn,
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
 
-    # Create paired portals first
-    portal_1 = create_portal()
-    portal_2 = create_portal(pair=portal_1)
+    _floors(level)
 
-    # 1) Add floor to every tile using nested loops
-    for y in range(9):
-        for x in range(9):
-            level.add((x, y), create_floor(cost_amount=TILE_COST))
-
-    # 2) Add entities grouped by type using for-loops
-
-    # Agent
     level.add((0, 0), create_agent(health=5))
-
-    # Effects
-    level.add((1, 0), create_phasing_effect(time=PHASE_TIME))
-    level.add((3, 7), create_immunity_effect(usage=SHIELD_USAGE))
-    level.add((3, 8), create_speed_effect(multiplier=SPEED_MULTIPLIER, time=SPEED_TIME))
-
-    # Walls
-    walls = [
-        (2, 0),
-        (4, 0),
-        (0, 1),
-        (2, 1),
-        (5, 1),
-        (7, 1),
-        (3, 2),
-        (0, 3),
-        (2, 3),
-        (5, 3),
-        (8, 3),
-        (3, 4),
-        (6, 4),
-        (1, 5),
-        (2, 5),
-        (5, 5),
-        (8, 5),
-        (3, 6),
-        (4, 6),
-        (7, 6),
-        (5, 7),
-        (6, 7),
-        (1, 8),
-        (2, 8),
-        (4, 8),
-        (5, 8),
-        (6, 8),
-        (8, 8),
-    ]
-    for pos in walls:
-        level.add(pos, create_wall())
-
-    # Coins
-    coins = [
-        (1, 1),
-        (0, 2),
-        (1, 2),
-        (6, 3),
-        (0, 4),
-        (4, 4),
-        (5, 4),
-        (0, 5),
-        (4, 5),
-        (0, 6),
-        (1, 6),
-        (5, 6),
-        (0, 8),
-    ]
-    for pos in coins:
-        level.add(pos, create_coin(reward=COIN_REWARD))
-
-    # Hazards (spikes)
-    spikes = [(5, 0), (8, 1), (1, 4), (6, 6), (7, 7), (8, 7)]
-    for pos in spikes:
-        level.add(
-            pos, create_hazard(appearance=AppearanceName.SPIKE, damage=HAZARD_DAMAGE)
-        )
-
-    # Monster
+    level.add((3, 0), create_wall())
+    level.add((5, 0), create_wall())
+    level.add((1, 1), create_wall())
+    level.add((1, 2), create_wall())
+    level.add((3, 2), create_wall())
+    level.add((4, 2), create_wall())
+    level.add((6, 2), create_wall())
+    level.add((0, 3), create_wall())
+    level.add((3, 3), create_wall())
+    level.add((5, 3), create_wall())
+    level.add((6, 3), create_core(reward=CORE_REWARD, required=True))
+    level.add((0, 4), create_key(key_id="my_key"))
+    level.add((1, 4), create_wall())
+    level.add((3, 4), create_door(key_id="my_key"))
+    level.add((3, 5), create_wall())
+    level.add((5, 5), create_wall())
+    level.add((6, 5), create_wall())
+    level.add((1, 6), create_wall())
     level.add(
-        (7, 2),
+        (2, 6),
         create_monster(
             damage=ENEMY_DAMAGE,
-            moving_axis=MovingAxis.HORIZONTAL,
-            moving_direction=1,
-            moving_bounce=True,
-            moving_speed=1,
-        ),
-    )
-
-    # Moving box
-    level.add(
-        (4, 7),
-        create_box(
-            pushable=False,
-            moving_axis=MovingAxis.HORIZONTAL,
+            moving_axis=MovingAxis.VERTICAL,
             moving_direction=-1,
             moving_bounce=True,
             moving_speed=1,
         ),
     )
-
-    # Cores (required)
-    cores_required = [(1, 3), (4, 3)]
-    for pos in cores_required:
-        level.add(pos, create_core(reward=CORE_REWARD, required=True))
-
-    # Door and Key
-    level.add((7, 4), create_door(key_id="my_key"))
-    level.add((3, 5), create_key(key_id="my_key"))
-
-    # Exit
-    level.add((8, 6), create_exit())
-
-    # Portals
-    level.add((8, 4), portal_1)
-    level.add((7, 8), portal_2)
-
-    return to_state(level)
-
-
-# -------------------------
-# L14: Capstone — integrated deterministic puzzle (large)
-# -------------------------
-
-
-def build_level_capstone_large(seed: int = 113) -> State:
-    level = Level(
-        width=13,
-        height=13,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
-        seed=seed,
-        turn_limit=TURN_LIMIT,
-    )
-
-    # Create paired portals first
-    portal_1 = create_portal()
-    portal_2 = create_portal(pair=portal_1)
-
-    # 1) Add floor to every tile using nested loops
-    for y in range(13):
-        for x in range(13):
-            level.add((x, y), create_floor(cost_amount=TILE_COST))
-
-    # 2) Add entities grouped by type using for-loops
-
-    # Agent
-    level.add((0, 0), create_agent(health=5))
-
-    # Walls
-    walls = [
-        (4, 0),
-        (7, 0),
-        (12, 0),
-        (0, 1),
-        (2, 1),
-        (5, 1),
-        (8, 1),
-        (9, 1),
-        (11, 1),
-        (3, 2),
-        (7, 2),
-        (11, 2),
-        (0, 3),
-        (2, 3),
-        (9, 3),
-        (3, 4),
-        (6, 4),
-        (9, 4),
-        (12, 4),
-        (3, 5),
-        (5, 5),
-        (8, 5),
-        (10, 5),
-        (0, 6),
-        (2, 6),
-        (6, 6),
-        (7, 6),
-        (9, 6),
-        (11, 6),
-        (3, 7),
-        (4, 7),
-        (5, 7),
-        (7, 7),
-        (11, 7),
-        (12, 7),
-        (1, 8),
-        (8, 8),
-        (9, 8),
-        (5, 9),
-        (6, 9),
-        (8, 9),
-        (11, 9),
-        (1, 10),
-        (4, 10),
-        (5, 10),
-        (6, 10),
-        (9, 10),
-        (12, 10),
-        (2, 11),
-        (5, 11),
-        (8, 11),
-        (10, 11),
-        (11, 11),
-        (1, 12),
-        (2, 12),
-        (3, 12),
-        (7, 12),
-    ]
-    for pos in walls:
-        level.add(pos, create_wall())
-
-    # Coins
-    coins = [
-        (5, 0),
-        (6, 0),
-        (9, 0),
-        (6, 1),
-        (10, 1),
-        (2, 2),
-        (12, 2),
-        (4, 3),
-        (5, 3),
-        (12, 3),
-        (7, 4),
-        (10, 4),
-        (2, 5),
-        (6, 5),
-        (7, 5),
-        (9, 5),
-        (3, 6),
-        (4, 6),
-        (6, 7),
-        (0, 8),
-        (11, 8),
-        (0, 9),
-        (9, 9),
-        (2, 10),
-        (8, 10),
-        (0, 11),
-        (1, 11),
-        (3, 11),
-        (4, 11),
-        (12, 11),
-        (0, 12),
-        (5, 12),
-        (12, 12),
-    ]
-    for pos in coins:
-        level.add(pos, create_coin(reward=COIN_REWARD))
-
-    # Hazards (spikes)
-    spikes = [(8, 0), (4, 5), (6, 12), (10, 8), (10, 9), (10, 12)]
-    for pos in spikes:
-        level.add(
-            pos, create_hazard(appearance=AppearanceName.SPIKE, damage=HAZARD_DAMAGE)
-        )
-
-    # Boxes (pushable)
-    boxes = [(8, 2), (1, 3)]
-    for pos in boxes:
-        level.add(pos, create_box(pushable=True))
-
-    # Monster
-    level.add(
-        (6, 3),
-        create_monster(
-            damage=ENEMY_DAMAGE,
-            moving_axis=MovingAxis.HORIZONTAL,
-            moving_direction=1,
-            moving_bounce=True,
-            moving_speed=1,
-        ),
-    )
-
-    # Effects
-    level.add((8, 3), create_phasing_effect(time=PHASE_TIME))
-    level.add((3, 0), create_speed_effect(multiplier=SPEED_MULTIPLIER, time=SPEED_TIME))
-    level.add((10, 6), create_immunity_effect(usage=SHIELD_USAGE))
-
-    # Cores (required)
-    cores_required = [(4, 4), (12, 8), (12, 9), (9, 11)]
-    for pos in cores_required:
-        level.add(pos, create_core(reward=CORE_REWARD, required=True))
-
-    # Door and Key
-    level.add((10, 7), create_door(key_id="my_key"))
-    level.add((3, 9), create_key(key_id="my_key"))
-
-    # Exit
-    level.add((8, 12), create_exit())
-
-    # Portals
-    level.add((10, 10), portal_1)
-    level.add((11, 12), portal_2)
+    level.add((3, 6), create_floor(cost_amount=TILE_COST))
+    level.add((3, 6), create_wall())
+    level.add((4, 6), create_floor(cost_amount=TILE_COST))
+    level.add((5, 6), create_floor(cost_amount=TILE_COST))
+    level.add((6, 6), create_floor(cost_amount=TILE_COST))
+    level.add((6, 6), create_exit())
 
     return to_state(level)
 
@@ -901,7 +641,6 @@ def generate_task_suite(
         build_level_power_ghost,  # L11 (Ghost necessary)
         build_level_power_boots,  # L12 (Boots strongly useful)
         build_level_capstone,  # L13 (capstone integration)
-        build_level_capstone_large,  # L14 (capstone integration)
     ]
 
     if seed_list is not None:

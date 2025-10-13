@@ -38,7 +38,6 @@ _NAME_TO_BUILDER: Dict[str, Callable[[int], State]] = {
     "L11 Ghost Powerup": gameplay_levels.build_level_power_ghost,
     "L12 Boots Powerup": gameplay_levels.build_level_power_boots,
     "L13 Capstone": gameplay_levels.build_level_capstone,
-    "L14 Capstone (Large)": gameplay_levels.build_level_capstone_large,
 }
 
 _LEVEL_NAMES: List[str] = list(_NAME_TO_BUILDER.keys())
