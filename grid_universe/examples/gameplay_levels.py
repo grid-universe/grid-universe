@@ -237,9 +237,6 @@ def build_level_required_two(seed: int = 104) -> State:
         for y in range(1, h - 1):
             if x != midx and y != midy:
                 lvl.add((x, y), create_wall())
-    # carve openings around center
-    for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-        lvl.add((midx + dx, midy + dy), create_floor(cost_amount=TILE_COST))
     lvl.add((1, midy), create_agent(health=6))
     lvl.add((w - 2, midy), create_exit())
     lvl.add((midx, 1), create_core(reward=CORE_REWARD, required=True))  # reward=0
