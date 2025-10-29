@@ -100,7 +100,7 @@ class State:
         portal (PMap[EntityID, Portal]): Teleport endpoints / pairs.
         position (PMap[EntityID, Position]): Current grid position of entities.
         pushable (PMap[EntityID, Pushable]): Entities that can be displaced by push actions.
-        required (PMap[EntityID, Required]): Items/conditions needed to satisfy Exit / objective.
+        required (PMap[EntityID, Required]): Items/conditions needed to satisfy collect and default objectives.
         rewardable (PMap[EntityID, Rewardable]): Components conferring score rewards when collected or triggered.
         status (PMap[EntityID, Status]): Ordered list container referencing effect component ids.
         prev_position (PMap[EntityID, Position]): Snapshot of positions before movement this step.
