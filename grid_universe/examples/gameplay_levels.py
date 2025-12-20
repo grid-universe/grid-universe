@@ -26,17 +26,11 @@ from grid_universe.levels.factories import (
 )
 
 # -------------------------
-# Cost policy constants (env scoring)
+# Level-wide constants
 # -------------------------
-# Base per-tile step cost (applied once per logical action by tile_cost_system).
-# Must be > 1 so that a coin can be a strictly cheaper step (reward into cost reduction).
+
 TILE_COST = 3
-
-# Coin reward acts as per-step cost reduction when stepping on it (non-collectible reward tile).
-# Must satisfy: 0 < COIN_REWARD < TILE_COST.
 COIN_REWARD = 5
-
-# Required core reward must be 0 (objective only, no scoring bonus).
 CORE_REWARD = 0
 
 # -------------------------

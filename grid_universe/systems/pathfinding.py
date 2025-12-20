@@ -143,6 +143,7 @@ def entity_pathfinding(
             state.time_limit,
             usage_limit,
         )
+        state = replace(state, usage_limit=usage_limit)
         if effect_id is not None:
             return state
 

@@ -71,6 +71,6 @@ def push_system(state: State, eid: EntityID, next_pos: Position) -> State:
     new_position = state.position.set(eid, next_pos)
     for pushable_id in pushable_ids:
         new_position = new_position.set(pushable_id, push_to)
-        add_trail_position(state, pushable_id, push_to)
+        state = add_trail_position(state, pushable_id, push_to)
 
     return replace(state, position=new_position)
