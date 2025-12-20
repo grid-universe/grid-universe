@@ -463,7 +463,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
             # For Level observations we cannot define a strict Gym space (arbitrary Python object).
             # Provide a placeholder space (Discrete(1)) with documented contract that observations are Level.
             # Users leveraging RL libraries should stick to observation_type="image".
-            self.observation_space = spaces.Discrete(1)  # type: ignore[assignment]
+            self.observation_space = spaces.Discrete(1)
 
         # Actions
         self.action_space = spaces.Discrete(len(Action))

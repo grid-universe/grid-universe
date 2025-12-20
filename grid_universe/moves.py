@@ -27,7 +27,7 @@ from grid_universe.types import EntityID, MoveFn
 from grid_universe.utils.grid import is_blocked_at
 
 
-def default_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Position]:
+def cardinal_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Position]:
     """Single-tile cardinal step.
 
     Returns the adjacent tile in the direction of ``action`` without bounds
@@ -177,9 +177,14 @@ def gravity_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Pos
     return path
 
 
+default_move_fn: MoveFn = cardinal_move_fn
+"""Alias for the default single-step movement function."""
+
+
 # Move function registry for per-level assignment
 MOVE_FN_REGISTRY: Dict[str, MoveFn] = {
     "default": default_move_fn,
+    "cardinal": cardinal_move_fn,
     "wrap": wrap_around_move_fn,
     "mirror": mirror_move_fn,
     "slippery": slippery_move_fn,
