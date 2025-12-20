@@ -17,7 +17,7 @@ from .pathfinding import Pathfinding, PathfindingType
 from .portal import Portal
 from .position import Position
 from .pushable import Pushable
-from .required import Required
+from .requirable import Requirable
 from .rewardable import Rewardable
 from .status import Status
 
@@ -44,7 +44,7 @@ __all__ = [
     "Portal",
     "Position",
     "Pushable",
-    "Required",
+    "Requirable",
     "Rewardable",
     "Status",
 ]

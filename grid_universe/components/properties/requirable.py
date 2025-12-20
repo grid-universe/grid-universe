@@ -2,9 +2,9 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class Required:
+class Requirable:
     """
-    Marker component for required entities.
+    Marker component for requirable entities.
     """
 
     pass

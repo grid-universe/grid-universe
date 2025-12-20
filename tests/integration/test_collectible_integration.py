@@ -7,7 +7,7 @@ from grid_universe.components import (
     Agent,
     Collectible,
     Rewardable,
-    Required,
+    Requirable,
     Inventory,
     Status,
     Position,
@@ -44,8 +44,8 @@ def make_agent_with_collectible_state(
     reward_map: Dict[EntityID, Rewardable] = (
         {collectible_id: Rewardable(amount=reward)} if reward else {}
     )
-    required_map: Dict[EntityID, Required] = (
-        {collectible_id: Required()} if required else {}
+    requirable_map: Dict[EntityID, Requirable] = (
+        {collectible_id: Requirable()} if required else {}
     )
     status_map: Dict[EntityID, Status] = {agent_id: Status(effect_ids=pset())}
     usage_limit_map: Dict[EntityID, UsageLimit] = {}
@@ -75,7 +75,7 @@ def make_agent_with_collectible_state(
         agent=pmap(agent_map),
         collectible=pmap(collectible_map),
         rewardable=pmap(reward_map),
-        required=pmap(required_map),
+        requirable=pmap(requirable_map),
         inventory=pmap(inventory_map),
         immunity=pmap(immunity_map),
         phasing=pmap(phasing_map),
@@ -193,22 +193,22 @@ def test_agent_picks_up_multiple_types() -> None:
     agent_id: EntityID = 1
     item_id: EntityID = 2
     rewardable_id: EntityID = 3
-    required_id: EntityID = 4
+    requirable_id: EntityID = 4
     pos: Dict[EntityID, Position] = {
         agent_id: Position(0, 0),
         item_id: Position(0, 1),
         rewardable_id: Position(0, 1),
-        required_id: Position(0, 1),
+        requirable_id: Position(0, 1),
     }
     agent_map: Dict[EntityID, Agent] = {agent_id: Agent()}
     inventory_map: Dict[EntityID, Inventory] = {agent_id: Inventory(pset())}
     collectible_map: Dict[EntityID, Collectible] = {
         item_id: Collectible(),
         rewardable_id: Collectible(),
-        required_id: Collectible(),
+        requirable_id: Collectible(),
     }
     rewardable_map: Dict[EntityID, Rewardable] = {rewardable_id: Rewardable(amount=10)}
-    required_map: Dict[EntityID, Required] = {required_id: Required()}
+    requirable_map: Dict[EntityID, Requirable] = {requirable_id: Requirable()}
 
     state: State = State(
         width=3,
@@ -219,15 +219,15 @@ def test_agent_picks_up_multiple_types() -> None:
         agent=pmap(agent_map),
         collectible=pmap(collectible_map),
         rewardable=pmap(rewardable_map),
-        required=pmap(required_map),
+        requirable=pmap(requirable_map),
         inventory=pmap(inventory_map),
     )
     state2 = move_and_pickup(state, agent_id, Action.DOWN)
     assert item_id in state2.inventory[agent_id].item_ids
     assert rewardable_id in state2.inventory[agent_id].item_ids
-    assert required_id in state2.inventory[agent_id].item_ids
+    assert requirable_id in state2.inventory[agent_id].item_ids
     assert state2.score == 10
-    for cid in [item_id, rewardable_id, required_id]:
+    for cid in [item_id, rewardable_id, requirable_id]:
         assert cid not in state2.collectible
         assert cid not in state2.position
 

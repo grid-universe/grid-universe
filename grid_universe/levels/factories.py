@@ -28,7 +28,7 @@ from grid_universe.components.properties import (
     Locked,
     Portal,
     Pushable,
-    Required,
+    Requirable,
     Rewardable,
     PathfindingType,
     Status,
@@ -96,7 +96,7 @@ def create_core(reward: Optional[int] = None, required: bool = True) -> EntitySp
         appearance=Appearance(name=AppearanceName.CORE, icon=True, priority=4),
         collectible=Collectible(),
         rewardable=None if reward is None else Rewardable(amount=reward),
-        required=Required() if required else None,
+        requirable=Requirable() if required else None,
     )
 
 

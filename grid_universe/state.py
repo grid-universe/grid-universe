@@ -29,7 +29,7 @@ from grid_universe.components.properties import (
     Portal,
     Position,
     Pushable,
-    Required,
+    Requirable,
     Rewardable,
     Status,
 )
@@ -69,7 +69,7 @@ class State:
         portal (PMap[EntityID, Portal]): Teleportation portal components.
         position (PMap[EntityID, Position]): Entity position component map.
         pushable (PMap[EntityID, Pushable]): Entities that can be pushed.
-        required (PMap[EntityID, Required]): Entities that must be collected to win if objective requires it.
+        requirable (PMap[EntityID, Requirable]): Entities that must be collected to win if objective requires it.
         rewardable (PMap[EntityID, Rewardable]): Entities that grant rewards when collected.
         status (PMap[EntityID, Status]): Entity status effect component map.
         prev_position (PMap[EntityID, Position]): Snapshot of positions before movement this step (used by system).
@@ -119,7 +119,7 @@ class State:
     portal: PMap[EntityID, Portal] = pmap()
     position: PMap[EntityID, Position] = pmap()
     pushable: PMap[EntityID, Pushable] = pmap()
-    required: PMap[EntityID, Required] = pmap()
+    requirable: PMap[EntityID, Requirable] = pmap()
     rewardable: PMap[EntityID, Rewardable] = pmap()
     status: PMap[EntityID, Status] = pmap()
     ## Extra

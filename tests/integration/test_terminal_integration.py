@@ -6,7 +6,7 @@ from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.components import (
     Agent,
-    Required,
+    Requirable,
     Collectible,
     Exit,
     Inventory,
@@ -20,8 +20,8 @@ from grid_universe.step import step
 def make_terminal_state(
     *,
     agent_on_exit: bool,
-    required_ids: List[EntityID],
-    collected_required_ids: List[EntityID],
+    requirable_ids: List[EntityID],
+    collected_requirable_ids: List[EntityID],
     agent_dead: bool,
 ) -> Tuple[State, EntityID, List[EntityID], EntityID]:
     agent_id: EntityID = 1
@@ -29,15 +29,15 @@ def make_terminal_state(
     agent: Dict[EntityID, Agent] = {agent_id: Agent()}
     pos: Dict[EntityID, Position] = {}
     inventory: Dict[EntityID, Inventory] = {
-        agent_id: Inventory(pset(collected_required_ids))
+        agent_id: Inventory(pset(collected_requirable_ids))
     }
-    required: Dict[EntityID, Required] = {}
+    requirable: Dict[EntityID, Requirable] = {}
     collectible: Dict[EntityID, Collectible] = {}
     pos[agent_id] = Position(1, 1) if agent_on_exit else Position(0, 0)
     pos[exit_id] = Position(1, 1)
-    for rid in required_ids:
-        required[rid] = Required()
-        if rid not in collected_required_ids:
+    for rid in requirable_ids:
+        requirable[rid] = Requirable()
+        if rid not in collected_requirable_ids:
             collectible[rid] = Collectible()
             pos[rid] = Position(5 + rid, 5)
     dead: PMap[EntityID, Dead] = pmap({agent_id: Dead()}) if agent_dead else pmap()
@@ -50,18 +50,18 @@ def make_terminal_state(
         agent=pmap(agent),
         exit=pmap({exit_id: Exit()}),
         collectible=pmap(collectible),
-        required=pmap(required),
+        requirable=pmap(requirable),
         inventory=pmap(inventory),
         dead=dead,
     )
-    return state, agent_id, required_ids, exit_id
+    return state, agent_id, requirable_ids, exit_id
 
 
 def test_win_when_on_exit_and_all_required_collected() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
         agent_on_exit=True,
-        required_ids=[3, 4],
-        collected_required_ids=[3, 4],
+        requirable_ids=[3, 4],
+        collected_requirable_ids=[3, 4],
         agent_dead=False,
     )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
@@ -70,10 +70,10 @@ def test_win_when_on_exit_and_all_required_collected() -> None:
 
 
 def test_no_win_if_required_not_collected() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
         agent_on_exit=True,
-        required_ids=[3, 4],
-        collected_required_ids=[3],
+        requirable_ids=[3, 4],
+        collected_requirable_ids=[3],
         agent_dead=False,
     )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
@@ -81,10 +81,10 @@ def test_no_win_if_required_not_collected() -> None:
 
 
 def test_no_win_if_not_on_exit() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
         agent_on_exit=False,
-        required_ids=[3],
-        collected_required_ids=[3],
+        requirable_ids=[3],
+        collected_requirable_ids=[3],
         agent_dead=False,
     )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
@@ -92,36 +92,36 @@ def test_no_win_if_not_on_exit() -> None:
 
 
 def test_lose_if_agent_dead() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, required_ids=[], collected_required_ids=[], agent_dead=True
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
+        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=True
     )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert new_state.lose
 
 
 def test_no_lose_if_agent_alive() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, required_ids=[], collected_required_ids=[], agent_dead=False
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
+        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=False
     )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert not new_state.lose
 
 
 def test_win_when_on_exit_no_required_items() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, required_ids=[], collected_required_ids=[], agent_dead=False
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
+        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=False
     )
-    # Remove all required items from state
-    state = replace(state, required=pmap())
+    # Remove all requirable items from state
+    state = replace(state, requirable=pmap())
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert new_state.win
 
 
 def test_dead_agent_on_exit_no_win() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
         agent_on_exit=True,
-        required_ids=[3],
-        collected_required_ids=[3],
+        requirable_ids=[3],
+        collected_requirable_ids=[3],
         agent_dead=True,
     )
     win_state = step(state, Action.UP, agent_id=agent_id)
@@ -131,8 +131,8 @@ def test_dead_agent_on_exit_no_win() -> None:
 
 
 def test_win_state_is_idempotent() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, required_ids=[], collected_required_ids=[], agent_dead=False
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
+        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=False
     )
     state = replace(state, win=True)
     new_state: State = step(state, Action.UP, agent_id=agent_id)
@@ -140,8 +140,8 @@ def test_win_state_is_idempotent() -> None:
 
 
 def test_lose_state_is_idempotent() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, required_ids=[], collected_required_ids=[], agent_dead=True
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
+        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=True
     )
     state = replace(state, lose=True)
     new_state: State = step(state, Action.UP, agent_id=agent_id)
@@ -149,10 +149,10 @@ def test_lose_state_is_idempotent() -> None:
 
 
 def test_no_win_if_agent_position_missing() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
         agent_on_exit=True,
-        required_ids=[3],
-        collected_required_ids=[3],
+        requirable_ids=[3],
+        collected_requirable_ids=[3],
         agent_dead=False,
     )
     state = replace(state, position=state.position.remove(agent_id))
@@ -161,10 +161,10 @@ def test_no_win_if_agent_position_missing() -> None:
 
 
 def test_no_win_if_no_agent_in_state() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
         agent_on_exit=True,
-        required_ids=[3],
-        collected_required_ids=[3],
+        requirable_ids=[3],
+        collected_requirable_ids=[3],
         agent_dead=False,
     )
     state = replace(state, agent=state.agent.remove(agent_id))
@@ -173,10 +173,10 @@ def test_no_win_if_no_agent_in_state() -> None:
 
 
 def test_win_when_on_any_exit() -> None:
-    state, agent_id, required_ids, exit_id = make_terminal_state(
+    state, agent_id, requirable_ids, exit_id = make_terminal_state(
         agent_on_exit=False,
-        required_ids=[3],
-        collected_required_ids=[3],
+        requirable_ids=[3],
+        collected_requirable_ids=[3],
         agent_dead=False,
     )
     # Add another exit at agent's position

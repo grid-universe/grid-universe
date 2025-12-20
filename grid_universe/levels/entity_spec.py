@@ -29,7 +29,7 @@ from grid_universe.components.properties import (
     PathfindingType,
     Portal,
     Pushable,
-    Required,
+    Requirable,
     Rewardable,
     Status,
 )
@@ -60,7 +60,7 @@ COMPONENT_TO_FIELD: Dict[Type[Any], str] = {
     Pathfinding: "pathfinding",
     Portal: "portal",
     Pushable: "pushable",
-    Required: "required",
+    Requirable: "requirable",
     Rewardable: "rewardable",
     Status: "status",
     Immunity: "immunity",
@@ -106,7 +106,7 @@ class EntitySpec:
     pathfinding: Optional[Pathfinding] = None
     portal: Optional[Portal] = None
     pushable: Optional[Pushable] = None
-    required: Optional[Required] = None
+    requirable: Optional[Requirable] = None
     rewardable: Optional[Rewardable] = None
     status: Optional[Status] = None
 

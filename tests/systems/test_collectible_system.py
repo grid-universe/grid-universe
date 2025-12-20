@@ -8,7 +8,7 @@ from grid_universe.components import (
     Collectible,
     Rewardable,
     Position,
-    Required,
+    Requirable,
     Appearance,
     AppearanceName,
 )
@@ -38,7 +38,7 @@ def make_collectible_state(
     inventory = pmap({agent_id: Inventory(pset())})
     collectible = pmap({collectible_id: Collectible()})
     rewardable: PMap[EntityID, Rewardable] = pmap()
-    required: PMap[EntityID, Required] = pmap()
+    requirable: PMap[EntityID, Requirable] = pmap()
     appearance: Dict[EntityID, Appearance] = {
         agent_id: Appearance(name=AppearanceName.HUMAN),
         collectible_id: Appearance(
@@ -49,7 +49,7 @@ def make_collectible_state(
     if collect_type == "rewardable":
         rewardable = pmap({collectible_id: Rewardable(amount=10)})
     if collect_type == "required":
-        required = pmap({collectible_id: Required()})
+        requirable = pmap({collectible_id: Requirable()})
 
     state = State(
         width=3,
@@ -60,7 +60,7 @@ def make_collectible_state(
         agent=agent,
         collectible=collectible,
         rewardable=rewardable,
-        required=required,
+        requirable=requirable,
         inventory=inventory,
         appearance=pmap(appearance),
     )
@@ -92,13 +92,13 @@ def test_pickup_multiple_collectibles_all_types() -> None:
     agent_id = new_entity_id()
     item_id = new_entity_id()
     rewardable_id = new_entity_id()
-    required_id = new_entity_id()
+    requirable_id = new_entity_id()
 
     pos = {
         agent_id: Position(0, 0),
         item_id: Position(0, 0),
         rewardable_id: Position(0, 0),
-        required_id: Position(0, 0),
+        requirable_id: Position(0, 0),
     }
     agent = pmap({agent_id: Agent()})
     inventory = pmap({agent_id: Inventory(pset())})
@@ -106,16 +106,16 @@ def test_pickup_multiple_collectibles_all_types() -> None:
         {
             item_id: Collectible(),
             rewardable_id: Collectible(),
-            required_id: Collectible(),
+            requirable_id: Collectible(),
         }
     )
     rewardable = pmap({rewardable_id: Rewardable(amount=10)})
-    required = pmap({required_id: Required()})
+    requirable = pmap({requirable_id: Requirable()})
     appearance = {
         agent_id: Appearance(name=AppearanceName.HUMAN),
         item_id: Appearance(name=AppearanceName.COIN),
         rewardable_id: Appearance(name=AppearanceName.CORE),
-        required_id: Appearance(name=AppearanceName.CORE),
+        requirable_id: Appearance(name=AppearanceName.CORE),
     }
 
     state = State(
@@ -127,19 +127,19 @@ def test_pickup_multiple_collectibles_all_types() -> None:
         agent=agent,
         collectible=collectible,
         rewardable=rewardable,
-        required=required,
+        requirable=requirable,
         inventory=inventory,
         appearance=pmap(appearance),
     )
     new_state = collectible_system(state, agent_id)
     # All should be out of world maps
-    for i in [item_id, rewardable_id, required_id]:
+    for i in [item_id, rewardable_id, requirable_id]:
         assert i not in new_state.collectible
         assert i not in new_state.position
     # Inventory contains items
     assert item_id in new_state.inventory[agent_id].item_ids
     assert rewardable_id in new_state.inventory[agent_id].item_ids
-    assert required_id in new_state.inventory[agent_id].item_ids
+    assert requirable_id in new_state.inventory[agent_id].item_ids
     # Score increased
     assert new_state.score == 10
 
@@ -199,7 +199,7 @@ def test_pickup_required_collectible() -> None:
     agent = pmap({agent_id: Agent()})
     inventory = pmap({agent_id: Inventory(pset())})
     collectible = pmap({req_id: Collectible()})
-    required = pmap({req_id: Required()})
+    requirable = pmap({req_id: Requirable()})
     appearance = {
         agent_id: Appearance(name=AppearanceName.HUMAN),
         req_id: Appearance(name=AppearanceName.CORE),
@@ -213,7 +213,7 @@ def test_pickup_required_collectible() -> None:
         position=pmap(pos),
         agent=agent,
         collectible=collectible,
-        required=required,
+        requirable=requirable,
         inventory=inventory,
         appearance=pmap(appearance),
     )

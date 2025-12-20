@@ -21,7 +21,7 @@ from grid_universe.components import (
     LethalDamage,
     Moving,
     Portal,
-    Required,
+    Requirable,
     Rewardable,
     Appearance,
     AppearanceName,
@@ -236,7 +236,7 @@ def make_agent_state(
             filter_component_map(extra_components, "rewardable", Rewardable)
         ),
         cost=pmap(filter_component_map(extra_components, "cost", Cost)),
-        required=pmap(filter_component_map(extra_components, "required", Required)),
+        requirable=pmap(filter_component_map(extra_components, "requirable", Requirable)),
         inventory=pmap(inventory),
         health=pmap(filter_component_map(extra_components, "health", Health)),
         appearance=pmap(

@@ -62,7 +62,7 @@ def _init_store_maps() -> Dict[str, Dict[EntityID, Any]]:
         "portal": {},
         "position": {},
         "pushable": {},
-        "required": {},
+        "requirable": {},
         "rewardable": {},
         "status": {},  # Status component map
     }
@@ -131,7 +131,7 @@ def _build_state(level: Level, stores: Dict[str, Dict[EntityID, Any]]) -> State:
         portal=pmap(stores["portal"]),
         position=pmap(stores["position"]),
         pushable=pmap(stores["pushable"]),
-        required=pmap(stores["required"]),
+        requirable=pmap(stores["requirable"]),
         rewardable=pmap(stores["rewardable"]),
         status=pmap(stores["status"]),
         # extras

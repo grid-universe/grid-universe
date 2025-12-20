@@ -23,14 +23,14 @@ def exit_objective_fn(state: State, agent_id: EntityID) -> bool:
     )
 
 
-def collect_required_objective_fn(state: State, agent_id: EntityID) -> bool:
-    """All entities marked ``Required`` have been collected."""
-    return all((eid not in state.collectible) for eid in state.required)
+def collect_objective_fn(state: State, agent_id: EntityID) -> bool:
+    """All entities marked ``Requirable`` have been collected."""
+    return all((eid not in state.collectible) for eid in state.requirable)
 
 
-def collect_required_and_exit_objective_fn(state: State, agent_id: EntityID) -> bool:
-    """Collect all required items and reach an exit tile."""
-    return collect_required_objective_fn(state, agent_id) and exit_objective_fn(
+def collect_and_exit_objective_fn(state: State, agent_id: EntityID) -> bool:
+    """Collect all requirable items and reach an exit tile."""
+    return collect_objective_fn(state, agent_id) and exit_objective_fn(
         state, agent_id
     )
 
@@ -57,15 +57,15 @@ def all_pushable_at_exit_objective_fn(state: State, agent_id: EntityID) -> bool:
     return True
 
 
-default_objective_fn: ObjectiveFn = collect_required_and_exit_objective_fn
+default_objective_fn: ObjectiveFn = collect_and_exit_objective_fn
 """Default objective function if none is specified in level config."""
 
 
 OBJECTIVE_FN_REGISTRY: Dict[str, ObjectiveFn] = {
     "default": default_objective_fn,
-    "collect": collect_required_objective_fn,
+    "collect": collect_objective_fn,
     "exit": exit_objective_fn,
-    "collect_exit": collect_required_and_exit_objective_fn,
+    "collect_exit": collect_and_exit_objective_fn,
     "unlock": all_unlocked_objective_fn,
     "push": all_pushable_at_exit_objective_fn,
 }
