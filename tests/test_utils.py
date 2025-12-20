@@ -236,7 +236,9 @@ def make_agent_state(
             filter_component_map(extra_components, "rewardable", Rewardable)
         ),
         cost=pmap(filter_component_map(extra_components, "cost", Cost)),
-        requirable=pmap(filter_component_map(extra_components, "requirable", Requirable)),
+        requirable=pmap(
+            filter_component_map(extra_components, "requirable", Requirable)
+        ),
         inventory=pmap(inventory),
         health=pmap(filter_component_map(extra_components, "health", Health)),
         appearance=pmap(

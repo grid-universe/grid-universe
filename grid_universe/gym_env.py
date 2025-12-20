@@ -218,7 +218,7 @@ def _serialize_inventory_item(state: State, item_id: EntityID) -> Dict[str, Any]
             item["key_id"] = ""
     # Collectibles (categorize core vs coin if we can)
     elif item_id in state.collectible:
-        if item_id in state.required:
+        if item_id in state.requirable:
             item["type"] = "core"
         else:
             item["type"] = "coin"

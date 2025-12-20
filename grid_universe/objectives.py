@@ -30,9 +30,7 @@ def collect_objective_fn(state: State, agent_id: EntityID) -> bool:
 
 def collect_and_exit_objective_fn(state: State, agent_id: EntityID) -> bool:
     """Collect all requirable items and reach an exit tile."""
-    return collect_objective_fn(state, agent_id) and exit_objective_fn(
-        state, agent_id
-    )
+    return collect_objective_fn(state, agent_id) and exit_objective_fn(state, agent_id)
 
 
 def all_unlocked_objective_fn(state: State, agent_id: EntityID) -> bool:

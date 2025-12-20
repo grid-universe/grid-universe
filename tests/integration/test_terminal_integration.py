@@ -93,7 +93,10 @@ def test_no_win_if_not_on_exit() -> None:
 
 def test_lose_if_agent_dead() -> None:
     state, agent_id, requirable_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=True
+        agent_on_exit=True,
+        requirable_ids=[],
+        collected_requirable_ids=[],
+        agent_dead=True,
     )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert new_state.lose
@@ -101,7 +104,10 @@ def test_lose_if_agent_dead() -> None:
 
 def test_no_lose_if_agent_alive() -> None:
     state, agent_id, requirable_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=False
+        agent_on_exit=True,
+        requirable_ids=[],
+        collected_requirable_ids=[],
+        agent_dead=False,
     )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert not new_state.lose
@@ -109,7 +115,10 @@ def test_no_lose_if_agent_alive() -> None:
 
 def test_win_when_on_exit_no_required_items() -> None:
     state, agent_id, requirable_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=False
+        agent_on_exit=True,
+        requirable_ids=[],
+        collected_requirable_ids=[],
+        agent_dead=False,
     )
     # Remove all requirable items from state
     state = replace(state, requirable=pmap())
@@ -132,7 +141,10 @@ def test_dead_agent_on_exit_no_win() -> None:
 
 def test_win_state_is_idempotent() -> None:
     state, agent_id, requirable_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=False
+        agent_on_exit=True,
+        requirable_ids=[],
+        collected_requirable_ids=[],
+        agent_dead=False,
     )
     state = replace(state, win=True)
     new_state: State = step(state, Action.UP, agent_id=agent_id)
@@ -141,7 +153,10 @@ def test_win_state_is_idempotent() -> None:
 
 def test_lose_state_is_idempotent() -> None:
     state, agent_id, requirable_ids, exit_id = make_terminal_state(
-        agent_on_exit=True, requirable_ids=[], collected_requirable_ids=[], agent_dead=True
+        agent_on_exit=True,
+        requirable_ids=[],
+        collected_requirable_ids=[],
+        agent_dead=True,
     )
     state = replace(state, lose=True)
     new_state: State = step(state, Action.UP, agent_id=agent_id)
