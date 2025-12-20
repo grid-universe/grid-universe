@@ -312,12 +312,12 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
     action space is ``Discrete(len(Action))``; see :mod:`grid_universe.actions`.
     """
 
-    metadata = {"render_modes": ["human", "texture"]}
+    metadata = {"render_modes": ["human", "rgb_array"]}
 
     def __init__(
         self,
         initial_state_fn: Callable[..., State],
-        render_mode: str = "texture",
+        render_mode: str = "rgb_array",
         render_resolution: int = DEFAULT_RESOLUTION,
         render_texture_map: TextureMap = DEFAULT_TEXTURE_MAP,
         render_asset_root: str = DEFAULT_ASSET_ROOT,
@@ -327,7 +327,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         """Create a new environment instance.
 
         Args:
-            render_mode (str): "texture" to return PIL image frames, "human" to open a window.
+            render_mode (str): "rgb_array" to return PIL image frames, "human" to open a window.
             render_resolution (int): Width (pixels) of rendered image (height derived).
             render_texture_map (TextureMap): Mapping of ``(AppearanceName, properties)`` to asset paths.
             initial_state_fn (Callable[..., State]): Callable returning an initial ``State``.
@@ -536,7 +536,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         """Render the current state.
 
         Args:
-            mode (str | None): "human" to display, "texture" to return PIL image. Defaults to
+            mode (str | None): "human" to display, "rgb_array" to return PIL image. Defaults to
                 the instance's configured render mode.
         """
         render_mode = mode or self._render_mode
@@ -547,7 +547,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         if render_mode == "human":
             img.show()
             return None
-        elif render_mode == "texture":
+        elif render_mode == "rgb_array":
             return img
         else:
             raise NotImplementedError(f"Render mode '{render_mode}' not supported.")

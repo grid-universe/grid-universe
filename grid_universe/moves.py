@@ -22,17 +22,20 @@ from grid_universe.types import EntityID, MoveFn
 from grid_universe.utils.grid import is_blocked_at
 
 
+MOVEMENT_MAP = {
+    Action.UP: (0, -1),
+    Action.DOWN: (0, 1),
+    Action.LEFT: (-1, 0),
+    Action.RIGHT: (1, 0),
+}
+
+
 def cardinal_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Position]:
     """Single-step cardinal movement in the intended direction.
     Returns the adjacent tile in the specified direction.
     """
     pos = state.position[eid]
-    dx, dy = {
-        Action.UP: (0, -1),
-        Action.DOWN: (0, 1),
-        Action.LEFT: (-1, 0),
-        Action.RIGHT: (1, 0),
-    }[action]
+    dx, dy = MOVEMENT_MAP[action]
     return [Position(pos.x + dx, pos.y + dy)]
 
 
@@ -44,12 +47,7 @@ def wrap_around_move_fn(
     the grid if the edge is crossed.
     """
     pos = state.position[eid]
-    dx, dy = {
-        Action.UP: (0, -1),
-        Action.DOWN: (0, 1),
-        Action.LEFT: (-1, 0),
-        Action.RIGHT: (1, 0),
-    }[action]
+    dx, dy = MOVEMENT_MAP[action]
     width = getattr(state, "width", None)
     height = getattr(state, "height", None)
     if width is None or height is None:
@@ -77,12 +75,7 @@ def slippery_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Po
     a slippery surface. If the first adjacent tile is blocked, no movement occurs.
     """
     pos = state.position[eid]
-    dx, dy = {
-        Action.UP: (0, -1),
-        Action.DOWN: (0, 1),
-        Action.LEFT: (-1, 0),
-        Action.RIGHT: (1, 0),
-    }[action]
+    dx, dy = MOVEMENT_MAP[action]
     width, height = state.width, state.height
     nx, ny = pos.x + dx, pos.y + dy
     path: list[Position] = []
@@ -104,12 +97,7 @@ def windy_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Posit
     skipped.
     """
     pos = state.position[eid]
-    dx, dy = {
-        Action.UP: (0, -1),
-        Action.DOWN: (0, 1),
-        Action.LEFT: (-1, 0),
-        Action.RIGHT: (1, 0),
-    }[action]
+    dx, dy = MOVEMENT_MAP[action]
     width, height = state.width, state.height
     path: list[Position] = []
 
@@ -139,12 +127,7 @@ def gravity_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Pos
     unobstructed downward tile.
     """
     pos = state.position[eid]
-    dx, dy = {
-        Action.UP: (0, -1),
-        Action.DOWN: (0, 1),
-        Action.LEFT: (-1, 0),
-        Action.RIGHT: (1, 0),
-    }[action]
+    dx, dy = MOVEMENT_MAP[action]
     width, height = state.width, state.height
     nx, ny = pos.x + dx, pos.y + dy
 

@@ -164,7 +164,6 @@ def entity_pathfinding(
 
 def pathfinding_system(state: State) -> State:
     """Advance all pathfinding-enabled entities by one tile if possible."""
-    usage_limit: PMap[EntityID, UsageLimit] = state.usage_limit
     for entity_id in state.pathfinding:
-        state = entity_pathfinding(state, usage_limit, entity_id)
+        state = entity_pathfinding(state, state.usage_limit, entity_id)
     return state

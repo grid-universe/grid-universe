@@ -142,7 +142,7 @@ with tab_game:
             st.balloons()
         if env.state and env.state.lose:
             st.error("💀 **You lose!** 💀")
-        img = env.render(mode="texture")
+        img = env.render(mode="rgb_array")
         if img is not None:
             img_compressed = img.convert("P")  # Converts to 8-bit palette mode
             st.image(img_compressed, use_container_width=True)

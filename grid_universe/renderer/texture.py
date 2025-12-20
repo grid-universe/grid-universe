@@ -289,6 +289,7 @@ def apply_recolor_if_group(
     return recolor_image_keep_tone(tex, color)
 
 
+@lru_cache(maxsize=4096)
 def load_texture(path: str, size: int) -> Optional[Image.Image]:
     """Load and resize a texture, returning None if inaccessible or invalid."""
     try:
@@ -341,7 +342,9 @@ def get_object_renderings(
 
 
 def choose_background(object_renderings: List[ObjectRendering]) -> ObjectRendering:
-    """Select the highest-priority background object.
+    """
+    Return the lowest-priority background object.
+    Higher priority values indicate lower importance.
 
     Raises
     ------
@@ -361,7 +364,9 @@ def choose_background(object_renderings: List[ObjectRendering]) -> ObjectRenderi
 
 
 def choose_main(object_renderings: List[ObjectRendering]) -> Optional[ObjectRendering]:
-    """Select main (foreground) object: lowest appearance priority value.
+    """
+    Return the highest-priority non-background object.
+    Lower priority values indicate higher importance.
 
     Returns ``None`` if no non-background objects exist.
     """
@@ -487,6 +492,7 @@ def render(
     state_rng = random.Random(state.seed)
     object_seeds = [state_rng.randint(0, 2**31) for _ in range(len(texture_map))]
     texture_map_values = list(texture_map.values())
+    value_to_first_index = {v: i for i, v in enumerate(texture_map_values)}
     groups = derive_groups(state)
 
     def default_get_tex(
@@ -498,7 +504,7 @@ def render(
 
         asset_path = f"{asset_root}/{path}"
         if os.path.isdir(asset_path):
-            asset_index = texture_map_values.index(path)
+            asset_index = value_to_first_index[path]
             selected_asset_path = select_texture_from_directory(
                 asset_path, object_seeds[asset_index]
             )

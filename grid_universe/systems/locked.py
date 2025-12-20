@@ -61,7 +61,8 @@ def unlock(state: State, entity_id: EntityID, next_pos: Position) -> State:
 
 
 def unlock_system(state: State, entity_id: EntityID) -> State:
-    """Run unlocking attempts for four-neighborhood around entity.
+    """
+    Attempt to unlock all locks adjacent to the specified entity and on its own tile.
 
     Args:
         state (State): Current immutable state.
@@ -72,7 +73,7 @@ def unlock_system(state: State, entity_id: EntityID) -> State:
     """
     pos = state.position.get(entity_id)
     if pos is not None:
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            adjacent = Position(pos.x + dx, pos.y + dy)
-            state = unlock(state, entity_id, adjacent)
+        for dx, dy in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]:
+            target_pos = Position(pos.x + dx, pos.y + dy)
+            state = unlock(state, entity_id, target_pos)
     return state
