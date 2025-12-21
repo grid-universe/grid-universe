@@ -7,7 +7,8 @@ config). Reward is the delta of ``state.score`` per step. ``terminated`` is
 
 Observation schema (see docs for full details):
 
-``{
+```python
+{
     "image": np.ndarray(H,W,4),
     "info": {
             "agent": {...},
@@ -15,22 +16,23 @@ Observation schema (see docs for full details):
             "config": {...},
             "message": str  # empty string if None
     }
-}``
+}
+```
 
 or
 
-``
+```python
 Level  # if observation_type="level"
-``
+```
 
 Usage:
 
-``
+```python
 from grid_universe.gym_env import GridUniverseEnv
 from grid_universe.examples.maze import generate as maze_generate
 
 env = GridUniverseEnv(initial_state_fn=maze_generate, width=9, height=9, seed=123)
-``
+```
 
 Customization hooks:
     * ``initial_state_fn``: Provide a callable that returns a fully built ``State``.

@@ -9,9 +9,13 @@ if TYPE_CHECKING:
     from grid_universe.components import Position
 
 EntityID = int
+"""Type alias for entity identifiers."""
 
 MoveFn = Callable[["State", "EntityID", "Action"], Sequence["Position"]]
+"""Function type for computing possible moves for an entity."""
+
 ObjectiveFn = Callable[["State", "EntityID"], bool]
+"""Function type for evaluating whether an entity has met an objective."""
 
 
 class EffectType(StrEnum):

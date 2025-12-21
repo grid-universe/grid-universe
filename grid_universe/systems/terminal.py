@@ -17,6 +17,7 @@ def win_system(state: State, agent_id: EntityID) -> State:
     Args:
         state (State): Current immutable state.
         agent_id (EntityID): ID of the agent to check for win condition.
+
     Returns:
         State: Updated state with ``win`` flag set if objective met.
     """
@@ -34,6 +35,7 @@ def lose_system(state: State, agent_id: EntityID) -> State:
     Args:
         state (State): Current immutable state.
         agent_id (EntityID): ID of the agent to check for lose condition.
+
     Returns:
         State: Updated state with ``lose`` flag set if agent is dead.
     """
@@ -48,6 +50,7 @@ def turn_system(state: State, agent_id: EntityID) -> State:
     Args:
         state (State): Current immutable state.
         agent_id (EntityID): ID of the agent to check for turn limit.
+
     Returns:
         State: Updated state with ``lose`` flag set if turn limit reached.
     """

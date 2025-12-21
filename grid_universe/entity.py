@@ -1,4 +1,4 @@
-""" "Entity ID management utilities."""
+"""Entity ID management utilities."""
 
 from typing import Iterator, List
 

@@ -35,6 +35,7 @@ def get_astar_next_position(
         state (State): Current world state.
         entity_id (EntityID): ID of the entity to move.
         target_id (EntityID): ID of the target entity.
+
     Returns:
         Position: Next position toward the target, or current position if no path found.
     """
@@ -108,6 +109,7 @@ def get_straight_line_next_position(
         state (State): Current world state.
         entity_id (EntityID): ID of the entity to move.
         target_id (EntityID): ID of the target entity.
+
     Returns:
         Position: Next position toward the target.
     """

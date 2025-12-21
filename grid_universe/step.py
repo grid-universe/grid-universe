@@ -35,8 +35,10 @@ def step(state: State, action: Action, agent_id: Optional[EntityID] = None) -> S
         action (Action): The action to be applied.
         agent_id (Optional[EntityID]): The ID of the agent performing the action.
             If None, the first agent in the state will be used.
+
     Returns:
         State: The updated state after applying the action.
+
     Raises:
         ValueError: If no agent_id is provided and no agents exist in the state.
     """
@@ -84,6 +86,7 @@ def _step_move(state: State, action: Action, agent_id: EntityID) -> State:
         state (State): Current state prior to movement.
         action (Action): One of the directional ``Action`` enum members.
         agent_id (EntityID): Controlled agent entity id.
+
     Returns:
         State: Updated state after applying the movement action.
     """
@@ -163,6 +166,7 @@ def _substep(
         action (Action): Action being processed.
         agent_id (EntityID): Acting agent.
         next_pos (Position): Target position for this sub-step.
+
     Returns:
         State: Updated state after the sub-step.
     """
@@ -182,6 +186,7 @@ def _after_substep(state: State, action: Action, agent_id: EntityID) -> State:
         state (State): State after the sub-step.
         action (Action): Action being processed.
         agent_id (EntityID): Acting agent.
+
     Returns:
         State: Updated state after finalizing the sub-step.
     """
@@ -205,6 +210,7 @@ def _after_step(state: State, agent_id: EntityID) -> State:
     Args:
         state (State): State after all sub-steps of the action.
         agent_id (EntityID): Acting agent.
+
     Returns:
         State: Updated state after finalizing the full action step.
     """

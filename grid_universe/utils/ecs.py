@@ -23,6 +23,7 @@ def _position_index(
 
     Args:
         position_store (Mapping[EntityID, Position]): Mapping of entity IDs to positions.
+
     Returns:
         Mapping[Position, FrozenSet[EntityID]]: Mapping from positions to sets of entity IDs.
     """
