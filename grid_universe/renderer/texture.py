@@ -280,7 +280,7 @@ def apply_recolor_if_group(
 ) -> Image.Image:
     """Recolor wrapper that sets hue to the group's color while preserving tone.
 
-    Delegates to :func:`recolor_image_keep_tone`; if no group is provided the
+    Delegates to `recolor_image_keep_tone`; if no group is provided the
     texture is returned unchanged.
     """
     if group is None:

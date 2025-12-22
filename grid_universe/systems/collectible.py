@@ -4,11 +4,11 @@ Resolves item/effect pickups and reward scoring when an entity occupies the
 same tile as collectible entities. The system supports three pickup flows:
 
 1. Effect pickup (power-up): adds an effect entity's ID to the entity's
-    :class:`Status` if the effect is valid and not expired.
+    `Status` if the effect is valid and not expired.
 2. Inventory pickup: inserts keys, coins, cores, etc. into the entity's
-    :class:`Inventory` (non-effect collectibles).
+    `Inventory` (non-effect collectibles).
 3. Reward scoring: applies immediate score changes for entities bearing a
-    :class:`Rewardable` component (whether or not they are effect/inventory
+    `Rewardable` component (whether or not they are effect/inventory
     pickups) and removes them.
 
 Collected entities are removed from ``position`` and ``collectible`` maps.

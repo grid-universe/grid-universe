@@ -126,7 +126,7 @@ def _step_usekey(state: State, action: Action, agent_id: EntityID) -> State:
     """
     Apply the use-key action.
 
-    Invokes :func:`grid_universe.systems.locked.unlock_system` to attempt to
+    Invokes `grid_universe.systems.locked.unlock_system` to attempt to
     unlock any locked entities at the agent's position or adjacent positions.
     """
     state = unlock_system(state, agent_id)
@@ -137,7 +137,7 @@ def _step_pickup(state: State, action: Action, agent_id: EntityID) -> State:
     """
     Apply the pick-up action.
 
-    Invokes :func:`grid_universe.systems.collectible.collectible_system` to
+    Invokes `grid_universe.systems.collectible.collectible_system` to
     collect any collectible entities at the agent's position.
     """
     state = collectible_system(state, agent_id)

@@ -1,13 +1,13 @@
 """Mutable grid/level representation.
 
-The :class:`~grid_universe.levels.grid.Level` dataclass is an alternative,
-mutable representation of a :class:`~grid_universe.state.State`. It provides a
+The `grid_universe.levels.grid.Level` dataclass is an alternative,
+mutable representation of a `grid_universe.state.State`. It provides a
 simple grid editing API (add/remove/move) and stores the configuration needed
 to build a runtime state.
 
-Use :mod:`grid_universe.levels.factories` to create :class:`~grid_universe.levels.entity.Entity`
-objects conveniently, and :mod:`grid_universe.levels.convert` to convert between
-this representation and the immutable runtime :class:`~grid_universe.state.State`.
+Use `grid_universe.levels.factories` to create `grid_universe.levels.entity.Entity`
+objects conveniently, and `grid_universe.levels.convert` to convert between
+this representation and the immutable runtime `grid_universe.state.State`.
 """
 
 from __future__ import annotations
@@ -27,11 +27,11 @@ class Level:
     """
     Grid-centric, mutable level representation.
 
-    - ``grid[y][x]`` is a list of :class:`~grid_universe.levels.entity.Entity` instances at that cell.
+    - ``grid[y][x]`` is a list of `grid_universe.levels.entity.Entity` instances at that cell.
     - The level stores configuration such as ``move_fn``, ``objective_fn``, ``seed``, and simple
         meta (turn/score/etc.).
-    - Use :func:`grid_universe.levels.convert.to_state` / :func:`grid_universe.levels.convert.from_state`
-        to convert between ``Level`` and the immutable ECS :class:`~grid_universe.state.State`.
+    - Use `grid_universe.levels.convert.to_state` / `grid_universe.levels.convert.from_state`
+        to convert between ``Level`` and the immutable ECS `grid_universe.state.State`.
     """
 
     width: int
@@ -59,7 +59,7 @@ class Level:
 
     def add(self, pos: Position, obj: Entity) -> None:
         """
-        Place an :class:`~grid_universe.levels.entity.Entity` into the cell at pos (x, y).
+        Place an `grid_universe.levels.entity.Entity` into the cell at pos (x, y).
         """
         x, y = pos
         self._check_bounds(x, y)

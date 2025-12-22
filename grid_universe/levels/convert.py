@@ -257,7 +257,7 @@ def to_state(level: Level) -> State:
 
 def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
     """
-    Reconstruct a mutable level :class:`~grid_universe.levels.entity.Entity` from a State entity id.
+    Reconstruct a mutable level `grid_universe.levels.entity.Entity` from a State entity id.
 
     Inventory and Status components (if present) are copied. Nested collections
     (``inventory_list`` / ``status_list``) are initialized empty here.

@@ -3,44 +3,82 @@ theme:
   name: material
   features:
     - navigation.tabs
-    - navigation.expand
+    - navigation.sections
+    - navigation.indexes
     - content.code.copy
+    - toc.integrate
+
 markdown_extensions:
   - admonition
+  - codehilite
+  - footnotes
   - toc:
       permalink: true
   - pymdownx.superfences
+  - pymdownx.tabbed
   - pymdownx.details
-  - pymdownx.highlight
+  - pymdownx.betterem:
+      smart_enable: all
+
 plugins:
+  - search
+  - autorefs
   - mkdocstrings:
       handlers:
         python:
           options:
+            show_source: false
             docstring_style: google
-            show_source: true
-            show_root_heading: true
-            heading_level: 3
-            separate_signature: true
-            members_order: source
+            merge_init_into_class: true
+
 nav:
   - Home: index.md
-  - Quick Start: quickstart.md
-  - Guides:
-      - Player Guide: guides/player_guide.md
-      - Authoring Levels: guides/authoring_levels.md
-      - Level Examples: guides/level_examples.md
-      - State and Systems: guides/state_and_systems.md
-      - Movement and Objectives: guides/movement_and_objectives.md
-      - Rendering: guides/rendering.md
-      - Functional API: guides/functional_api.md
-      - Gym Environment: guides/gym_env.md
-      - Extending the System: guides/extending_the_system.md
-  - Reference:
-      - API: reference/api.md
-  - Design:
-      - ECS Architecture: design/ecs_architecture.md
-      - Systems Lifecycle: design/systems_lifecycle.md
-      - Components Reference: design/components_reference.md
-watch:
-  - grid_universe
+  
+  - API Reference:
+    - State: api/state.md
+    - Step: api/step.md
+    - Actions: api/actions.md
+    - Env: api/gym_env.md
+    - Types: api/types.md
+    - Entity: api/entity.md
+    - Components:
+      - Properties: api/components/properties.md
+      - Effects: api/components/effects.md
+    - Systems:
+      - collectible: api/systems/collectible.md
+      - damage: api/systems/damage.md
+      - locked: api/systems/locked.md
+      - movement: api/systems/movement.md
+      - moving: api/systems/moving.md
+      - pathfinding: api/systems/pathfinding.md
+      - portal: api/systems/portal.md
+      - position: api/systems/position.md
+      - push: api/systems/push.md
+      - status: api/systems/status.md
+      - terminal: api/systems/terminal.md
+      - tile: api/systems/tile.md
+    - Levels:
+      - Level: api/levels/level.md
+      - Entity: api/levels/entity.md
+      - Convert: api/levels/convert.md
+      - Factories: api/levels/factories.md
+    - Examples:
+      - Maze: api/examples/maze.md
+      - Gameplay Levels: api/examples/gameplay_levels.md
+      - Cipher Levels: api/examples/cipher_objective_levels.md
+    - Renderer: api/renderer/texture.md
+    - Moves & Objectives:
+      - Moves: api/moves.md
+      - Objectives: api/objectives.md
+    - Utils:
+      - ecs: api/utils/ecs.md
+      - gc: api/utils/gc.md
+      - grid: api/utils/grid.md
+      - health: api/utils/health.md
+      - image: api/utils/image.md
+      - inventory: api/utils/inventory.md
+      - math: api/utils/math.md
+      - maze: api/utils/maze.md
+      - status: api/utils/status.md
+      - terminal: api/utils/terminal.md
+      - trail: api/utils/trail.md

@@ -1,14 +1,14 @@
 """Mutable entity specification.
 
-The :class:`~grid_universe.levels.entity.Entity` dataclass is an alternative,
-mutable representation of an ECS entity in :class:`~grid_universe.state.State`.
+The `grid_universe.levels.entity.Entity` dataclass is an alternative,
+mutable representation of an ECS entity in `grid_universe.state.State`.
 
 It stores optional component instances plus additional mutable structure
 (nested inventory/status items and cross-entity references) that can be
 resolved during conversion.
 
-Use :mod:`grid_universe.levels.convert` to convert between this representation
-and the immutable runtime :class:`~grid_universe.state.State`.
+Use `grid_universe.levels.convert` to convert between this representation
+and the immutable runtime `grid_universe.state.State`.
 """
 
 from __future__ import annotations
@@ -84,13 +84,13 @@ def _empty_objs() -> List["Entity"]:
 @dataclass
 class Entity:
     """
-    Mutable bag of ECS components used in :class:`~grid_universe.levels.grid.Level`.
+    Mutable bag of ECS components used in `grid_universe.levels.grid.Level`.
 
     - It omits ``Position`` (position is supplied by the containing grid cell).
     - It supports extra mutable structure that is resolved during conversion:
         - wiring refs: ``pathfind_target_ref``, ``pathfinding_type``, ``portal_pair_ref``
         - nested collections: ``inventory_list`` and ``status_list`` (materialized as
-            separate entities in :func:`grid_universe.levels.convert.to_state`).
+            separate entities in `grid_universe.levels.convert.to_state`).
     """
 
     # Components

@@ -7,6 +7,6 @@ Provides sprite assembly, recoloring and layering logic for turning immutable
 * Optional palette / hue adjustments for entity grouping (team colors, etc.).
 * Lightweight Pillow + NumPy based compositing suitable for small tile grids.
 
-See :mod:`grid_universe.renderer.texture` for the core texture map and
+See `grid_universe.renderer.texture` for the core texture map and
 composition routines.
 """

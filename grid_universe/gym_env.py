@@ -142,7 +142,7 @@ class Observation(TypedDict):
     """Top‑level observation returned by the environment.
 
     image: RGBA image array (H x W x 4, dtype=uint8)
-    info:  Rich structured dictionaries (see :class:`InfoDict`).
+    info:  Rich structured dictionaries (see `InfoDict`).
     """
 
     image: ImageArray
@@ -311,7 +311,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
     """Gymnasium ``Env`` implementation for the Grid Universe.
 
     Parameters mirror the procedural level generator plus rendering knobs. The
-    action space is ``Discrete(len(Action))``; see :mod:`grid_universe.actions`.
+    action space is ``Discrete(len(Action))``; see `grid_universe.actions`.
     """
 
     metadata = {"render_modes": ["human", "rgb_array"]}
@@ -357,6 +357,10 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         self._render_texture_map = render_texture_map
         self._render_asset_root = render_asset_root
         self._render_mode = render_mode
+
+        assert self._render_resolution % self.width == 0, (
+            f"render_resolution ({self._render_resolution}) must be divisible by grid width ({self.width})"
+        )
 
         # Rendering setup
         render_width: int = render_resolution
