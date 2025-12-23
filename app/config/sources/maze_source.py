@@ -182,14 +182,14 @@ def _hazards_section() -> List[HazardSpec]:
         c1, c2, c3 = st.columns([1, 1, 1])
         with c1:
             count = st.number_input(
-                f"{hazard_type.value.title()} count",
+                f"{hazard_type.title()} count",
                 min_value=0,
                 value=1,
-                key=f"hazard_count_{hazard_type.value}",
+                key=f"hazard_count_{hazard_type}",
             )
         with c2:
             lethal = st.checkbox(
-                "Lethal?", value=hazard_lethal, key=f"hazard_lethal_{hazard_type.value}"
+                "Lethal?", value=hazard_lethal, key=f"hazard_lethal_{hazard_type}"
             )
         with c3:
             if not lethal:
@@ -197,7 +197,7 @@ def _hazards_section() -> List[HazardSpec]:
                     "Damage",
                     min_value=1,
                     value=hazard_damage,
-                    key=f"hazard_damage_{hazard_type.value}",
+                    key=f"hazard_damage_{hazard_type}",
                 )
             else:
                 st.markdown("Lethal")
