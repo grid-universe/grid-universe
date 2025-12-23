@@ -2,7 +2,7 @@
 
 > A modular, deterministic, fully *immutable* ECS gridworld for research, teaching, prototyping RL ideas, and building puzzle / action mechanics fast.
 
-Grid Universe combines a pure Entity–Component–System model (functional, ordered systems) with flexible level-building and rendering tools. It ships with procedural generators, a Gymnasium wrapper, a Streamlit inspector app, and extensible registries for movement and objectives.
+Grid Universe combines a pure Entity–Component–System model (functional, ordered systems) with flexible level-building and rendering tools. It ships with procedural generators, a Gymnasium wrapper, and extensible registries for movement and objectives.
 
 Built for: rapid experimentation (movement/objective swaps), reproducible RL benchmarks, curriculum & teaching demos, and custom gameplay mechanics (portals, powerups, hazards, pushing, keys/doors, moving enemies, pathfinding chasers, etc.).
 
@@ -10,7 +10,6 @@ Built for: rapid experimentation (movement/objective swaps), reproducible RL ben
 
 <p align="center">
     <a href="https://grid-universe.github.io/grid-universe/">Docs</a> •
-    <a href="https://grid-universe.streamlit.app/">App</a> •
     <a href="LICENSE">MIT License</a>
 </p>
 
@@ -36,7 +35,6 @@ Built for: rapid experimentation (movement/objective swaps), reproducible RL ben
 - **RL ready** – Native Gymnasium environment: image + structured info; reward = delta score; discrete 7‑action space.
 - **Procedural generation** – Maze generator with density knobs for enemies, keys, portals, hazards, rewards.
 - **Extensible** – Register new movement & objective functions; add systems, components, texture mappings without invasive changes.
-- **Teaching & tooling** – Streamlit inspector exposes full ECS state live; ideal for lectures and debugging.
 
 ---
 
@@ -93,7 +91,6 @@ Optional extras (from `pyproject.toml`):
 
 ```bash
 pip install -e ".[dev]"   # tests, lint, type checking
-pip install -e ".[app]"   # streamlit UI
 pip install -e ".[doc]"   # mkdocs site
 ```
 
@@ -174,16 +171,6 @@ while not done:
 img = env.render()
 if img: img.save("rollout_last.png")
 ```
-
-### Streamlit App
-
-Interactive exploration + state inspector:
-
-```bash
-streamlit run app/main.py
-```
-
-Hosted preview (if deployed): https://grid-universe.streamlit.app/
 
 ---
 
@@ -325,7 +312,6 @@ Group recoloring: keys/doors (by key id), paired portals, etc. Add custom group 
 
 More in: docs/guides/rendering/ and docs/reference/api/#rendering
 
----
 
 ---
 
@@ -391,7 +377,6 @@ grid_universe/
   renderer/        # TextureRenderer + helpers
   utils/           # ECS, grid, status, inventory, gc, image, trail
   assets/          # Texture packs (kenney, futurama, ...)
-app/               # Streamlit app
 tests/             # Unit + integration tests
 docs/              # MkDocs site sources
 ```
