@@ -431,14 +431,10 @@ def validate_appearance_names(state: State, texture_map: TextureMap) -> None:
     appearance_names_in_state = set(
         appearance.name for appearance in state.appearance.values()
     )
-    appearance_names_in_texture_map = set(
-        name for (name, _) in texture_map.keys()
-    )
+    appearance_names_in_texture_map = set(name for (name, _) in texture_map.keys())
     missing_names = appearance_names_in_state - appearance_names_in_texture_map
     if missing_names:
-        raise ValueError(
-            f"Missing appearance names in texture map: {missing_names}"
-        )
+        raise ValueError(f"Missing appearance names in texture map: {missing_names}")
 
 
 def render(
@@ -471,6 +467,10 @@ def render(
     """
     cell_size: int = resolution // state.width
     subicon_size: int = int(cell_size * subicon_percent)
+    render_width: int = cell_size * state.width
+    render_height: int = cell_size * state.height
+    target_width: int = resolution
+    target_height: int = (resolution * state.height) // state.width
 
     if texture_map is None:
         texture_map = DEFAULT_TEXTURE_MAP
@@ -484,10 +484,7 @@ def render(
     for (obj_name, obj_properties), value in texture_map.items():
         texture_hmap[obj_name][tuple(obj_properties)] = value
 
-    width, height = state.width, state.height
-    img = Image.new(
-        "RGBA", (width * cell_size, height * cell_size), (128, 128, 128, 255)
-    )
+    img = Image.new("RGBA", (render_width, render_height), (128, 128, 128, 255))
 
     state_rng = random.Random(state.seed)
     object_seeds = [state_rng.randint(0, 2**31) for _ in range(len(texture_map))]
@@ -569,6 +566,10 @@ def render(
             tex = tex_lookup(corner_icon, subicon_size)
             if tex:
                 img.alpha_composite(tex, (dx, dy))
+
+    # Resize to target resolution if needed
+    if (render_width, render_height) != (target_width, target_height):
+        img = img.resize((target_width, target_height), resample=Image.NEAREST)
 
     return img
 

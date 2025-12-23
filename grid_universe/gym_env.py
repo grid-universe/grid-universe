@@ -358,10 +358,6 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         self._render_asset_root = render_asset_root
         self._render_mode = render_mode
 
-        assert self._render_resolution % self.width == 0, (
-            f"render_resolution ({self._render_resolution}) must be divisible by grid width ({self.width})"
-        )
-
         # Rendering setup
         render_width: int = render_resolution
         render_height: int = int(self.height / self.width * render_width)
