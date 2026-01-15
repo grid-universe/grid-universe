@@ -28,6 +28,7 @@ def wrap_position(x: int, y: int, width: int, height: int) -> Position:
 def is_blocked_at(
     state: State,
     pos: Position,
+    check_blocking: bool = True,
     check_collidable: bool = True,
     check_pushable: bool = True,
 ) -> bool:
@@ -36,15 +37,39 @@ def is_blocked_at(
     Args:
         state (State): World state.
         pos (Position): Candidate destination.
-        check_collidable (bool): If True, treat ``Collidable`` as blocking (for agent movement);
-            pushing may disable this to allow pushing into collidable tiles.
+        check_blocking (bool): If True, treat ``Blocking`` as blocking.
+        check_collidable (bool): If True, treat ``Collidable`` as blocking.
+        check_pushable (bool): If True, treat ``Pushable`` as blocking.
     """
     ids_at_pos: Set[EntityID] = entities_at(state, pos)
     for other_id in ids_at_pos:
         if (
-            other_id in state.blocking
+            (check_blocking and other_id in state.blocking)
             or (check_pushable and other_id in state.pushable)
             or (check_collidable and other_id in state.collidable)
         ):
             return True
     return False
+
+
+def is_entity_blocked_at(
+    state: State,
+    entity_id: EntityID,
+    pos: Position,
+) -> bool:
+    """Return True if ``entity_id`` would be blocked at ``pos``.
+
+    If the entity is blocking or pushable, collidable entities are also checked.
+
+    Args:
+        state (State): World state.
+        entity_id (EntityID): Entity.
+        pos (Position): Candidate destination.
+    """
+    return is_blocked_at(
+        state,
+        pos,
+        check_blocking=True,
+        check_collidable=(entity_id in state.blocking or entity_id in state.pushable),
+        check_pushable=True,
+    )

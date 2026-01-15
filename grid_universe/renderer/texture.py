@@ -309,10 +309,7 @@ def get_object_renderings(
         move_speed: int = 0
         if eid in state.moving:
             m = state.moving[eid]
-            if m.axis.name == "HORIZONTAL":
-                move_dir = (1 if m.direction > 0 else -1, 0)
-            else:
-                move_dir = (0, 1 if m.direction > 0 else -1)
+            move_dir = m.vector
             move_speed = m.speed
 
         renderings.append(

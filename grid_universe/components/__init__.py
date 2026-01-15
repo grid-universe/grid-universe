@@ -21,7 +21,7 @@ from .properties import Inventory
 from .properties import Key
 from .properties import LethalDamage
 from .properties import Locked
-from .properties import Moving, MovingAxis
+from .properties import Moving, Direction
 from .properties import Pathfinding, PathfindingType
 from .properties import Portal
 from .properties import Position
@@ -54,7 +54,7 @@ __all__ = [
     "LethalDamage",
     "Locked",
     "Moving",
-    "MovingAxis",
+    "Direction",
     "Pathfinding",
     "PathfindingType",
     "Portal",

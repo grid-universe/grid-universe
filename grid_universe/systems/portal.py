@@ -10,7 +10,7 @@ from pyrsistent.typing import PMap, PSet
 from grid_universe.components import Position
 from grid_universe.state import State
 from grid_universe.types import EntityID
-from grid_universe.utils.grid import is_blocked_at
+from grid_universe.utils.grid import is_entity_blocked_at
 from grid_universe.runtime import StepContext
 from grid_universe.utils.trail import get_augmented_trail
 
@@ -31,9 +31,6 @@ def portal_system_entity(
     if pair_position is None:
         return state
 
-    if is_blocked_at(state, pair_position, check_collidable=True):
-        return state  # Teleport not possible
-
     entity_ids = set(augmented_trail.get(portal_position, pset())) & set(
         state.collidable
     )
@@ -46,6 +43,8 @@ def portal_system_entity(
 
     state_position = state.position
     for eid in entering_entity_ids:
+        if is_entity_blocked_at(state, eid, pair_position):
+            continue  # Can't teleport this entity
         state_position = state_position.set(eid, pair_position)
     return replace(state, position=state_position)
 

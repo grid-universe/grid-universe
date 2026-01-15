@@ -12,7 +12,7 @@ from grid_universe.state import State
 from grid_universe.components import Position
 from grid_universe.types import EntityID
 from grid_universe.utils.ecs import entities_with_components_at
-from grid_universe.utils.grid import is_blocked_at, is_in_bounds, wrap_position
+from grid_universe.utils.grid import is_entity_blocked_at, is_in_bounds, wrap_position
 from grid_universe.utils.trail import add_trail_position
 from grid_universe.runtime import StepContext
 
@@ -70,7 +70,9 @@ def push_system(
     if push_to is None:
         return state, ctx
 
-    if is_blocked_at(state, push_to, check_collidable=True):
+    # Destination must be unblocked for the (first) pushable entity.
+    # All pushables share the same collision rules.
+    if is_entity_blocked_at(state, pushable_ids[0], push_to):
         return state, ctx  # Push not possible
 
     new_position = state.position.set(eid, next_pos)

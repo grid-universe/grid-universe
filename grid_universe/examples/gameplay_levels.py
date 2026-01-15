@@ -6,7 +6,6 @@ from grid_universe.levels.convert import to_state
 from grid_universe.moves import default_move_fn
 from grid_universe.objectives import default_objective_fn, exit_objective_fn
 from grid_universe.state import State
-from grid_universe.components.properties import MovingAxis
 from grid_universe.levels.factories import (
     create_floor,
     create_wall,
@@ -387,16 +386,14 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
     enemy1 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
-        moving_axis=MovingAxis.VERTICAL,
-        moving_direction=1,
+        moving_direction="down",
         moving_bounce=True,
         moving_speed=1,
     )
     enemy2 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
-        moving_axis=MovingAxis.VERTICAL,
-        moving_direction=1,
+        moving_direction="down",
         moving_bounce=True,
         moving_speed=1,
     )
@@ -510,24 +507,21 @@ def build_level_power_boots(seed: int = 112) -> State:
     enemy1 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
-        moving_axis=MovingAxis.VERTICAL,
-        moving_direction=1,
+        moving_direction="down",
         moving_bounce=True,
         moving_speed=1,
     )
     enemy2 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
-        moving_axis=MovingAxis.VERTICAL,
-        moving_direction=1,
+        moving_direction="down",
         moving_bounce=True,
         moving_speed=1,
     )
     enemy3 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
-        moving_axis=MovingAxis.VERTICAL,
-        moving_direction=1,
+        moving_direction="down",
         moving_bounce=True,
         moving_speed=1,
     )
@@ -577,8 +571,7 @@ def build_level_capstone(seed: int = 113) -> State:
         (2, 6),
         create_monster(
             damage=ENEMY_DAMAGE,
-            moving_axis=MovingAxis.VERTICAL,
-            moving_direction=-1,
+            moving_direction="up",
             moving_bounce=True,
             moving_speed=1,
         ),

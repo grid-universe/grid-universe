@@ -13,7 +13,7 @@ from pyrsistent.typing import PMap
 from grid_universe.components import PathfindingType, Position, UsageLimit
 from grid_universe.state import State
 from grid_universe.types import EntityID
-from grid_universe.utils.grid import is_blocked_at, is_in_bounds
+from grid_universe.utils.grid import is_entity_blocked_at, is_in_bounds
 from grid_universe.utils.math import (
     argmax,
     position_to_vector,
@@ -49,7 +49,7 @@ def get_astar_next_position(
         return is_in_bounds(state, pos)
 
     def is_blocked(pos: Position) -> bool:
-        return is_blocked_at(state, pos, check_collidable=False)
+        return is_entity_blocked_at(state, entity_id, pos)
 
     def heuristic(a: Position, b: Position) -> int:
         return abs(a.x - b.x) + abs(a.y - b.y)
@@ -156,7 +156,7 @@ def entity_pathfinding(
     else:
         raise NotImplementedError
 
-    if is_blocked_at(state, next_pos, check_collidable=False) or not is_in_bounds(
+    if is_entity_blocked_at(state, entity_id, next_pos) or not is_in_bounds(
         state, next_pos
     ):
         return state

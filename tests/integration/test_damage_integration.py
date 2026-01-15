@@ -16,7 +16,6 @@ from grid_universe.components import (
     Position,
     Collectible,
     Moving,
-    MovingAxis,
     Speed,
     Portal,
     Collidable,
@@ -369,8 +368,7 @@ def test_damage_on_crossing_swap_positions(
         "health": {agent_id: Health(health=10, max_health=10)},
         "moving": {
             damager_id: Moving(
-                axis=MovingAxis.HORIZONTAL,
-                direction=-1,
+                direction="left",
                 speed=damager_speed,
                 bounce=False,
             )
@@ -411,8 +409,7 @@ def test_damage_on_path_intersection_trail(
         "health": {agent_id: Health(health=10, max_health=10)},
         "moving": {
             damager_id: Moving(
-                axis=MovingAxis.HORIZONTAL,
-                direction=1,
+                direction="right",
                 speed=damager_speed,
                 bounce=False,
             )
@@ -448,8 +445,7 @@ def test_no_damage_agent_moves_away_before_damager_arrives(
         "health": {agent_id: Health(health=9, max_health=9)},
         "moving": {
             damager_id: Moving(
-                axis=MovingAxis.HORIZONTAL,
-                direction=1,
+                direction="right",
                 speed=damager_speed,
                 bounce=False,
             )
@@ -482,7 +478,9 @@ def test_no_damage_damager_moves_away_from_incoming_agent(
         "health": {agent_id: Health(health=6, max_health=6)},
         "moving": {
             damager_id: Moving(
-                axis=MovingAxis.VERTICAL, direction=1, speed=damager_speed, bounce=False
+                direction="down",
+                speed=damager_speed,
+                bounce=False,
             )
         },
     }

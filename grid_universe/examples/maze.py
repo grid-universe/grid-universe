@@ -56,8 +56,8 @@ from grid_universe.types import (
 from grid_universe.moves import default_move_fn
 from grid_universe.objectives import default_objective_fn
 from grid_universe.components.properties import (
-    MovingAxis,
     PathfindingType,
+    Direction,
 )
 from grid_universe.levels.grid import Level, Position
 from grid_universe.levels.convert import to_state
@@ -137,8 +137,8 @@ DEFAULT_BOXES: List[BoxSpec] = [
 # -------------------------
 
 
-def _random_axis_and_dir(rng: random.Random) -> Tuple[MovingAxis, int]:
-    """Choose a random movement axis and direction.
+def _random_direction(rng: random.Random) -> Direction:
+    """Choose a random cardinal movement direction.
 
     Parameters
     ----------
@@ -147,12 +147,10 @@ def _random_axis_and_dir(rng: random.Random) -> Tuple[MovingAxis, int]:
 
     Returns
     -------
-    (MovingAxis, int)
-        Selected axis and signed direction (+1 or -1).
+    str
+        One of: "up", "down", "left", "right".
     """
-    axis: MovingAxis = rng.choice([MovingAxis.HORIZONTAL, MovingAxis.VERTICAL])
-    direction: int = rng.choice([-1, 1])
-    return axis, direction
+    return rng.choice(["up", "down", "left", "right"])
 
 
 def _pop_or_fallback(positions: List[Position], fallback: Position) -> Position:
@@ -323,10 +321,9 @@ def generate(
         if not open_non_essential:
             break
         pos = open_non_essential.pop()
-        axis, direction = _random_axis_and_dir(rng) if speed > 0 else (None, None)
+        direction = _random_direction(rng) if speed > 0 else None
         box = create_box(
             pushable=pushable,
-            moving_axis=axis,
             moving_direction=direction,
             moving_speed=speed,
         )
@@ -351,13 +348,10 @@ def generate(
                 damage=dmg, lethal=lethal, pathfind_target=agent, path_type=path_type
             )
         else:
-            maxis, mdirection = (
-                _random_axis_and_dir(rng) if mspeed > 0 else (None, None)
-            )
+            mdirection = _random_direction(rng) if mspeed > 0 else None
             enemy = create_monster(
                 damage=dmg,
                 lethal=lethal,
-                moving_axis=maxis,
                 moving_direction=mdirection,
                 moving_speed=mspeed,
             )
