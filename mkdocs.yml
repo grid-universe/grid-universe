@@ -41,6 +41,7 @@ nav:
     - Env: api/gym_env.md
     - Types: api/types.md
     - Entity: api/entity.md
+    - Runtime: api/runtime.md
     - Components:
       - Properties: api/components/properties.md
       - Effects: api/components/effects.md
