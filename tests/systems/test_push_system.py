@@ -17,8 +17,14 @@ from grid_universe.components import (
     Portal,
 )
 from grid_universe.systems.push import push_system
+from grid_universe.runtime import StepContext
 from grid_universe.entity import new_entity_id
 from grid_universe.actions import Action
+
+
+def step_push(state: State, agent_id: EntityID, next_pos: Position) -> State:
+    next_state, _ = push_system(state, StepContext(), agent_id, next_pos)
+    return next_state
 
 
 def make_push_state(
@@ -95,7 +101,7 @@ def test_agent_pushes_box_successfully() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -109,7 +115,7 @@ def test_push_blocked_by_wall() -> None:
     state, agent_id, box_ids, wall_ids = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0)], wall_positions=[(2, 0)]
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -124,7 +130,7 @@ def test_push_blocked_by_another_box() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0), (2, 0)]
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -139,7 +145,7 @@ def test_push_box_out_of_bounds() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(3, 0), box_positions=[(4, 0)], width=5, height=1
     )
-    next_state = push_system(state, agent_id, Position(4, 0))
+    next_state = step_push(state, agent_id, Position(4, 0))
     check_positions(
         next_state,
         {
@@ -159,7 +165,7 @@ def test_push_box_onto_collectible() -> None:
         collectible=state.collectible.set(collectible_id, Collectible()),
         position=state.position.set(collectible_id, Position(2, 0)),
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -180,7 +186,7 @@ def test_push_box_onto_exit() -> None:
         exit=state.exit.set(exit_id, Exit()),
         position=state.position.set(exit_id, Position(2, 0)),
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -206,7 +212,7 @@ def test_push_box_onto_portal() -> None:
             paired_portal_id, Position(4, 0)
         ),
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     # Box should land at (2,0) (portal logic would teleport after push_system, not during push_system itself)
     check_positions(
         next_state,
@@ -231,7 +237,7 @@ def test_push_box_onto_agent() -> None:
         position=state.position.set(other_agent_id, Position(2, 0)),
         inventory=state.inventory.set(other_agent_id, Inventory(pset())),
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -254,7 +260,7 @@ def test_push_box_left_right_up_down() -> None:
             agent_pos=agent_p, box_positions=[box_p], width=3, height=3
         )
         next_box_pos = Position(*dest_p)
-        next_state = push_system(state, agent_id, Position(*box_p))
+        next_state = step_push(state, agent_id, Position(*box_p))
         check_positions(
             next_state,
             {
@@ -268,7 +274,7 @@ def test_push_box_on_narrow_grid_edge() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(0, 0), box_positions=[(0, 1)], width=1, height=2
     )
-    next_state = push_system(state, agent_id, Position(0, 1))
+    next_state = step_push(state, agent_id, Position(0, 1))
     check_positions(
         next_state,
         {
@@ -282,7 +288,7 @@ def test_push_chain_of_boxes_blocked() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0), (2, 0)]
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -298,7 +304,7 @@ def test_push_chain_wall_box_blocked() -> None:
     state, agent_id, box_ids, wall_ids = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0)], wall_positions=[(2, 0)]
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -314,7 +320,7 @@ def test_push_chain_box_wall_blocked() -> None:
     state, agent_id, box_ids, wall_ids = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0), (3, 0)], wall_positions=[(2, 0)]
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -340,7 +346,7 @@ def test_push_box_onto_multiple_collidables() -> None:
             exit_id, Position(2, 0)
         ),
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     check_positions(
         next_state,
         {
@@ -356,7 +362,7 @@ def test_push_not_adjacent() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(0, 0), box_positions=[(2, 0)]
     )
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     assert box_ids[0] in next_state.position and next_state.position[
         box_ids[0]
     ] == Position(2, 0)
@@ -364,7 +370,7 @@ def test_push_not_adjacent() -> None:
 
 def test_push_no_pushable_at_destination() -> None:
     state, agent_id, _, _ = make_push_state(agent_pos=(0, 0))
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     assert next_state.position[agent_id] == Position(
         0, 0
     )  # push system doesn't handle agent movement
@@ -375,7 +381,7 @@ def test_push_box_missing_position() -> None:
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
     state = replace(state, position=state.position.remove(box_ids[0]))
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     assert agent_id in next_state.position
     assert box_ids[0] not in next_state.position
 
@@ -385,7 +391,7 @@ def test_push_missing_agent_position() -> None:
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
     state = replace(state, position=state.position.remove(agent_id))
-    next_state = push_system(state, agent_id, Position(1, 0))
+    next_state = step_push(state, agent_id, Position(1, 0))
     assert box_ids[0] in next_state.position
     assert agent_id not in next_state.position
 
@@ -401,7 +407,7 @@ def test_push_box_at_narrow_grid_edge() -> None:
             box_ids[0], Position(0, 1)
         ),
     )
-    next_state = push_system(state, agent_id, Position(0, 1))
+    next_state = step_push(state, agent_id, Position(0, 1))
     check_positions(
         next_state,
         {

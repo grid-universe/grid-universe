@@ -14,6 +14,7 @@ from grid_universe.types import EntityID
 from grid_universe.utils.ecs import entities_with_components_at
 from grid_universe.utils.grid import is_blocked_at, is_in_bounds, wrap_position
 from grid_universe.utils.trail import add_trail_position
+from grid_universe.runtime import StepContext
 
 
 def compute_destination(
@@ -41,36 +42,40 @@ def compute_destination(
     return target_position
 
 
-def push_system(state: State, eid: EntityID, next_pos: Position) -> State:
+def push_system(
+    state: State, ctx: StepContext, eid: EntityID, next_pos: Position
+) -> tuple[State, StepContext]:
     """Attempt to push all pushable entities at ``next_pos``.
 
     Args:
         state (State): Current immutable state.
+        ctx (StepContext): Current step context.
         eid (EntityID): Entity initiating the push (must have a position).
         next_pos (Position): Adjacent position the entity is trying to move into.
 
     Returns:
-        State: Updated state with moved positions if push succeeds; original state otherwise.
+        State: Updated state after applying any pushes.
+        StepContext: Updated step context after applying any pushes.
     """
     current_pos = state.position.get(eid)
     if current_pos is None:
-        return state
+        return state, ctx
 
     # Is there a pushable object at next_pos?
     pushable_ids = entities_with_components_at(state, next_pos, state.pushable)
     if not pushable_ids:
-        return state  # Nothing to push
+        return state, ctx  # Nothing to push
 
     push_to = compute_destination(state, current_pos, next_pos)
     if push_to is None:
-        return state
+        return state, ctx
 
     if is_blocked_at(state, push_to, check_collidable=True):
-        return state  # Push not possible
+        return state, ctx  # Push not possible
 
     new_position = state.position.set(eid, next_pos)
     for pushable_id in pushable_ids:
         new_position = new_position.set(pushable_id, push_to)
-        state = add_trail_position(state, pushable_id, push_to)
+        ctx = add_trail_position(ctx, pushable_id, push_to)
 
-    return replace(state, position=new_position)
+    return replace(state, position=new_position), ctx

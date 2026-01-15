@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Any, Optional
-from pyrsistent import PMap, PSet, pmap, pset
+from pyrsistent import PMap, pmap
 
 from grid_universe.components.effects import (
     Immunity,
@@ -72,9 +72,6 @@ class State:
         requirable (PMap[EntityID, Requirable]): Entities that must be collected to win if objective requires it.
         rewardable (PMap[EntityID, Rewardable]): Entities that grant rewards when collected.
         status (PMap[EntityID, Status]): Entity status effect component map.
-        prev_position (PMap[EntityID, Position]): Snapshot of positions before movement this step (used by system).
-        trail (PMap[Position, PSet[EntityID]]): Mapping of positions to entities that have occupied them (for trail effects).
-        damage_hits (PSet[tuple[EntityID, EntityID, int]]): Set of damage events this turn (target, damager, turn).
         turn (int): Current turn number.
         score (int): Cumulative score.
         turn_limit (int | None): Optional maximum number of turns allowed. When
@@ -122,10 +119,6 @@ class State:
     requirable: PMap[EntityID, Requirable] = pmap()
     rewardable: PMap[EntityID, Rewardable] = pmap()
     status: PMap[EntityID, Status] = pmap()
-    ## Extra
-    prev_position: PMap[EntityID, Position] = pmap()
-    trail: PMap[Position, PSet[EntityID]] = pmap()
-    damage_hits: PSet[tuple[EntityID, EntityID, int]] = pset()
 
     # Status
     turn: int = 0

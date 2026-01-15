@@ -17,6 +17,7 @@ from grid_universe.components import (
 )
 from grid_universe.entity import new_entity_id
 from grid_universe.systems.portal import portal_system
+from grid_universe.runtime import StepContext
 
 
 def make_entity_on_portal_state(
@@ -57,7 +58,6 @@ def make_entity_on_portal_state(
         portal=pmap(portal),
         appearance=pmap(appearance),
         collidable=pmap(collidable),
-        prev_position=pmap(position),  # assume standing still at the beginning
         turn=0,
         score=0,
         win=False,
@@ -94,7 +94,8 @@ def test_entity_standing_on_portal_does_not_teleport(
         portal2_pos,
     )
 
-    new_state: State = portal_system(state)
+    ctx = StepContext(prev_position=state.position)
+    new_state: State = portal_system(state, ctx)
     assert new_state.position[entity_id] == Position(*portal1_pos)
 
 
@@ -122,9 +123,9 @@ def test_entity_teleported_when_entering_portal(
     moved_state: State = replace(
         state,
         position=state.position.set(entity_id, Position(*portal1_pos)),
-        prev_position=state.position,
     )
-    new_state: State = portal_system(moved_state)
+    ctx = StepContext(prev_position=state.position)
+    new_state: State = portal_system(moved_state, ctx)
     assert new_state.position[entity_id] == Position(*portal2_pos)
 
 
@@ -150,7 +151,8 @@ def test_entity_not_teleported_if_not_on_portal(
         portal2_pos,
     )
 
-    new_state: State = portal_system(state)
+    ctx = StepContext(prev_position=state.position)
+    new_state: State = portal_system(state, ctx)
     assert new_state.position[entity_id] == Position(*entity_pos)
 
 
@@ -167,9 +169,9 @@ def test_pushable_teleported_when_pushed_onto_portal() -> None:
     moved_state: State = replace(
         state,
         position=state.position.set(entity_id, Position(*portal1_pos)),
-        prev_position=state.position,
     )
-    new_state: State = portal_system(moved_state)
+    ctx = StepContext(prev_position=state.position)
+    new_state: State = portal_system(moved_state, ctx)
     assert new_state.position[entity_id] == Position(*portal2_pos)
 
 
@@ -198,9 +200,9 @@ def test_portal_pair_missing_does_not_crash() -> None:
         portal=pmap(portal),
         appearance=pmap(appearance),
         collidable=pmap(collidable),
-        prev_position=pmap(position),
     )
-    new_state: State = portal_system(state)
+    ctx = StepContext(prev_position=state.position)
+    new_state: State = portal_system(state, ctx)
     assert new_state.position[agent_id] == Position(*agent_pos)
 
 
@@ -242,14 +244,14 @@ def test_multiple_entities_on_portal_all_blocked() -> None:
         move_fn=lambda s, eid, d: [],
         objective_fn=default_objective_fn,
         position=pmap(position),
-        prev_position=pmap(prev_position),
         agent=pmap({agent_id: Agent()}),
         pushable=pmap({pushable_id: Pushable()}),
         portal=pmap(portal),
         appearance=pmap(appearance),
         collidable=pmap(collidable),
     )
-    new_state: State = portal_system(state)
+    ctx = StepContext(prev_position=pmap(prev_position))
+    new_state: State = portal_system(state, ctx)
     assert new_state.position[agent_id] == Position(*portal1_pos)
     assert new_state.position[pushable_id] == Position(*portal2_pos)
 
@@ -301,12 +303,12 @@ def test_entity_chained_portals_no_infinite_teleport() -> None:
         move_fn=lambda s, eid, d: [],
         objective_fn=default_objective_fn,
         position=pmap(position),
-        prev_position=pmap(prev_position),
         agent=pmap({agent_id: Agent()}),
         portal=pmap(portal),
         appearance=pmap(appearance),
         collidable=pmap(collidable),
     )
-    new_state: State = portal_system(state)
+    ctx = StepContext(prev_position=pmap(prev_position))
+    new_state: State = portal_system(state, ctx)
     # Only one teleport: A→B (not B→C or C→A)
     assert new_state.position[agent_id] == Position(*pos_b)

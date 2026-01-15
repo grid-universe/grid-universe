@@ -22,6 +22,7 @@ from grid_universe.components import (
 from grid_universe.entity import EntityID
 from grid_universe.actions import Action
 from grid_universe.step import step
+from ..test_utils import make_agent_state
 
 
 def agent_has_effect(state: State, agent_id: EntityID, effect_id: EntityID) -> bool:
@@ -479,3 +480,37 @@ def test_effect_priority_with_multiple_powerups() -> None:
     effect_ids = get_agent_status_effects(state, agent_id)
     assert unlimited_id in effect_ids
     assert limited_id not in effect_ids
+
+
+def test_speed_time_limit_pickup_then_three_moves_is_2_2_2() -> None:
+    # Place agent at (0,0) on an open row so we can advance freely.
+    # Build a minimal state using the test helper; we’ll inject the power-up at the agent’s tile.
+    state, agent_id = make_agent_state(agent_pos=(0, 0), width=20, height=1)
+
+    # Create a Speed x2 effect with time limit of 3 and place it at the agent's current tile
+    effect_id: EntityID = 6001
+    state = replace(
+        state,
+        # Power-up entity lives at the agent tile (so the agent can PICK_UP immediately)
+        position=state.position.set(effect_id, Position(0, 0)),
+        # Mark it collectible (so PICK_UP will pick it)
+        collectible=state.collectible.set(
+            effect_id, object()
+        ),  # marker, type unused by system
+        # Effect components
+        speed=state.speed.set(effect_id, Speed(multiplier=2)),
+        time_limit=state.time_limit.set(effect_id, TimeLimit(amount=3)),
+        # Ensure agent has a Status component to receive effects
+        status=state.status.set(agent_id, Status(effect_ids=pset())),
+    )
+
+    # Agent takes the power-up
+    state = step(state, Action.PICK_UP, agent_id=agent_id)
+
+    # Now move RIGHT three times; with time=3 the Speed x2 applies for each action
+    state = step(state, Action.RIGHT, agent_id=agent_id)
+    state = step(state, Action.RIGHT, agent_id=agent_id)
+    state = step(state, Action.RIGHT, agent_id=agent_id)
+
+    # Expect 2 + 2 + 2 = 6 tiles to the right after pickup
+    assert state.position[agent_id] == Position(6, 0)

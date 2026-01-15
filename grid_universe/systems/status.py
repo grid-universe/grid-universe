@@ -9,6 +9,7 @@ expired or orphaned effects.
 from dataclasses import replace
 from pyrsistent.typing import PMap, PSet
 from grid_universe.components import TimeLimit, UsageLimit, Status
+from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.types import EntityID, EffectType
 
@@ -74,12 +75,18 @@ def garbage_collect(
     return replace(status, effect_ids=effect_ids)
 
 
-def status_tick_system(state: State) -> State:
-    """Phase 1: decrement all active time limits."""
+def status_tick_system(state: State, ctx: StepContext) -> State:
+    """Phase 1: decrement time limits for effects active at step start.
+
+    When an effect is collected/applied mid-step, it should not immediately lose
+    one tick during the same step. We therefore tick using ``ctx.prev_status``
+    (a snapshot taken at the beginning of the step), not the possibly-updated
+    ``state.status``.
+    """
     state_status = state.status
     state_time_limit = state.time_limit
 
-    for _, entity_status in state_status.items():
+    for _, entity_status in ctx.prev_status.items():
         state_time_limit = tick_time_limit(state, entity_status, state_time_limit)
 
     return replace(
@@ -111,6 +118,6 @@ def status_gc_system(state: State) -> State:
 
 def status_system(state: State) -> State:
     """Run tick + GC phases for all statuses (public entry point)."""
-    state = status_tick_system(state)
+    state = status_tick_system(state, StepContext(prev_status=state.status))
     state = status_gc_system(state)
     return state

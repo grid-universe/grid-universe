@@ -122,9 +122,6 @@ def _build_state(level: Level, stores: Dict[str, Dict[EntityID, Any]]) -> State:
         requirable=pmap(stores["requirable"]),
         rewardable=pmap(stores["rewardable"]),
         status=pmap(stores["status"]),
-        # extras
-        prev_position=pmap({}),
-        trail=pmap({}),
         # meta
         turn=level.turn,
         score=level.score,

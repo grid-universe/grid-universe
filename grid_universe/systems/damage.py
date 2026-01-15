@@ -28,17 +28,17 @@ from grid_universe.components import Health, Dead, UsageLimit, Position
 from grid_universe.types import EntityID
 from grid_universe.utils.health import apply_damage_and_check_death
 from grid_universe.utils.status import use_status_effect_if_present
+from grid_universe.runtime import StepContext
 
 
-def _build_trail_cache(state: State) -> Dict[EntityID, Set[Position]]:
-    """Invert ``state.trail`` once into entity -> visited positions set.
-
-    This replaces repeated scans per (target, damager) pair.
-    """
+def _build_trail_cache(
+    trail: PMap[Position, PSet[EntityID]],
+) -> Dict[EntityID, Set[Position]]:
+    """Invert trail mapping into entity -> visited positions set."""
     cache: Dict[EntityID, Set[Position]] = {}
-    for pos, ids in state.trail.items():  # pos -> PSet[eid]
+    for pos, ids in trail.items():
         for eid in ids:
-            cache.setdefault(eid, set()).add(pos)  # local, mutable sets OK
+            cache.setdefault(eid, set()).add(pos)
     return cache
 
 
@@ -128,6 +128,7 @@ def _apply_single_damage(
 
 def _apply_damage_for_target(
     state: State,
+    ctx: StepContext,
     target_id: EntityID,
     health: PMap[EntityID, Health],
     dead: PMap[EntityID, Dead],
@@ -146,7 +147,7 @@ def _apply_damage_for_target(
     if target_pos is None or target_id in dead:
         return health, dead, usage_limit, damage_hits
 
-    target_prev = state.prev_position.get(target_id)
+    target_prev = ctx.prev_position.get(target_id)
     target_trail = trail_cache.get(target_id, set())
 
     for damager_id in damager_ids:
@@ -156,7 +157,7 @@ def _apply_damage_for_target(
         if damager_pos is None:
             continue
 
-        damager_prev = state.prev_position.get(damager_id)
+        damager_prev = ctx.prev_position.get(damager_id)
 
         # If either lacks prev position, only overlap is reliable.
         if target_prev is None or damager_prev is None:
@@ -208,7 +209,7 @@ def _apply_damage_for_target(
     return health, dead, usage_limit, damage_hits
 
 
-def damage_system(state: State) -> State:
+def damage_system(state: State, ctx: StepContext) -> tuple[State, StepContext]:
     """Resolve damage / lethal interactions for this turn.
 
     Complexity: O(H * D + T) where
@@ -219,15 +220,16 @@ def damage_system(state: State) -> State:
     health: PMap[EntityID, Health] = state.health
     dead: PMap[EntityID, Dead] = state.dead
     usage_limit: PMap[EntityID, UsageLimit] = state.usage_limit
-    damage_hits: PSet[DamageHit] = state.damage_hits
+    damage_hits: PSet[DamageHit] = ctx.damage_hits
 
     damager_ids = _candidate_damagers(state)
-    trail_cache = _build_trail_cache(state)
+    trail_cache = _build_trail_cache(ctx.trail)
 
     # Iterate over snapshot list to avoid issues if component maps structurally change.
     for target_id in list(state.health.keys()):
         health, dead, usage_limit, damage_hits = _apply_damage_for_target(
             state,
+            ctx,
             target_id,
             health,
             dead,
@@ -237,10 +239,11 @@ def damage_system(state: State) -> State:
             trail_cache,
         )
 
-    return replace(
+    state = replace(
         state,
         health=health,
         dead=dead,
         usage_limit=usage_limit,
-        damage_hits=damage_hits,
     )
+    ctx = replace(ctx, damage_hits=damage_hits)
+    return state, ctx

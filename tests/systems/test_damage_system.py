@@ -19,6 +19,12 @@ from grid_universe.components import (
 )
 from grid_universe.systems.damage import damage_system
 from grid_universe.types import EntityID
+from grid_universe.runtime import StepContext
+
+
+def step_damage(state: State, ctx: StepContext | None = None) -> State:
+    next_state, _ = damage_system(state, ctx or StepContext())
+    return next_state
 
 
 def build_agent_with_sources(
@@ -98,7 +104,7 @@ def test_agent_takes_damage_from_single_source() -> None:
     state, agent_id, _ = build_agent_with_sources(
         sources=[{"damage": 4, "pos": (0, 0)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 6)
 
 
@@ -106,7 +112,7 @@ def test_agent_dies_from_lethal_damage_source() -> None:
     state, agent_id, _ = build_agent_with_sources(
         sources=[{"lethal": True, "pos": (0, 0)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert agent_id in state2.dead
 
 
@@ -114,7 +120,7 @@ def test_agent_survives_zero_damage() -> None:
     state, agent_id, _ = build_agent_with_sources(
         sources=[{"damage": 0, "pos": (0, 0)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 10)
 
 
@@ -123,7 +129,7 @@ def test_negative_damage_raises_error() -> None:
         sources=[{"damage": -3, "pos": (0, 0)}],
     )
     with pytest.raises(ValueError):
-        damage_system(state)
+        step_damage(state)
 
 
 def test_agent_takes_accumulated_damage_from_multiple_sources() -> None:
@@ -133,7 +139,7 @@ def test_agent_takes_accumulated_damage_from_multiple_sources() -> None:
             {"damage": 3, "pos": (0, 0)},
         ],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 5)
 
 
@@ -144,7 +150,7 @@ def test_lethal_damage_takes_precedence_over_accumulated_damage() -> None:
             {"damage": 3, "lethal": True, "pos": (0, 0)},
         ],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert agent_id in state2.dead
 
 
@@ -156,7 +162,7 @@ def test_multiple_sources_mixed_damage_and_lethal() -> None:
             {"damage": 7, "pos": (0, 0)},
         ],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert agent_id in state2.dead
 
 
@@ -165,7 +171,7 @@ def test_damage_does_not_underflow_below_zero() -> None:
         agent_health=3,
         sources=[{"damage": 10, "pos": (0, 0)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 0)
 
 
@@ -173,7 +179,7 @@ def test_no_damage_when_agent_not_on_source() -> None:
     state, agent_id, _ = build_agent_with_sources(
         sources=[{"damage": 7, "pos": (2, 2)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 10)
 
 
@@ -181,7 +187,7 @@ def test_no_damage_or_lethal_component_present() -> None:
     state, agent_id, _ = build_agent_with_sources(
         sources=[{"pos": (0, 0)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 10)
 
 
@@ -192,7 +198,7 @@ def test_damage_sources_with_zero_and_positive_damage() -> None:
             {"damage": 5, "pos": (0, 0)},
         ],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 5)
 
 
@@ -201,7 +207,7 @@ def test_already_dead_agent_not_affected() -> None:
         agent_dead=True,
         sources=[{"damage": 3, "pos": (0, 0)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert agent_id in state2.dead
     assert agent_id in state2.health
     assert state2.health[agent_id].health == 10
@@ -212,7 +218,7 @@ def test_agent_with_no_health_component() -> None:
         sources=[{"damage": 6, "pos": (0, 0)}],
     )
     state = replace(state, health=pmap())
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert agent_id not in state2.health
 
 
@@ -223,7 +229,7 @@ def test_damage_component_negative_amount_is_robust() -> None:
     src_id: EntityID = source_ids[0]
     state = replace(state, damage=state.damage.set(src_id, Damage(amount=-999)))
     with pytest.raises(ValueError):
-        damage_system(state)
+        step_damage(state)
 
 
 def test_multiple_agents_each_take_appropriate_damage() -> None:
@@ -265,7 +271,7 @@ def test_multiple_agents_each_take_appropriate_damage() -> None:
         collidable=pmap(collidable),
         damage=pmap(damage_map),
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert agent1 in state2.health and state2.health[agent1].health == 8
     assert agent2 in state2.health and state2.health[agent2].health == 7
 
@@ -275,7 +281,7 @@ def test_agent_with_immunity_component_blocks_damage() -> None:
         agent_immunity=True,
         sources=[{"damage": 5, "pos": (0, 0)}],
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 10)
     assert agent_id not in state2.dead
 
@@ -291,7 +297,7 @@ def test_damage_and_unrelated_components_do_not_interfere() -> None:
         rewardable=state.rewardable.set(unrelated_id, object()),  # type: ignore
         appearance=state.appearance.set(unrelated_id, Appearance(name="coin")),
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 6)
 
 
@@ -302,5 +308,5 @@ def test_agent_with_multiple_health_entries_is_robust() -> None:
     state = replace(
         state, health=state.health.set(agent_id, Health(health=5, max_health=10))
     )
-    state2: State = damage_system(state)
+    state2: State = step_damage(state)
     assert_health(state2, agent_id, 3)

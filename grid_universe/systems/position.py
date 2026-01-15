@@ -13,19 +13,20 @@ from pyrsistent import pmap
 from grid_universe.components import Position
 from grid_universe.state import State
 from grid_universe.types import EntityID
+from grid_universe.runtime import StepContext
 
 
-def position_system(state: State) -> State:
+def position_system(state: State, ctx: StepContext) -> StepContext:
     """Snapshot current entity positions.
 
     Args:
         state (State): Current immutable simulation state.
+        ctx (StepContext): Current step context.
 
     Returns:
-        State: New state with ``prev_position`` replaced by a pmap copy of the
-            current ``position`` mapping.
+        StepContext: Updated step context with snapshot of current positions.
     """
     prev_position: Dict[EntityID, Position] = {}
     for eid, pos in state.position.items():
         prev_position[eid] = pos
-    return replace(state, prev_position=pmap(prev_position))
+    return replace(ctx, prev_position=pmap(prev_position))

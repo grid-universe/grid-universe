@@ -11,11 +11,15 @@ from grid_universe.components import Position
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.grid import is_blocked_at
+from grid_universe.runtime import StepContext
 from grid_universe.utils.trail import get_augmented_trail
 
 
 def portal_system_entity(
-    state: State, augmented_trail: PMap[Position, PSet[EntityID]], portal_id: EntityID
+    state: State,
+    ctx: StepContext,
+    augmented_trail: PMap[Position, PSet[EntityID]],
+    portal_id: EntityID,
 ) -> State:
     """Teleport entities entering the specified portal to its pair."""
     portal = state.portal.get(portal_id)
@@ -36,7 +40,7 @@ def portal_system_entity(
     entering_entity_ids = {
         eid
         for eid in entity_ids
-        if state.prev_position.get(eid) != state.position.get(eid)
+        if ctx.prev_position.get(eid) != state.position.get(eid)
         and state.position.get(eid) == portal_position
     }
 
@@ -46,11 +50,11 @@ def portal_system_entity(
     return replace(state, position=state_position)
 
 
-def portal_system(state: State) -> State:
+def portal_system(state: State, ctx: StepContext) -> State:
     """Apply portal teleportation for all portals in the state."""
     augmented_trail: PMap[Position, PSet[EntityID]] = get_augmented_trail(
-        state, pset(state.collidable)
+        state, ctx, pset(state.collidable)
     )
     for portal_id in state.portal:
-        state = portal_system_entity(state, augmented_trail, portal_id)
+        state = portal_system_entity(state, ctx, augmented_trail, portal_id)
     return state

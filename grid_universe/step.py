@@ -1,6 +1,6 @@
 from dataclasses import replace
 from typing import Optional
-from pyrsistent import pset, pmap
+from grid_universe.runtime import StepContext
 from grid_universe.actions import Action, MOVE_ACTIONS
 from grid_universe.components.properties.position import Position
 from grid_universe.systems.damage import damage_system
@@ -51,16 +51,14 @@ def step(state: State, action: Action, agent_id: Optional[EntityID] = None) -> S
     if not is_valid_state(state, agent_id) or is_terminal_state(state, agent_id):
         return state
 
-    # Reset per-action damage hit tracking and trail at the very start of a new step
-    state = replace(state, damage_hits=pset(), trail=pmap())
+    ctx: StepContext = StepContext(prev_status=state.status)
 
-    state = position_system(state)  # before movements
-    state = moving_system(state)
+    ctx = position_system(state, ctx)  # before movements
+    state, ctx = moving_system(state, ctx)
     state = pathfinding_system(state)
-    state = status_tick_system(state)
 
     if action in MOVE_ACTIONS:
-        state = _step_move(state, action, agent_id)
+        state, ctx = _step_move(state, ctx, action, agent_id)
     elif action == Action.USE_KEY:
         state = _step_usekey(state, action, agent_id)
     elif action == Action.PICK_UP:
@@ -71,12 +69,14 @@ def step(state: State, action: Action, agent_id: Optional[EntityID] = None) -> S
         raise ValueError("Action is not valid")
 
     if action not in MOVE_ACTIONS:
-        state = _after_substep(state, action, agent_id)
+        state, ctx = _after_substep(state, ctx, action, agent_id)
 
-    return _after_step(state, agent_id)
+    return _after_step(state, ctx, agent_id)
 
 
-def _step_move(state: State, action: Action, agent_id: EntityID) -> State:
+def _step_move(
+    state: State, ctx: StepContext, action: Action, agent_id: EntityID
+) -> tuple[State, StepContext]:
     """Apply a movement action.
 
     Handles multi-substep movement, speed effects, and invokes interaction
@@ -84,16 +84,18 @@ def _step_move(state: State, action: Action, agent_id: EntityID) -> State:
 
     Args:
         state (State): Current state prior to movement.
+        ctx (StepContext): Current step context.
         action (Action): One of the directional ``Action`` enum members.
         agent_id (EntityID): Controlled agent entity id.
 
     Returns:
         State: Updated state after applying the movement action.
+        StepContext: Updated step context after applying the movement action.
     """
     move_fn: MoveFn = state.move_fn
     current_pos = state.position.get(agent_id)
     if not current_pos:
-        return state
+        return state, ctx  # agent has no position, cannot move
 
     move_count = 1
 
@@ -114,12 +116,12 @@ def _step_move(state: State, action: Action, agent_id: EntityID) -> State:
             positions = [current_pos]  # no move possible
         for next_pos in positions:
             prev_state = state
-            state = _substep(state, action, agent_id, next_pos)
-            state = _after_substep(state, action, agent_id)
+            state, ctx = _substep(state, ctx, action, agent_id, next_pos)
+            state, ctx = _after_substep(state, ctx, action, agent_id)
             if prev_state == state:
-                return state  # movement blocked, stop processing further sub-moves
+                return state, ctx  # movement blocked, stop processing further sub-moves
 
-    return state
+    return state, ctx
 
 
 def _step_usekey(state: State, action: Action, agent_id: EntityID) -> State:
@@ -153,8 +155,12 @@ def _step_wait(state: State, action: Action, agent_id: EntityID) -> State:
 
 
 def _substep(
-    state: State, action: Action, agent_id: EntityID, next_pos: Position
-) -> State:
+    state: State,
+    ctx: StepContext,
+    action: Action,
+    agent_id: EntityID,
+    next_pos: Position,
+) -> tuple[State, StepContext]:
     """
     Perform a single movement *sub‑step* towards `next_pos`.
 
@@ -163,6 +169,7 @@ def _substep(
 
     Args:
         state (State): Current state before the sub-step.
+        ctx (StepContext): Current step context.
         action (Action): Action being processed.
         agent_id (EntityID): Acting agent.
         next_pos (Position): Target position for this sub-step.
@@ -170,12 +177,14 @@ def _substep(
     Returns:
         State: Updated state after the sub-step.
     """
-    state = push_system(state, agent_id, next_pos)
+    state, ctx = push_system(state, ctx, agent_id, next_pos)
     state = movement_system(state, agent_id, next_pos)
-    return state
+    return state, ctx
 
 
-def _after_substep(state: State, action: Action, agent_id: EntityID) -> State:
+def _after_substep(
+    state: State, ctx: StepContext, action: Action, agent_id: EntityID
+) -> tuple[State, StepContext]:
     """
     Finalize a single movement *sub‑step*.
 
@@ -184,23 +193,25 @@ def _after_substep(state: State, action: Action, agent_id: EntityID) -> State:
 
     Args:
         state (State): State after the sub-step.
+        ctx (StepContext): Current step context.
         action (Action): Action being processed.
         agent_id (EntityID): Acting agent.
 
     Returns:
         State: Updated state after finalizing the sub-step.
+        StepContext: Updated step context after finalizing the sub-step.
     """
-    state = add_trail_position(state, agent_id, state.position[agent_id])
-    state = portal_system(state)
-    state = damage_system(state)
+    ctx = add_trail_position(ctx, agent_id, state.position[agent_id])
+    state = portal_system(state, ctx)
+    state, ctx = damage_system(state, ctx)
     state = tile_reward_system(state, agent_id)
-    state = position_system(state)
+    ctx = position_system(state, ctx)
     state = win_system(state, agent_id)
     state = lose_system(state, agent_id)
-    return state
+    return state, ctx
 
 
-def _after_step(state: State, agent_id: EntityID) -> State:
+def _after_step(state: State, ctx: StepContext, agent_id: EntityID) -> State:
     """
     Finalize the full action step.
 
@@ -209,11 +220,13 @@ def _after_step(state: State, agent_id: EntityID) -> State:
 
     Args:
         state (State): State after all sub-steps of the action.
+        ctx (StepContext): Current step context.
         agent_id (EntityID): Acting agent.
 
     Returns:
         State: Updated state after finalizing the full action step.
     """
+    state = status_tick_system(state, ctx)
     state = tile_cost_system(
         state, agent_id
     )  # doesn't penalize faster move (move with submoves)

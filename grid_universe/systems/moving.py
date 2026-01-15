@@ -9,6 +9,7 @@ from dataclasses import replace
 from typing import Tuple
 from pyrsistent.typing import PMap
 from grid_universe.state import State
+from grid_universe.runtime import StepContext
 from grid_universe.utils.trail import add_trail_position
 from grid_universe.components import Moving, MovingAxis, Position
 from grid_universe.types import EntityID
@@ -36,18 +37,14 @@ def move(
         new_direction = moving.direction * (-1 if moving.bounce else 1)
         state_moving = state_moving.set(
             entity_id,
-            replace(moving, direction=new_direction, prev_position=pos),
+            replace(moving, direction=new_direction),
         )
     else:
         state_position = state_position.set(entity_id, next_pos)
-        state_moving = state_moving.set(
-            entity_id,
-            replace(moving, prev_position=pos),
-        )
     return state_moving, state_position, blocked
 
 
-def moving_system(state: State) -> State:
+def moving_system(state: State, ctx: StepContext) -> tuple[State, StepContext]:
     """Advance all moving entities for the current step."""
     state_position = state.position
     state_moving = state.moving
@@ -71,10 +68,10 @@ def moving_system(state: State) -> State:
             state_moving, state_position, blocked = move(
                 state, entity_id, pos, next_pos, state_moving, state_position
             )
-            state = add_trail_position(state, entity_id, state_position[entity_id])
+            ctx = add_trail_position(ctx, entity_id, state_position[entity_id])
             if blocked:
                 break
 
         state = replace(state, position=state_position, moving=state_moving)
 
-    return state
+    return state, ctx
