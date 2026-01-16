@@ -12,7 +12,7 @@ from .inventory import Inventory
 from .key import Key
 from .lethal_damage import LethalDamage
 from .locked import Locked
-from .moving import Moving, Direction
+from .moving import Moving, Direction, CollisionBehavior
 from .pathfinding import Pathfinding, PathfindingType
 from .portal import Portal
 from .position import Position
@@ -38,6 +38,7 @@ __all__ = [
     "Locked",
     "Moving",
     "Direction",
+    "CollisionBehavior",
     "Pathfinding",
     "PathfindingType",
     "Portal",

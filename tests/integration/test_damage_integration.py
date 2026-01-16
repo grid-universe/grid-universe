@@ -370,7 +370,7 @@ def test_damage_on_crossing_swap_positions(
             damager_id: Moving(
                 direction="left",
                 speed=damager_speed,
-                bounce=False,
+                on_collision="stop",
             )
         },
     }
@@ -411,7 +411,7 @@ def test_damage_on_path_intersection_trail(
             damager_id: Moving(
                 direction="right",
                 speed=damager_speed,
-                bounce=False,
+                on_collision="stop",
             )
         },
     }
@@ -447,7 +447,7 @@ def test_no_damage_agent_moves_away_before_damager_arrives(
             damager_id: Moving(
                 direction="right",
                 speed=damager_speed,
-                bounce=False,
+                on_collision="stop",
             )
         },
     }
@@ -480,7 +480,7 @@ def test_no_damage_damager_moves_away_from_incoming_agent(
             damager_id: Moving(
                 direction="down",
                 speed=damager_speed,
-                bounce=False,
+                on_collision="stop",
             )
         },
     }

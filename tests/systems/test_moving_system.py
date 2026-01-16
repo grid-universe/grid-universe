@@ -23,8 +23,8 @@ def test_two_bouncing_movers_do_not_overlap_on_intersection() -> None:
             down_id: Position(3, 0),
         },
         "moving": {
-            right_id: Moving(direction="right", bounce=True),
-            down_id: Moving(direction="down", bounce=True),
+            right_id: Moving(direction="right", on_collision="bounce"),
+            down_id: Moving(direction="down", on_collision="bounce"),
         },
         # Mark as blocking so they treat each other as obstacles
         "blocking": {
@@ -71,7 +71,7 @@ def test_moving_blocking_box_bounces_off_collidable_agent() -> None:
             box_id: Position(2, 0),
         },
         "moving": {
-            box_id: Moving(direction="right", bounce=True),
+            box_id: Moving(direction="right", on_collision="bounce"),
         },
         "blocking": {
             box_id: Blocking(),
@@ -110,7 +110,7 @@ def test_moving_collidable_enemy_does_not_bounce_on_collidable_agent() -> None:
             enemy_id: Position(2, 0),
         },
         "moving": {
-            enemy_id: Moving(direction="right", bounce=True),
+            enemy_id: Moving(direction="right", on_collision="bounce"),
         },
         "collidable": {
             agent_id: Collidable(),

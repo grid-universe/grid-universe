@@ -33,6 +33,7 @@ from grid_universe.components.properties import (
     Status,
     Moving,
     Direction,
+    CollisionBehavior,
 )
 from grid_universe.components.effects import (
     Immunity,
@@ -137,7 +138,7 @@ def create_portal(*, pair: Optional[Entity] = None) -> Entity:
 def create_box(
     pushable: bool = True,
     moving_direction: Optional[Direction] = None,
-    moving_bounce: bool = True,
+    moving_on_collision: CollisionBehavior = "bounce",
     moving_speed: int = 1,
 ) -> Entity:
     """Pushable / blocking box (optionally not pushable)."""
@@ -150,7 +151,7 @@ def create_box(
         if moving_direction is None
         else Moving(
             direction=moving_direction,
-            bounce=moving_bounce,
+            on_collision=moving_on_collision,
             speed=moving_speed,
         ),
     )
@@ -161,7 +162,7 @@ def create_monster(
     lethal: bool = False,
     *,
     moving_direction: Optional[Direction] = None,
-    moving_bounce: bool = True,
+    moving_on_collision: CollisionBehavior = "bounce",
     moving_speed: int = 1,
     pathfind_target: Optional[Entity] = None,
     path_type: PathfindingType = PathfindingType.PATH,
@@ -176,7 +177,7 @@ def create_monster(
         if moving_direction is None
         else Moving(
             direction=moving_direction,
-            bounce=moving_bounce,
+            on_collision=moving_on_collision,
             speed=moving_speed,
         ),
     )

@@ -3,6 +3,7 @@ from typing import Literal, cast
 
 
 Direction = Literal["up", "down", "left", "right"]
+CollisionBehavior = Literal["bounce", "stop"]
 
 
 @dataclass(frozen=True)
@@ -12,13 +13,13 @@ class Moving:
 
     Attributes:
         direction: Direction of movement ("up", "down", "left", or "right").
-        bounce: Reverse direction upon hitting an obstacle if True; stop moving if False.
+        on_collision: Behavior when a collision occurs ("bounce" or "stop").
         speed: Number of steps to move per tick.
         vector: Computed (dx, dy) movement vector based on direction.
     """
 
     direction: Direction
-    bounce: bool = True
+    on_collision: CollisionBehavior = "stop"
     speed: int = 1
 
     def reversed(self) -> "Moving":
@@ -31,7 +32,7 @@ class Moving:
         }
         return Moving(
             direction=cast(Direction, reverse_map[self.direction]),
-            bounce=self.bounce,
+            on_collision=self.on_collision,
             speed=self.speed,
         )
 

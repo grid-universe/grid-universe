@@ -2,8 +2,7 @@
 
 For each entity with a ``Moving`` component, attempt to move it in its
 configured direction by its speed. If the destination tile is out of bounds
-or blocked, either reverse direction (if ``bounce`` is True) or stop moving
-for this step.
+or blocked, it applies the configured ``on_collision`` behavior.
 """
 
 from dataclasses import replace
@@ -40,7 +39,7 @@ def moving_system(state: State, ctx: StepContext) -> tuple[State, StepContext]:
             )
 
             if blocked:
-                if mover.bounce:
+                if mover.on_collision == "bounce":
                     state = replace(
                         state, moving=state.moving.set(entity_id, mover.reversed())
                     )

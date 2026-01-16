@@ -387,14 +387,14 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
         damage=ENEMY_DAMAGE,
         lethal=False,
         moving_direction="down",
-        moving_bounce=True,
+        moving_on_collision="bounce",
         moving_speed=1,
     )
     enemy2 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
         moving_direction="down",
-        moving_bounce=True,
+        moving_on_collision="bounce",
         moving_speed=1,
     )
     lvl.add((w // 2, h // 2), enemy1)
@@ -508,21 +508,21 @@ def build_level_power_boots(seed: int = 112) -> State:
         damage=ENEMY_DAMAGE,
         lethal=False,
         moving_direction="down",
-        moving_bounce=True,
+        moving_on_collision="bounce",
         moving_speed=1,
     )
     enemy2 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
         moving_direction="down",
-        moving_bounce=True,
+        moving_on_collision="bounce",
         moving_speed=1,
     )
     enemy3 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
         moving_direction="down",
-        moving_bounce=True,
+        moving_on_collision="bounce",
         moving_speed=1,
     )
     lvl.add((w // 2, h // 2), enemy1)
@@ -572,7 +572,7 @@ def build_level_capstone(seed: int = 113) -> State:
         create_monster(
             damage=ENEMY_DAMAGE,
             moving_direction="up",
-            moving_bounce=True,
+            moving_on_collision="bounce",
             moving_speed=1,
         ),
     )
