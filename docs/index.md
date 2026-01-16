@@ -1,6 +1,6 @@
 # Grid Universe
 
-Grid Universe is a turn-based, grid-based game engine and Gym-compatible environment. It offers an immutable ECS State for simulation, built-in systems (movement, push, portals, damage, status, rewards/costs), image or Level observations, and a texture-based renderer.
+Grid Universe is a turn-based, grid-based game engine and Gym-compatible environment. It offers an immutable ECS State for simulation, built-in systems (movement, push, portals, damage, status, rewards/costs), image or Level observations, and a image-based renderer.
 
 It’s designed for:
 

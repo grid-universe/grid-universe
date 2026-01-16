@@ -1,3 +1,3 @@
-# Renderer: texture
+# Renderer: image
 
-::: grid_universe.renderer.texture
+::: grid_universe.renderer.image
