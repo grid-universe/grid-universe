@@ -1,7 +1,7 @@
-"""Texture-based renderer utilities.
+"""Image-based renderer utilities.
 
 Transforms a ``State`` into a composited RGBA image using per-entity
-``Appearance`` metadata, property-derived texture variants, optional group
+``Appearance`` metadata, property-derived image variants, optional group
 recoloring and motion glyph overlays.
 
 Rendering Model
@@ -12,7 +12,7 @@ Rendering Model
      * Corner Icons: up to four icon entities (``appearance.icon=True``) placed
          in tile corners (NW, NE, SW, SE)
      * Others: additional layered entities (drawn between background and main)
-2. A texture path is chosen via an object + property signature lookup. If the
+2. A image path is chosen via an object + property signature lookup. If the
      path refers to a directory, a deterministic random selection occurs.
 3. Group-based recoloring (e.g., matching keys and locks, portal pairs) applies
      a hue shift while preserving shading (value channel) and saturation rules.
@@ -20,7 +20,7 @@ Rendering Model
 
 Customization Hooks
 -------------------
-* Provide a custom ``texture_map`` for alternative asset packs.
+* Provide a custom ``image_map`` for alternative asset packs.
 * Replace or extend ``DEFAULT_GROUP_RULES`` to recolor other sets of entities.
 * Supply ``tex_lookup_fn`` to implement caching, animation frames, or atlas
     packing.
@@ -67,7 +67,7 @@ class ObjectRendering:
     Attributes:
         appearance (Appearance): The entity's appearance component (or a default anonymous one).
         properties (Tuple[str, ...]): Property component collection names (e.g. ``('blocking', 'locked')``)
-            used to select texture variants.
+            used to select image variants.
         group (str | None): Deterministic recolor group identifier.
         move_dir (tuple[int, int] | None): (dx, dy) direction for movement glyph overlay.
         move_speed (int): Movement speed (number of direction triangles to draw).
@@ -85,16 +85,16 @@ class ObjectRendering:
 
 ObjectName = str
 ObjectProperty = str
-ObjectPropertiesTextureMap = Dict[ObjectName, Dict[Tuple[ObjectProperty, ...], str]]
+ObjectPropertiesImageMap = Dict[ObjectName, Dict[Tuple[ObjectProperty, ...], str]]
 
 TexLookupFn = Callable[[ObjectRendering, int], Image.Image]
-TextureMap = HashableDict[ObjectAsset, str]
+ImageMap = HashableDict[ObjectAsset, str]
 
 
-# --- Built-in Texture Maps ---
+# --- Built-in Image Maps ---
 
 
-IMAGEN1_TEXTURE_MAP: TextureMap = TextureMap(
+IMAGEN1_IMAGE_MAP: ImageMap = ImageMap(
     {
         ("human", tuple([])): "imagen1/human",
         ("human", tuple(["dead"])): "imagen1/sleeping",
@@ -120,7 +120,7 @@ IMAGEN1_TEXTURE_MAP: TextureMap = TextureMap(
 )
 
 
-KENNEY_TEXTURE_MAP: TextureMap = TextureMap(
+KENNEY_IMAGE_MAP: ImageMap = ImageMap(
     {
         (
             "human",
@@ -148,7 +148,7 @@ KENNEY_TEXTURE_MAP: TextureMap = TextureMap(
     }
 )
 
-FUTURAMA_TEXTURE_MAP: TextureMap = TextureMap(
+FUTURAMA_IMAGE_MAP: ImageMap = ImageMap(
     {
         ("human", tuple([])): "futurama/character01",
         ("human", tuple(["dead"])): "futurama/character02",
@@ -173,12 +173,12 @@ FUTURAMA_TEXTURE_MAP: TextureMap = TextureMap(
     }
 )
 
-DEFAULT_TEXTURE_MAP: TextureMap = IMAGEN1_TEXTURE_MAP
+DEFAULT_IMAGE_MAP: ImageMap = IMAGEN1_IMAGE_MAP
 
-TEXTURE_MAP_REGISTRY: Dict[str, TextureMap] = {
-    "imagen1": IMAGEN1_TEXTURE_MAP,
-    "kenney": KENNEY_TEXTURE_MAP,
-    "futurama": FUTURAMA_TEXTURE_MAP,
+IMAGE_MAP_REGISTRY: Dict[str, ImageMap] = {
+    "imagen1": IMAGEN1_IMAGE_MAP,
+    "kenney": KENNEY_IMAGE_MAP,
+    "futurama": FUTURAMA_IMAGE_MAP,
 }
 
 
@@ -216,7 +216,7 @@ def derive_groups(
 
     Later rendering stages may use groups to recolor related entities with a
     shared hue (e.g., all portals in a pair share the same color while still
-    using the original texture shading).
+    using the original image shading).
 
     Args:
         state (State): Immutable simulation state.
@@ -267,7 +267,7 @@ def apply_recolor_if_group(
     """Recolor wrapper that sets hue to the group's color while preserving tone.
 
     Delegates to `recolor_image_keep_tone`; if no group is provided the
-    texture is returned unchanged.
+    image is returned unchanged.
     """
     if group is None:
         return tex
@@ -276,8 +276,8 @@ def apply_recolor_if_group(
 
 
 @lru_cache(maxsize=4096)
-def load_texture(path: str, size: int) -> Optional[Image.Image]:
-    """Load and resize a texture, returning None if inaccessible or invalid."""
+def load_image(path: str, size: int) -> Optional[Image.Image]:
+    """Load and resize an image, returning None if inaccessible or invalid."""
     try:
         return Image.open(path).convert("RGBA").resize((size, size))
     except Exception:
@@ -291,7 +291,7 @@ def get_object_renderings(
 
     Inspects component PMaps on the ``State`` to infer property labels,
     movement direction and speed, then packages them in ``ObjectRendering``
-    objects for subsequent texture lookup and layering decisions.
+    objects for subsequent image lookup and layering decisions.
     """
     renderings: List[ObjectRendering] = []
     default_appearance: Appearance = Appearance(name="none")
@@ -381,32 +381,30 @@ def choose_corner_icons(
     ]  # take the highest priority
 
 
-def get_path(
-    object_asset: ObjectAsset, texture_hmap: ObjectPropertiesTextureMap
-) -> str:
-    """Resolve a texture path for an object asset signature.
+def get_path(object_asset: ObjectAsset, image_hmap: ObjectPropertiesImageMap) -> str:
+    """Resolve an image path for an object asset signature.
 
     Attempts to find the nearest matching property tuple (maximizing shared
-    properties, minimizing unmatched) to allow textures that only specify a
+    properties, minimizing unmatched) to allow images that only specify a
     subset of possible property labels.
     """
     object_name, object_properties = object_asset
-    if object_name not in texture_hmap:
-        raise ValueError(f"Object rendering {object_asset} is not found in texture map")
+    if object_name not in image_hmap:
+        raise ValueError(f"Object rendering {object_asset} is not found in image map")
     nearest_object_properties = sorted(
-        texture_hmap[object_name].keys(),
+        image_hmap[object_name].keys(),
         key=lambda x: len(set(x).intersection(object_properties))
         - len(set(x) - set(object_properties)),
         reverse=True,
     )[0]
-    return texture_hmap[object_name][nearest_object_properties]
+    return image_hmap[object_name][nearest_object_properties]
 
 
-def select_texture_from_directory(
+def select_image_from_directory(
     dir: str,
     seed: Optional[int],
 ) -> Optional[str]:
-    """Choose a deterministic random texture file from a directory."""
+    """Choose a deterministic random image file from a directory."""
     if not os.path.isdir(dir):
         return None
 
@@ -427,39 +425,39 @@ def select_texture_from_directory(
 
 
 @lru_cache(maxsize=128)
-def validate_appearance_names(state: State, texture_map: TextureMap) -> None:
-    """Validate that all appearance names in the state have a corresponding texture.
+def validate_appearance_names(state: State, image_map: ImageMap) -> None:
+    """Validate that all appearance names in the state have a corresponding image.
 
     Raises:
-        ValueError: If any appearance name in the state is missing from the texture map.
+        ValueError: If any appearance name in the state is missing from the image map.
     """
     appearance_names_in_state = set(
         appearance.name for appearance in state.appearance.values()
     )
-    appearance_names_in_texture_map = set(name for (name, _) in texture_map.keys())
-    missing_names = appearance_names_in_state - appearance_names_in_texture_map
+    appearance_names_in_image_map = set(name for (name, _) in image_map.keys())
+    missing_names = appearance_names_in_state - appearance_names_in_image_map
     if missing_names:
-        raise ValueError(f"Missing appearance names in texture map: {missing_names}")
+        raise ValueError(f"Missing appearance names in image map: {missing_names}")
 
 
 @lru_cache(maxsize=128)
-def validate_texture_map_files(texture_map: TextureMap, asset_root: str) -> None:
-    """Validate that all texture paths in the texture map exist.
+def validate_image_map_files(image_map: ImageMap, asset_root: str) -> None:
+    """Validate that all image paths in the image map exist.
 
     Raises:
-        FileNotFoundError: If any texture path in the texture map does not exist.
+        FileNotFoundError: If any image path in the image map does not exist.
     """
-    for path in texture_map.values():
+    for path in image_map.values():
         full_path = os.path.join(asset_root, path)
         if not os.path.exists(full_path):
-            raise FileNotFoundError(f"Texture path does not exist: {full_path}")
+            raise FileNotFoundError(f"Image path does not exist: {full_path}")
 
 
 def render(
     state: State,
     resolution: int = DEFAULT_RESOLUTION,
     subicon_percent: float = DEFAULT_SUBICON_PERCENT,
-    texture_map: Optional[TextureMap] = None,
+    image_map: Optional[ImageMap] = None,
     asset_root: str = DEFAULT_ASSET_ROOT,
     tex_lookup_fn: Optional[TexLookupFn] = None,
     cache: Optional[
@@ -475,9 +473,9 @@ def render(
         state (State): Immutable game state to visualize.
         resolution (int): Output image width in pixels (height derived from aspect ratio).
         subicon_percent (float): Relative size of corner icons compared to a cell's size.
-        texture_map (TextureMap | None): Mapping from ``(appearance name, property tuple)`` to asset path.
+        image_map (ImageMap | None): Mapping from ``(appearance name, property tuple)`` to asset path.
         asset_root (str): Root directory containing the asset hierarchy (e.g. ``"assets"``).
-        tex_lookup_fn (TexLookupFn | None): Override for texture loading/recoloring/overlay logic.
+        tex_lookup_fn (TexLookupFn | None): Override for image loading/recoloring/overlay logic.
         cache (dict | None): Mutable memoization dict keyed by ``(path, size, group, move_dir, speed)``.
 
     Returns:
@@ -490,38 +488,38 @@ def render(
     target_width: int = resolution
     target_height: int = (resolution * state.height) // state.width
 
-    if texture_map is None:
-        texture_map = DEFAULT_TEXTURE_MAP
+    if image_map is None:
+        image_map = DEFAULT_IMAGE_MAP
 
-    validate_appearance_names(state, texture_map)
-    validate_texture_map_files(texture_map, asset_root)
+    validate_appearance_names(state, image_map)
+    validate_image_map_files(image_map, asset_root)
 
     if cache is None:
         cache = {}
 
-    texture_hmap: ObjectPropertiesTextureMap = defaultdict(dict)
-    for (obj_name, obj_properties), value in texture_map.items():
-        texture_hmap[obj_name][tuple(obj_properties)] = value
+    image_hmap: ObjectPropertiesImageMap = defaultdict(dict)
+    for (obj_name, obj_properties), value in image_map.items():
+        image_hmap[obj_name][tuple(obj_properties)] = value
 
     img = Image.new("RGBA", (render_width, render_height), (128, 128, 128, 255))
 
     state_rng = random.Random(state.seed)
-    object_seeds = [state_rng.randint(0, 2**31) for _ in range(len(texture_map))]
-    texture_map_values = list(texture_map.values())
-    value_to_first_index = {v: i for i, v in enumerate(texture_map_values)}
+    object_seeds = [state_rng.randint(0, 2**31) for _ in range(len(image_map))]
+    image_map_values = list(image_map.values())
+    value_to_first_index = {v: i for i, v in enumerate(image_map_values)}
     groups = derive_groups(state)
 
     def default_get_tex(
         object_rendering: ObjectRendering, size: int
     ) -> Optional[Image.Image]:
-        path = get_path(object_rendering.asset(), texture_hmap)
+        path = get_path(object_rendering.asset(), image_hmap)
         if not path:
             return None
 
         asset_path = f"{asset_root}/{path}"
         if os.path.isdir(asset_path):
             asset_index = value_to_first_index[path]
-            selected_asset_path = select_texture_from_directory(
+            selected_asset_path = select_image_from_directory(
                 asset_path, object_seeds[asset_index]
             )
             if selected_asset_path is None:
@@ -538,19 +536,19 @@ def render(
         if key in cache:
             return cache[key]
 
-        texture = load_texture(asset_path, size)
-        if texture is None:
+        image = load_image(asset_path, size)
+        if image is None:
             return None
 
-        texture = apply_recolor_if_group(texture, object_rendering.group)
+        image = apply_recolor_if_group(image, object_rendering.group)
         if object_rendering.move_dir is not None and object_rendering.move_speed > 0:
             dx, dy = object_rendering.move_dir
-            texture = draw_direction_triangles_on_image(
-                texture.copy(), size, dx, dy, object_rendering.move_speed
+            image = draw_direction_triangles_on_image(
+                image.copy(), size, dx, dy, object_rendering.move_speed
             )
 
-        cache[key] = texture
-        return texture
+        cache[key] = image
+        return image
 
     tex_lookup = tex_lookup_fn or default_get_tex
 
@@ -593,10 +591,10 @@ def render(
     return img
 
 
-class TextureRenderer:
+class ImageRenderer:
     resolution: int
     subicon_percent: float
-    texture_map: TextureMap
+    image_map: ImageMap
     asset_root: str
     tex_lookup_fn: Optional[TexLookupFn]
 
@@ -604,13 +602,13 @@ class TextureRenderer:
         self,
         resolution: int = DEFAULT_RESOLUTION,
         subicon_percent: float = DEFAULT_SUBICON_PERCENT,
-        texture_map: Optional[TextureMap] = None,
+        image_map: Optional[ImageMap] = None,
         asset_root: str = DEFAULT_ASSET_ROOT,
         tex_lookup_fn: Optional[TexLookupFn] = None,
     ):
         self.resolution = resolution
         self.subicon_percent = subicon_percent
-        self.texture_map = texture_map or DEFAULT_TEXTURE_MAP
+        self.image_map = image_map or DEFAULT_IMAGE_MAP
         self.asset_root = asset_root
         self.tex_lookup_fn = tex_lookup_fn
 
@@ -620,7 +618,7 @@ class TextureRenderer:
             state,
             resolution=self.resolution,
             subicon_percent=self.subicon_percent,
-            texture_map=self.texture_map,
+            image_map=self.image_map,
             asset_root=self.asset_root,
             tex_lookup_fn=self.tex_lookup_fn,
         )

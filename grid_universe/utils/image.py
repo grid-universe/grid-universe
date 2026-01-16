@@ -3,7 +3,7 @@
 Vectorized helpers for lightweight image post-processing used by the renderer.
 
 The primary goal is fast, deterministic recoloring of small RGBA sprite
-textures (e.g. 16x16 or 32x32) without introducing heavyweight dependencies
+images (e.g. 16x16 or 32x32) without introducing heavyweight dependencies
 or per-pixel Python loops. Operations are implemented with NumPy and operate
 on float32 buffers to balance precision and performance.
 
@@ -15,7 +15,7 @@ recolor_image_keep_tone:
     palette swapping / team coloring while retaining shading.
 
 draw_direction_triangles_on_image:
-    Overlays directional arrow/triangle glyphs onto a texture to visualize
+    Overlays directional arrow/triangle glyphs onto an image to visualize
     movement intent or facing direction, used for debugging pathfinding or
     animating multi-step movements.
 
@@ -123,7 +123,7 @@ def recolor_image_keep_tone(
 
     visible: BoolArray = a8 > 0
 
-    # Convert texture to HSV
+    # Convert image to HSV
     _, s, v = _rgb_to_hsv_np(r, g, b)
 
     # Target hue/saturation

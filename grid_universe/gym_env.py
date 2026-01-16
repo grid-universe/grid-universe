@@ -36,7 +36,7 @@ env = GridUniverseEnv(initial_state_fn=maze_generate, width=9, height=9, seed=12
 
 Customization hooks:
     * ``initial_state_fn``: Provide a callable that returns a fully built ``State``.
-    * ``render_texture_map`` / resolution let you swap assets or resolution.
+    * ``render_image_map`` / resolution let you swap assets or resolution.
 
 The environment is purposely *not* vectorized; wrap externally if needed.
 """
@@ -57,12 +57,12 @@ from grid_universe.levels.grid import (
     Level,
 )
 from grid_universe.actions import Action as Action
-from grid_universe.renderer.texture import (
+from grid_universe.renderer.image import (
     DEFAULT_ASSET_ROOT,
     DEFAULT_RESOLUTION,
-    DEFAULT_TEXTURE_MAP,
-    TextureRenderer,
-    TextureMap,
+    DEFAULT_IMAGE_MAP,
+    ImageRenderer,
+    ImageMap,
 )
 from grid_universe.step import step
 from grid_universe.types import EffectLimit, EffectType, EntityID
@@ -321,7 +321,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         initial_state_fn: Callable[..., State],
         render_mode: str = "rgb_array",
         render_resolution: int = DEFAULT_RESOLUTION,
-        render_texture_map: TextureMap = DEFAULT_TEXTURE_MAP,
+        render_image_map: ImageMap = DEFAULT_IMAGE_MAP,
         render_asset_root: str = DEFAULT_ASSET_ROOT,
         observation_type: str = "image",
         **kwargs: Any,
@@ -331,7 +331,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         Args:
             render_mode (str): "rgb_array" to return PIL image frames, "human" to open a window.
             render_resolution (int): Width (pixels) of rendered image (height derived).
-            render_texture_map (TextureMap): Mapping of ``(appearance_name, properties)`` to asset paths.
+            render_image_map (ImageMap): Mapping of ``(appearance_name, properties)`` to asset paths.
             initial_state_fn (Callable[..., State]): Callable returning an initial ``State``.
             **kwargs: Forwarded to ``initial_state_fn`` (e.g., size, densities, seed).
         """
@@ -359,14 +359,14 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         self.width: int = int(kwargs.get("width", 9))
         self.height: int = int(kwargs.get("height", 9))
         self._render_resolution = render_resolution
-        self._render_texture_map = render_texture_map
+        self._render_image_map = render_image_map
         self._render_asset_root = render_asset_root
         self._render_mode = render_mode
 
         # Rendering setup
         render_width: int = render_resolution
         render_height: int = int(self.height / self.width * render_width)
-        self._texture_renderer: Optional[TextureRenderer] = None
+        self._image_renderer: Optional[ImageRenderer] = None
 
         # Observation space helpers (Gymnasium has no Integer/Optional)
         base_chars = (
@@ -552,8 +552,8 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         render_mode = mode or self._render_mode
         assert self.state is not None
         self._setup_renderer()
-        assert self._texture_renderer is not None
-        img = self._texture_renderer.render(self.state)
+        assert self._image_renderer is not None
+        img = self._image_renderer.render(self.state)
         if render_mode == "human":
             img.show()
             return None
@@ -588,8 +588,8 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
 
         # Default image observation path
         self._setup_renderer()
-        assert self._texture_renderer is not None
-        img = self._texture_renderer.render(self.state)
+        assert self._image_renderer is not None
+        img = self._image_renderer.render(self.state)
         img_np: ImageArray = np.array(img)
         info_dict: InfoDict = self.state_info()
         return cast(Observation, {"image": img_np, "info": info_dict})
@@ -599,11 +599,11 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         return {}
 
     def _setup_renderer(self) -> None:
-        """(Re)initialize the texture renderer if needed."""
-        if self._texture_renderer is None:
-            self._texture_renderer = TextureRenderer(
+        """(Re)initialize the image renderer if needed."""
+        if self._image_renderer is None:
+            self._image_renderer = ImageRenderer(
                 resolution=self._render_resolution,
-                texture_map=self._render_texture_map,
+                image_map=self._render_image_map,
                 asset_root=self._render_asset_root,
             )
 
