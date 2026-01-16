@@ -7,12 +7,8 @@ detect transitions or movement paths.
 """
 
 from dataclasses import replace
-from typing import Dict
 
-from pyrsistent import pmap
-from grid_universe.components import Position
 from grid_universe.state import State
-from grid_universe.types import EntityID
 from grid_universe.runtime import StepContext
 
 
@@ -26,7 +22,4 @@ def position_system(state: State, ctx: StepContext) -> StepContext:
     Returns:
         StepContext: Updated step context with snapshot of current positions.
     """
-    prev_position: Dict[EntityID, Position] = {}
-    for eid, pos in state.position.items():
-        prev_position[eid] = pos
-    return replace(ctx, prev_position=pmap(prev_position))
+    return replace(ctx, prev_position=state.position)

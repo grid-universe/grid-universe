@@ -38,9 +38,10 @@ from pathlib import Path
 import colorsys
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Callable, Dict, Optional, Tuple, List
+from typing import Callable, Dict, Optional, Tuple, List, Any
 from PIL import Image
 from pyrsistent import pmap
+from pyrsistent.typing import PMap
 from grid_universe.components.properties.appearance import Appearance
 from grid_universe.state import State
 from grid_universe.types import EntityID
@@ -87,7 +88,7 @@ ObjectName = str
 ObjectProperty = str
 ObjectPropertiesImageMap = Dict[ObjectName, Dict[Tuple[ObjectProperty, ...], str]]
 
-TexLookupFn = Callable[[ObjectRendering, int], Image.Image]
+TexLookupFn = Callable[[ObjectRendering, int], Optional[Image.Image]]
 ImageMap = HashableDict[ObjectAsset, str]
 
 
@@ -284,8 +285,39 @@ def load_image(path: str, size: int) -> Optional[Image.Image]:
         return None
 
 
+@lru_cache(maxsize=256)
+def get_eid_properties_map(state: State) -> Dict[EntityID, Tuple[str, ...]]:
+    """Build a mapping from eid to its component store names efficiently."""
+    eid_to_props: Dict[EntityID, List[str]] = {}
+    # Identify component stores once (avoid scanning __dict__ per eid)
+    component_store_names: List[str] = []
+    for name, value in state.__dict__.items():
+        # Keep only PMap stores (effects + properties)
+        if isinstance(value, type(pmap())):
+            component_store_names.append(name)
+
+    for store_name in component_store_names:
+        store: PMap[EntityID, Any] = getattr(state, store_name)
+        # Iterate keys once; append store_name to that eid’s props
+        for eid in store.keys():
+            lst = eid_to_props.get(eid)
+            if lst is None:
+                eid_to_props[eid] = [store_name]
+            else:
+                lst.append(store_name)
+
+    # Ensure all positioned eids exist (even if no components beyond position)
+    for eid in state.position.keys():
+        eid_to_props.setdefault(eid, [])
+
+    return {eid: tuple(props) for eid, props in eid_to_props.items()}
+
+
 def get_object_renderings(
-    state: State, eids: List[EntityID], groups: Dict[EntityID, Optional[str]]
+    state: State,
+    eids: List[EntityID],
+    groups: Dict[EntityID, Optional[str]],
+    eid_properties_map: Dict[EntityID, Tuple[str, ...]],
 ) -> List[ObjectRendering]:
     """Build rendering descriptors for entity IDs in a single cell.
 
@@ -297,13 +329,7 @@ def get_object_renderings(
     default_appearance: Appearance = Appearance(name="none")
     for eid in eids:
         appearance = state.appearance.get(eid, default_appearance)
-        properties = tuple(
-            [
-                component
-                for component, value in state.__dict__.items()
-                if isinstance(value, type(pmap())) and eid in value
-            ]
-        )
+        properties = eid_properties_map[eid]
 
         move_dir: Optional[Tuple[int, int]] = None
         move_speed: int = 0
@@ -341,9 +367,7 @@ def choose_background(object_renderings: List[ObjectRendering]) -> ObjectRenderi
     ]
     if len(items) == 0:
         raise ValueError(f"No matching background: {object_renderings}")
-    return sorted(items, key=lambda x: x.appearance.priority)[
-        -1
-    ]  # take the lowest priority
+    return max(items, key=lambda x: x.appearance.priority)  # take the lowest priority
 
 
 def choose_main(object_renderings: List[ObjectRendering]) -> Optional[ObjectRendering]:
@@ -360,9 +384,7 @@ def choose_main(object_renderings: List[ObjectRendering]) -> Optional[ObjectRend
     ]
     if len(items) == 0:
         return None
-    return sorted(items, key=lambda x: x.appearance.priority)[
-        0
-    ]  # take the highest priority
+    return min(items, key=lambda x: x.appearance.priority)  # take the highest priority
 
 
 def choose_corner_icons(
@@ -391,31 +413,37 @@ def get_path(object_asset: ObjectAsset, image_hmap: ObjectPropertiesImageMap) ->
     object_name, object_properties = object_asset
     if object_name not in image_hmap:
         raise ValueError(f"Object rendering {object_asset} is not found in image map")
-    nearest_object_properties = sorted(
+    nearest_object_properties = max(
         image_hmap[object_name].keys(),
         key=lambda x: len(set(x).intersection(object_properties))
         - len(set(x) - set(object_properties)),
-        reverse=True,
-    )[0]
+    )
     return image_hmap[object_name][nearest_object_properties]
 
 
+@lru_cache(maxsize=128)
+def get_files_in_directory(dir: str) -> List[str]:
+    """List image files in a directory."""
+    if not os.path.isdir(dir):
+        return []
+    try:
+        entries = os.listdir(dir)
+    except (FileNotFoundError, NotADirectoryError, PermissionError, OSError):
+        return []
+
+    files = sorted(
+        f for f in entries if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))
+    )
+    return files
+
+
+@lru_cache(maxsize=128)
 def select_image_from_directory(
     dir: str,
     seed: Optional[int],
 ) -> Optional[str]:
     """Choose a deterministic random image file from a directory."""
-    if not os.path.isdir(dir):
-        return None
-
-    try:
-        entries = os.listdir(dir)
-    except (FileNotFoundError, NotADirectoryError, PermissionError, OSError):
-        return None
-
-    files = sorted(
-        f for f in entries if f.lower().endswith((".png", ".jpg", ".jpeg", ".gif"))
-    )
+    files = get_files_in_directory(dir)
     if not files:
         return None
 
@@ -509,6 +537,8 @@ def render(
     value_to_first_index = {v: i for i, v in enumerate(image_map_values)}
     groups = derive_groups(state)
 
+    eid_properties_map: Dict[EntityID, Tuple[str, ...]] = get_eid_properties_map(state)
+
     def default_get_tex(
         object_rendering: ObjectRendering, size: int
     ) -> Optional[Image.Image]:
@@ -559,7 +589,9 @@ def render(
     for (x, y), eids in grid_entities.items():
         x0, y0 = x * cell_size, y * cell_size
 
-        object_renderings = get_object_renderings(state, eids, groups)
+        object_renderings = get_object_renderings(
+            state, eids, groups, eid_properties_map
+        )
 
         background = choose_background(object_renderings)
         main = choose_main(object_renderings)
@@ -597,6 +629,10 @@ class ImageRenderer:
     image_map: ImageMap
     asset_root: str
     tex_lookup_fn: Optional[TexLookupFn]
+    _tex_cache: Dict[
+        Tuple[str, int, Optional[str], Optional[Tuple[int, int]], int],
+        Optional[Image.Image],
+    ]
 
     def __init__(
         self,
@@ -611,6 +647,7 @@ class ImageRenderer:
         self.image_map = image_map or DEFAULT_IMAGE_MAP
         self.asset_root = asset_root
         self.tex_lookup_fn = tex_lookup_fn
+        self._tex_cache = {}
 
     def render(self, state: State) -> Image.Image:
         """Render convenience wrapper using stored configuration."""
@@ -621,4 +658,5 @@ class ImageRenderer:
             image_map=self.image_map,
             asset_root=self.asset_root,
             tex_lookup_fn=self.tex_lookup_fn,
+            cache=self._tex_cache,
         )
