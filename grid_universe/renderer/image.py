@@ -404,6 +404,18 @@ def choose_corner_icons(
     ]  # take the highest priority
 
 
+def rendering_sort_key(rendering: ObjectRendering) -> tuple[Any, ...]:
+    """Deterministic sort key for composition ordering and cache stability."""
+    return (
+        rendering.appearance.priority,
+        rendering.appearance.name,
+        rendering.properties,
+        rendering.group or "",
+        rendering.move_dir or (0, 0),
+        rendering.move_speed,
+    )
+
+
 def get_path(object_asset: ObjectAsset, image_hmap: ObjectPropertiesImageMap) -> str:
     """Resolve an image path for an object asset signature.
 
@@ -420,6 +432,59 @@ def get_path(object_asset: ObjectAsset, image_hmap: ObjectPropertiesImageMap) ->
         - len(set(x) - set(object_properties)),
     )
     return image_hmap[object_name][nearest_object_properties]
+
+
+def get_cell_key(
+    background: ObjectRendering,
+    primary_renderings: list[ObjectRendering],
+    corner_icons: list[ObjectRendering],
+    cell_size: int,
+    subicon_size: int,
+    resolve_asset_path: Callable[[ObjectRendering], str | None],
+) -> tuple[Any, ...]:
+    def _get_key(obj: ObjectRendering) -> tuple[Any, ...]:
+        return (
+            resolve_asset_path(obj),
+            cell_size,
+            obj.group,
+            obj.move_dir,
+            obj.move_speed,
+        )
+
+    background_key = _get_key(background)
+    primary_keys = tuple(_get_key(obj) for obj in primary_renderings)
+    corner_keys = tuple(_get_key(obj) for obj in corner_icons[:4])
+    return (cell_size, subicon_size, background_key, primary_keys, corner_keys)
+
+
+def render_cell(
+    *,
+    background: ObjectRendering,
+    primary_renderings: list[ObjectRendering],
+    corner_icons: list[ObjectRendering],
+    cell_size: int,
+    subicon_size: int,
+    tex_lookup: TexLookupFn,
+) -> Image.Image:
+    cell_img = Image.new("RGBA", (cell_size, cell_size), (0, 0, 0, 0))
+
+    background_tex = tex_lookup(background, cell_size)
+    if background_tex:
+        cell_img.paste(background_tex, (0, 0))
+
+    for object_rendering in primary_renderings:
+        object_tex = tex_lookup(object_rendering, cell_size)
+        if object_tex:
+            cell_img.alpha_composite(object_tex, (0, 0))
+
+    for idx, corner_icon in enumerate(corner_icons[:4]):
+        dx = cell_size - subicon_size if idx % 2 == 1 else 0
+        dy = cell_size - subicon_size if idx // 2 == 1 else 0
+        tex = tex_lookup(corner_icon, subicon_size)
+        if tex:
+            cell_img.alpha_composite(tex, (dx, dy))
+
+    return cell_img
 
 
 @lru_cache(maxsize=128)
@@ -494,6 +559,7 @@ def render(
         Image.Image | None,
     ]
     | None = None,
+    cell_cache: dict[tuple[Any, ...], Image.Image] | None = None,
 ) -> Image.Image:
     """Render a ``State`` into a PIL Image.
 
@@ -505,6 +571,7 @@ def render(
         asset_root (str): Root directory containing the asset hierarchy (e.g. ``"assets"``).
         tex_lookup_fn (TexLookupFn | None): Override for image loading/recoloring/overlay logic.
         cache (dict | None): Mutable memoization dict keyed by ``(path, size, group, move_dir, speed)``.
+        cell_cache (dict | None): Optional per-cell composition cache (default lookup only).
 
     Returns:
         Image.Image: Composited RGBA image of the entire grid.
@@ -524,6 +591,8 @@ def render(
 
     if cache is None:
         cache = {}
+    if cell_cache is None:
+        cell_cache = {}
 
     image_hmap: ObjectPropertiesImageMap = defaultdict(dict)
     for (obj_name, obj_properties), value in image_map.items():
@@ -539,9 +608,7 @@ def render(
 
     eid_properties_map: dict[EntityID, tuple[str, ...]] = get_eid_properties_map(state)
 
-    def default_get_tex(
-        object_rendering: ObjectRendering, size: int
-    ) -> Image.Image | None:
+    def resolve_asset_path(object_rendering: ObjectRendering) -> str | None:
         path = get_path(object_rendering.asset(), image_hmap)
         if not path:
             return None
@@ -555,6 +622,14 @@ def render(
             if selected_asset_path is None:
                 return None
             asset_path = selected_asset_path
+        return asset_path
+
+    def default_get_tex(
+        object_rendering: ObjectRendering, size: int
+    ) -> Image.Image | None:
+        asset_path = resolve_asset_path(object_rendering)
+        if asset_path is None:
+            return None
 
         key = (
             asset_path,
@@ -596,30 +671,58 @@ def render(
         background = choose_background(object_renderings)
         main = choose_main(object_renderings)
         corner_icons = choose_corner_icons(object_renderings, main)
-        others = list(
-            set(object_renderings) - set([main] + corner_icons + [background])
+        others = sorted(
+            list(set(object_renderings) - set([main] + corner_icons + [background])),
+            key=rendering_sort_key,
         )
 
-        primary_renderings: list[ObjectRendering] = (
-            [background] + others + ([main] if main is not None else [])
+        primary_renderings: list[ObjectRendering] = others + (
+            [main] if main is not None else []
         )
 
-        for object_rendering in primary_renderings:
-            object_tex = tex_lookup(object_rendering, cell_size)
-            if object_tex:
-                img.alpha_composite(object_tex, (x0, y0))
+        cell_key: tuple[Any, ...] | None = get_cell_key(
+            background,
+            primary_renderings,
+            corner_icons,
+            cell_size,
+            subicon_size,
+            resolve_asset_path,
+        )
+        cached_cell: Image.Image | None = cell_cache.get(cell_key)
 
-        for idx, corner_icon in enumerate(corner_icons[:4]):
-            dx = x0 + (cell_size - subicon_size if idx % 2 == 1 else 0)
-            dy = y0 + (cell_size - subicon_size if idx // 2 == 1 else 0)
-            tex = tex_lookup(corner_icon, subicon_size)
-            if tex:
-                img.alpha_composite(tex, (dx, dy))
+        if cached_cell is None:
+            cached_cell = render_cell(
+                background=background,
+                primary_renderings=primary_renderings,
+                corner_icons=corner_icons,
+                cell_size=cell_size,
+                subicon_size=subicon_size,
+                tex_lookup=tex_lookup,
+            )
+            cell_cache[cell_key] = cached_cell
 
-    # Resize to target resolution if needed
+        img.paste(cached_cell, (x0, y0), cached_cell)
+
+    return render_image(
+        img,
+        render_width=render_width,
+        render_height=render_height,
+        target_width=target_width,
+        target_height=target_height,
+    )
+
+
+def render_image(
+    img: Image.Image,
+    *,
+    render_width: int,
+    render_height: int,
+    target_width: int,
+    target_height: int,
+) -> Image.Image:
+    """Finalize the render by resizing if needed."""
     if (render_width, render_height) != (target_width, target_height):
-        img = img.resize((target_width, target_height), resample=Image.NEAREST)
-
+        return img.resize((target_width, target_height), resample=Image.NEAREST)
     return img
 
 
@@ -633,6 +736,7 @@ class ImageRenderer:
         tuple[str, int, str | None, tuple[int, int] | None, int],
         Image.Image | None,
     ]
+    _cell_cache: dict[tuple[Any, ...], Image.Image]
 
     def __init__(
         self,
@@ -648,6 +752,7 @@ class ImageRenderer:
         self.asset_root = asset_root
         self.tex_lookup_fn = tex_lookup_fn
         self._tex_cache = {}
+        self._cell_cache = {}
 
     def render(self, state: State) -> Image.Image:
         """Render convenience wrapper using stored configuration."""
@@ -659,4 +764,5 @@ class ImageRenderer:
             asset_root=self.asset_root,
             tex_lookup_fn=self.tex_lookup_fn,
             cache=self._tex_cache,
+            cell_cache=self._cell_cache,
         )
