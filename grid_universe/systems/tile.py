@@ -22,9 +22,12 @@ def get_noncollectible_entities(
 ) -> set[EntityID]:
     """Return entity IDs at ``pos`` with a component but not collectible."""
     at_pos = entities_at(state, pos)
-    ids = set(component_map.keys())
-    collectible_ids = set(state.collectible.keys())
-    return (at_pos & ids) - collectible_ids
+    if not at_pos:
+        return set()
+    collectible_ids = state.collectible
+    return {
+        eid for eid in at_pos if eid in component_map and eid not in collectible_ids
+    }
 
 
 def tile_reward_system(state: State, eid: EntityID) -> State:

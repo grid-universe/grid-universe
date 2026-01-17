@@ -8,6 +8,7 @@ Functions here are used by movement and pathfinding systems to validate
 entity positions and movements within the grid world.
 """
 
+from collections.abc import Iterable, Mapping
 from grid_universe.components import Position
 from grid_universe.state import State
 from grid_universe.types import EntityID
@@ -30,6 +31,7 @@ def is_blocked_at(
     check_blocking: bool = True,
     check_collidable: bool = True,
     check_pushable: bool = True,
+    position_index: Mapping[Position, Iterable[EntityID]] | None = None,
 ) -> bool:
     """Return True if any blocking entity occupies ``pos``.
 
@@ -39,8 +41,9 @@ def is_blocked_at(
         check_blocking (bool): If True, treat ``Blocking`` as blocking.
         check_collidable (bool): If True, treat ``Collidable`` as blocking.
         check_pushable (bool): If True, treat ``Pushable`` as blocking.
+        position_index: Optional cached position index to avoid rebuilding.
     """
-    ids_at_pos: set[EntityID] = entities_at(state, pos)
+    ids_at_pos = entities_at(state, pos, position_index=position_index)
     for other_id in ids_at_pos:
         if (
             (check_blocking and other_id in state.blocking)
@@ -55,6 +58,7 @@ def is_entity_blocked_at(
     state: State,
     entity_id: EntityID,
     pos: Position,
+    position_index: Mapping[Position, Iterable[EntityID]] | None = None,
 ) -> bool:
     """Return True if ``entity_id`` would be blocked at ``pos``.
 
@@ -64,6 +68,7 @@ def is_entity_blocked_at(
         state (State): World state.
         entity_id (EntityID): Entity.
         pos (Position): Candidate destination.
+        position_index: Optional cached position index to avoid rebuilding.
     """
     return is_blocked_at(
         state,
@@ -71,4 +76,5 @@ def is_entity_blocked_at(
         check_blocking=True,
         check_collidable=(entity_id in state.blocking or entity_id in state.pushable),
         check_pushable=True,
+        position_index=position_index,
     )

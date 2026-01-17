@@ -51,6 +51,7 @@ from grid_universe.utils.image import (
     recolor_image_keep_tone,
 )
 from grid_universe.utils.ds import HashableDict
+from grid_universe.utils.cache import lru_identity_cache
 import os
 import random
 
@@ -286,7 +287,7 @@ def load_image(path: str, size: int) -> Image.Image | None:
         return None
 
 
-@lru_cache(maxsize=256)
+@lru_identity_cache(maxsize=256)
 def get_eid_properties_map(state: State) -> dict[EntityID, tuple[str, ...]]:
     """Build a mapping from eid to its component store names efficiently."""
     eid_to_props: dict[EntityID, list[str]] = {}
@@ -680,7 +681,7 @@ def render(
             [main] if main is not None else []
         )
 
-        cell_key: tuple[Any, ...] | None = get_cell_key(
+        cell_key: tuple[Any, ...] = get_cell_key(
             background,
             primary_renderings,
             corner_icons,

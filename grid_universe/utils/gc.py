@@ -29,10 +29,17 @@ def run_garbage_collector(state: State) -> State:
     """Return a new state with unreachable entities removed."""
     alive = compute_alive_entities(state)
     new_fields: dict[str, Any] = {}
+    is_dirty = False
     for field in state.__dataclass_fields__:
         value = getattr(state, field)
         if isinstance(value, type(pmap())):
             value_map = cast(PMap[EntityID, Any], value)
-            filtered = pmap({k: v for k, v in value_map.items() if k in alive})
-            new_fields[field] = filtered
+            if not all(k in alive for k in value_map.keys()):
+                is_dirty = True
+                filtered = pmap({k: v for k, v in value_map.items() if k in alive})
+                new_fields[field] = filtered
+
+    if not is_dirty:
+        return state
+
     return replace(state, **new_fields)
