@@ -7,7 +7,6 @@ purposes such as implementing trail-based mechanics.
 """
 
 from collections import defaultdict
-from typing import DefaultDict, Set
 from dataclasses import replace
 from pyrsistent import pmap, pset
 from pyrsistent.typing import PMap, PSet
@@ -33,7 +32,7 @@ def get_augmented_trail(
             entity ids that have either previously occupied (historic) or currently occupy
             that position among the provided tracked entities.
     """
-    pos_to_eids: DefaultDict[Position, Set[EntityID]] = defaultdict(set)
+    pos_to_eids: defaultdict[Position, set[EntityID]] = defaultdict(set)
     for eid in entity_ids:
         if eid not in state.position:
             continue

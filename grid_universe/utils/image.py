@@ -28,7 +28,6 @@ branching; alpha is preserved exactly unless explicitly recolored.
 import numpy as np
 import numpy.typing as npt
 from PIL import Image, ImageDraw
-from typing import Tuple
 
 # Type aliases for clarity
 FloatArray = npt.NDArray[np.float32 | np.float64]
@@ -38,7 +37,7 @@ BoolArray = npt.NDArray[np.bool_]
 
 def _rgb_to_hsv_np(
     r: FloatArray, g: FloatArray, b: FloatArray
-) -> Tuple[FloatArray, FloatArray, FloatArray]:
+) -> tuple[FloatArray, FloatArray, FloatArray]:
     """
     Vectorized RGB->HSV for arrays in [0,1]. Returns H,S,V in [0,1], dtype float32.
     """
@@ -77,7 +76,7 @@ def _rgb_to_hsv_np(
 
 def _hsv_to_rgb_np(
     h: FloatArray, s: FloatArray, v: FloatArray
-) -> Tuple[FloatArray, FloatArray, FloatArray]:
+) -> tuple[FloatArray, FloatArray, FloatArray]:
     """
     Vectorized HSV->RGB for arrays in [0,1]. Returns float32 arrays in [0,1].
     """
@@ -98,7 +97,7 @@ def _hsv_to_rgb_np(
 
 def recolor_image_keep_tone(
     base: Image.Image,
-    target_rgb: Tuple[int, int, int],
+    target_rgb: tuple[int, int, int],
     keep_saturation: bool = True,
     saturation_mix: float = 0.0,
     min_saturation: float = 0.0,

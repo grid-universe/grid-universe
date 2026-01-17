@@ -1,6 +1,6 @@
 """Entity ID management utilities."""
 
-from typing import Iterator, List
+from collections.abc import Iterator
 
 from grid_universe.types import EntityID
 
@@ -21,6 +21,6 @@ def new_entity_id() -> EntityID:
     return next(_entity_id_gen)
 
 
-def new_entity_ids(n: int) -> List[EntityID]:
+def new_entity_ids(n: int) -> list[EntityID]:
     """Return ``n`` fresh entity IDs as a list."""
     return [new_entity_id() for _ in range(n)]

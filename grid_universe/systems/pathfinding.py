@@ -6,7 +6,6 @@ to move toward their targets.
 """
 
 from dataclasses import replace
-from typing import Dict, List, Tuple
 
 from pyrsistent import pvector
 from pyrsistent.typing import PMap
@@ -56,7 +55,7 @@ def get_astar_next_position(
 
     neighbors = [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
-    def get_valid_next_positions(position: Position) -> List[Position]:
+    def get_valid_next_positions(position: Position) -> list[Position]:
         neighbor_positions = [
             Position(position.x + dx, position.y + dy) for dx, dy in neighbors
         ]
@@ -64,9 +63,9 @@ def get_astar_next_position(
             pos for pos in neighbor_positions if in_bounds(pos) and not is_blocked(pos)
         ]
 
-    frontier: PriorityQueue[Tuple[int, int, Position]] = PriorityQueue()
-    prev_pos: Dict[Position, Position] = {}
-    cost_so_far: Dict[Position, int] = {start: 0}
+    frontier: PriorityQueue[tuple[int, int, Position]] = PriorityQueue()
+    prev_pos: dict[Position, Position] = {}
+    cost_so_far: dict[Position, int] = {start: 0}
 
     tiebreaker = count()  # Unique sequence count
     frontier.put((0, next(tiebreaker), start))
@@ -88,7 +87,7 @@ def get_astar_next_position(
         return start  # No path found
 
     # Walk backwards to get the path
-    path: List[Position] = []
+    path: list[Position] = []
     current = goal
     while current != start:
         path.append(current)

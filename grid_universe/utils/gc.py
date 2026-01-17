@@ -11,13 +11,13 @@ from dataclasses import replace
 from pyrsistent import pmap
 from grid_universe.types import EntityID
 from grid_universe.state import State
-from typing import Set, Any, Dict, cast
+from typing import Any, cast
 from pyrsistent.typing import PMap
 
 
-def compute_alive_entities(state: State) -> Set[EntityID]:
+def compute_alive_entities(state: State) -> set[EntityID]:
     """Compute the set of all reachable entity IDs in the state."""
-    alive: Set[EntityID] = set(state.position.keys())
+    alive: set[EntityID] = set(state.position.keys())
     for stats in state.status.values():
         alive |= set(stats.effect_ids)
     for inv in state.inventory.values():
@@ -28,7 +28,7 @@ def compute_alive_entities(state: State) -> Set[EntityID]:
 def run_garbage_collector(state: State) -> State:
     """Return a new state with unreachable entities removed."""
     alive = compute_alive_entities(state)
-    new_fields: Dict[str, Any] = {}
+    new_fields: dict[str, Any] = {}
     for field in state.__dataclass_fields__:
         value = getattr(state, field)
         if isinstance(value, type(pmap())):

@@ -24,15 +24,14 @@ adjust_maze_wall_percentage:
     aesthetic variation.
 """
 
-from typing import Dict, Tuple, List, Set
 import random
 from collections import deque
 
 # Type aliases for clarity
-Coord = Tuple[int, int]
-MazeGrid = Dict[Coord, bool]  # True = open/floor; False = wall
+Coord = tuple[int, int]
+MazeGrid = dict[Coord, bool]  # True = open/floor; False = wall
 
-DIRECTIONS: List[Tuple[int, int]] = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+DIRECTIONS: list[tuple[int, int]] = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
 
 def generate_perfect_maze(
@@ -74,7 +73,7 @@ def generate_perfect_maze(
     return maze
 
 
-def bfs_path(maze: MazeGrid, start: Coord, goal: Coord) -> List[Coord]:
+def bfs_path(maze: MazeGrid, start: Coord, goal: Coord) -> list[Coord]:
     """
     Finds the shortest path from start to goal using BFS.
     Only traverses open/floor cells.
@@ -83,8 +82,8 @@ def bfs_path(maze: MazeGrid, start: Coord, goal: Coord) -> List[Coord]:
     if start == goal:
         return [start]
     queue: deque[Coord] = deque([start])
-    prev: Dict[Coord, Coord] = {}
-    visited: Set[Coord] = {start}
+    prev: dict[Coord, Coord] = {}
+    visited: set[Coord] = {start}
 
     while queue:
         pos = queue.popleft()
@@ -100,7 +99,7 @@ def bfs_path(maze: MazeGrid, start: Coord, goal: Coord) -> List[Coord]:
                     break
 
     # Reconstruct path
-    path: List[Coord] = []
+    path: list[Coord] = []
     if goal in visited:
         p = goal
         while p != start:
@@ -112,13 +111,13 @@ def bfs_path(maze: MazeGrid, start: Coord, goal: Coord) -> List[Coord]:
 
 
 def all_required_path_positions(
-    maze: MazeGrid, start: Coord, required_positions: List[Coord], goal: Coord
-) -> Set[Coord]:
+    maze: MazeGrid, start: Coord, required_positions: list[Coord], goal: Coord
+) -> set[Coord]:
     """
     Returns all positions along the shortest paths
     from start -> required_position1 -> required_position2 -> ... -> goal.
     """
-    essential: Set[Coord] = set()
+    essential: set[Coord] = set()
     waypoints = [start] + required_positions + [goal]
     for i in range(len(waypoints) - 1):
         path = bfs_path(maze, waypoints[i], waypoints[i + 1])

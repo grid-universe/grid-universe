@@ -1,17 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Final,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import Any, Final, cast
 
 from grid_universe.components.properties import (
     Agent,
@@ -46,7 +37,7 @@ from grid_universe.components.effects import (
 
 # ---- Registries ----
 
-ComponentType = Type[Any]
+ComponentType = type[Any]
 FieldName = str
 
 FIELD_TO_COMPONENT: Final[Mapping[FieldName, ComponentType]] = {
@@ -86,10 +77,10 @@ REFERENCE_FIELD_TO_COMPONENT: Final[Mapping[FieldName, ComponentType]] = {
 }
 
 # Level-only nested lists (contain BaseEntity instances); tuple avoids forward-ref type mismatch
-NESTED_FIELDS: Final[Tuple[FieldName, ...]] = ("inventory_list", "status_list")
+NESTED_FIELDS: Final[tuple[FieldName, ...]] = ("inventory_list", "status_list")
 
 
-def _empty_objs() -> List["BaseEntity"]:
+def _empty_objs() -> list["BaseEntity"]:
     return []
 
 
@@ -105,7 +96,7 @@ class BaseEntity:
     def __post_init__(self) -> None:
         validate_entity(self)
 
-    def iter_components(self) -> Iterator[Tuple[FieldName, Any]]:
+    def iter_components(self) -> Iterator[tuple[FieldName, Any]]:
         """Yield (store_name, component) for non-None ECS/effect components present on this object."""
         for name in FIELD_TO_COMPONENT.keys():
             if hasattr(self, name):
@@ -113,17 +104,17 @@ class BaseEntity:
                 if value is not None:
                     yield name, value
 
-    def iter_nested_objects(self) -> Iterator[Tuple[FieldName, List["BaseEntity"]]]:
+    def iter_nested_objects(self) -> Iterator[tuple[FieldName, list["BaseEntity"]]]:
         """Yield (store_name, list[BaseEntity]) for non-empty nested lists."""
         for name in NESTED_FIELDS:
             if hasattr(self, name):
                 lst_any = getattr(self, name, [])
                 if lst_any:
                     # Cast for type checker; runtime checks are done in validate_entity
-                    lst = cast(List[BaseEntity], lst_any)
+                    lst = cast(list[BaseEntity], lst_any)
                     yield name, list(lst)
 
-    def iter_reference_fields(self) -> Iterator[Tuple[FieldName, Any]]:
+    def iter_reference_fields(self) -> Iterator[tuple[FieldName, Any]]:
         """Yield (store_name, ref) for non-None cross-entity references."""
         for name in REFERENCE_FIELD_TO_COMPONENT.keys():
             if hasattr(self, name):
@@ -132,7 +123,7 @@ class BaseEntity:
                     yield name, ref
 
     def __repr__(self) -> str:
-        parts: List[str] = []
+        parts: list[str] = []
         for k, v in self.iter_components():
             parts.append(f"{k}={v!r}")
         for k, v in self.iter_nested_objects():
@@ -152,42 +143,42 @@ class Entity(BaseEntity):
     """
 
     # Components (optional)
-    agent: Optional[Agent] = None
-    appearance: Optional[Appearance] = None
-    blocking: Optional[Blocking] = None
-    collectible: Optional[Collectible] = None
-    collidable: Optional[Collidable] = None
-    cost: Optional[Cost] = None
-    damage: Optional[Damage] = None
-    exit: Optional[Exit] = None
-    health: Optional[Health] = None
-    inventory: Optional[Inventory] = None
-    key: Optional[Key] = None
-    lethal_damage: Optional[LethalDamage] = None
-    locked: Optional[Locked] = None
-    moving: Optional[Moving] = None
-    pathfinding: Optional[Pathfinding] = None
-    portal: Optional[Portal] = None
-    pushable: Optional[Pushable] = None
-    requirable: Optional[Requirable] = None
-    rewardable: Optional[Rewardable] = None
-    status: Optional[Status] = None
+    agent: Agent | None = None
+    appearance: Appearance | None = None
+    blocking: Blocking | None = None
+    collectible: Collectible | None = None
+    collidable: Collidable | None = None
+    cost: Cost | None = None
+    damage: Damage | None = None
+    exit: Exit | None = None
+    health: Health | None = None
+    inventory: Inventory | None = None
+    key: Key | None = None
+    lethal_damage: LethalDamage | None = None
+    locked: Locked | None = None
+    moving: Moving | None = None
+    pathfinding: Pathfinding | None = None
+    portal: Portal | None = None
+    pushable: Pushable | None = None
+    requirable: Requirable | None = None
+    rewardable: Rewardable | None = None
+    status: Status | None = None
 
     # Effects (optional)
-    immunity: Optional[Immunity] = None
-    phasing: Optional[Phasing] = None
-    speed: Optional[Speed] = None
-    time_limit: Optional[TimeLimit] = None
-    usage_limit: Optional[UsageLimit] = None
+    immunity: Immunity | None = None
+    phasing: Phasing | None = None
+    speed: Speed | None = None
+    time_limit: TimeLimit | None = None
+    usage_limit: UsageLimit | None = None
 
     # Level-only nested objects (not placed on the grid; materialized during conversion)
-    inventory_list: List["BaseEntity"] = field(default_factory=_empty_objs)
-    status_list: List["BaseEntity"] = field(default_factory=_empty_objs)
+    inventory_list: list[BaseEntity] = field(default_factory=_empty_objs)
+    status_list: list[BaseEntity] = field(default_factory=_empty_objs)
 
     # Level-only reference fields (resolved during conversion)
-    pathfind_target_ref: Optional["BaseEntity"] = None
-    pathfinding_type: Optional[PathfindingType] = None
-    portal_pair_ref: Optional["BaseEntity"] = None
+    pathfind_target_ref: BaseEntity | None = None
+    pathfinding_type: PathfindingType | None = None
+    portal_pair_ref: BaseEntity | None = None
 
 
 # ---- Validation helper ----
@@ -268,7 +259,7 @@ def copy_entity_components(
             if hasattr(src, list_name) and hasattr(dst, list_name):
                 lst_any = getattr(src, list_name, [])
                 if lst_any:
-                    lst = cast(List[BaseEntity], lst_any)
+                    lst = cast(list[BaseEntity], lst_any)
                     setattr(dst, list_name, list(lst))
 
     # References

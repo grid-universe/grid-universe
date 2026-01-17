@@ -6,8 +6,9 @@ including adding/removing effects, checking for effect presence, and
 consuming effect usages.
 """
 
+from collections.abc import Sequence
 from dataclasses import replace
-from typing import List, Optional, Sequence, Tuple, Union, cast
+from typing import cast
 
 from pyrsistent.typing import PMap, PSet
 from grid_universe.components import Status
@@ -22,16 +23,12 @@ from grid_universe.components.effects import (
 )
 
 
-EffectMap = Union[
-    PMap[EntityID, Immunity],
-    PMap[EntityID, Phasing],
-    PMap[EntityID, Speed],
-]
+EffectMap = PMap[EntityID, Immunity] | PMap[EntityID, Phasing] | PMap[EntityID, Speed]
 
 
 def _normalize_effects(
-    effects: Union[EffectMap, Sequence[EffectMap]],
-) -> List[EffectMap]:
+    effects: EffectMap | Sequence[EffectMap],
+) -> list[EffectMap]:
     """Return list form for effect map(s) argument."""
     if isinstance(effects, (list, tuple)):
         return list(cast(Sequence[EffectMap], effects))
@@ -41,7 +38,7 @@ def _normalize_effects(
 
 def has_effect(state: State, effect_id: EntityID) -> bool:
     """Return True if ``effect_id`` exists in any runtime effect store."""
-    effect_maps: List[EffectMap] = [state.immunity, state.phasing, state.speed]
+    effect_maps: list[EffectMap] = [state.immunity, state.phasing, state.speed]
     for effect in effect_maps:
         if effect_id in effect:
             return True
@@ -70,10 +67,10 @@ def remove_status(status: Status, effect_id: EntityID) -> Status:
 
 def get_status_effect(
     effect_ids: PSet[EntityID],
-    effects: Union[EffectMap, Sequence[EffectMap]],
+    effects: EffectMap | Sequence[EffectMap],
     time_limit: PMap[EntityID, TimeLimit],
     usage_limit: PMap[EntityID, UsageLimit],
-) -> Optional[EntityID]:
+) -> EntityID | None:
     """Select a valid effect from ``effect_ids`` matching any provided store.
 
     Selection rules:
@@ -81,7 +78,7 @@ def get_status_effect(
     2. Drop expired effects (time or usage limit <= 0).
     3. Prefer effects without usage limits; otherwise lowest EID yields tie.
     """
-    effect_maps: List[EffectMap] = _normalize_effects(effects)
+    effect_maps: list[EffectMap] = _normalize_effects(effects)
 
     # Effects present in any of the requested effect stores
     relevant = [
@@ -131,12 +128,12 @@ def use_status_effect(
 
 def use_status_effect_if_present(
     effect_ids: PSet[EntityID],
-    effects: Union[EffectMap, Sequence[EffectMap]],
+    effects: EffectMap | Sequence[EffectMap],
     time_limit: PMap[EntityID, TimeLimit],
     usage_limit: PMap[EntityID, UsageLimit],
-) -> Tuple[PMap[EntityID, UsageLimit], Optional[EntityID]]:
+) -> tuple[PMap[EntityID, UsageLimit], EntityID | None]:
     """Select and consume an effect (if any) returning updated usage map."""
-    effect_maps: List[EffectMap] = _normalize_effects(effects)
+    effect_maps: list[EffectMap] = _normalize_effects(effects)
     effect_id = get_status_effect(effect_ids, effect_maps, time_limit, usage_limit)
     if effect_id is not None:
         usage_limit = use_status_effect(effect_id, usage_limit)

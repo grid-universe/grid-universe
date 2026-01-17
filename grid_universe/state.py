@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 from pyrsistent import PMap, pmap
 
 from grid_universe.components.effects import (
@@ -125,11 +125,11 @@ class State:
     score: int = 0
     win: bool = False
     lose: bool = False
-    message: Optional[str] = None
-    turn_limit: Optional[int] = None
+    message: str | None = None
+    turn_limit: int | None = None
 
     # RNG
-    seed: Optional[int] = None
+    seed: int | None = None
 
     @property
     def description(self) -> PMap[str, Any]:

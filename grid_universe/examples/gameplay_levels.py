@@ -1,5 +1,4 @@
 from __future__ import annotations
-from typing import List
 
 from grid_universe.levels.grid import Level
 from grid_universe.levels.convert import to_state
@@ -590,8 +589,8 @@ def build_level_capstone(seed: int = 113) -> State:
 def generate_task_suite(
     base_seed: int | None = None,
     *,
-    seed_list: List[int] | None = None,
-) -> List[State]:
+    seed_list: list[int] | None = None,
+) -> list[State]:
     """Return ordered suite of authored levels (L0..L13) with configurable seeds.
 
     Seeding strategy precedence:

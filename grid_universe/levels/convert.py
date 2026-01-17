@@ -12,8 +12,9 @@ EntityIDs.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any
 
 from pyrsistent import pmap, pset
 
@@ -31,7 +32,7 @@ from grid_universe.levels.grid import Level, Position
 from grid_universe.levels.entity import BaseEntity, Entity, FIELD_TO_COMPONENT
 
 
-def _init_store_maps() -> Dict[str, Dict[EntityID, Any]]:
+def _init_store_maps() -> dict[str, dict[EntityID, Any]]:
     """Initialize mutable component-store maps mirroring State; converted to pmaps later."""
     return {
         # effects
@@ -68,9 +69,9 @@ def _init_store_maps() -> Dict[str, Dict[EntityID, Any]]:
 
 def _alloc_from_obj(
     obj: BaseEntity,
-    stores: Dict[str, Dict[EntityID, Any]],
-    next_eid_ref: List[int],
-    place_pos: Optional[Position] = None,
+    stores: dict[str, dict[EntityID, Any]],
+    next_eid_ref: list[int],
+    place_pos: Position | None = None,
 ) -> EntityID:
     """Allocate a new EntityID, copy ECS/effect components from obj, and optionally set Position."""
     eid: EntityID = next_eid_ref[0]
@@ -86,7 +87,7 @@ def _alloc_from_obj(
     return eid
 
 
-def _build_state(level: Level, stores: Dict[str, Dict[EntityID, Any]]) -> State:
+def _build_state(level: Level, stores: dict[str, dict[EntityID, Any]]) -> State:
     """Convert mutable dict stores to pyrsistent maps and construct immutable State."""
     return State(
         width=level.width,
@@ -135,12 +136,12 @@ def _build_state(level: Level, stores: Dict[str, Dict[EntityID, Any]]) -> State:
 
 def to_state(level: Level) -> State:
     """Convert a Level (grid of BaseEntity objects) into an immutable State."""
-    stores: Dict[str, Dict[EntityID, Any]] = _init_store_maps()
-    next_eid_ref: List[int] = [0]
+    stores: dict[str, dict[EntityID, Any]] = _init_store_maps()
+    next_eid_ref: list[int] = [0]
 
     # source object -> eid for on-grid objects
-    obj_to_eid: Dict[int, EntityID] = {}
-    placed: List[Tuple[BaseEntity, EntityID]] = []
+    obj_to_eid: dict[int, EntityID] = {}
+    placed: list[tuple[BaseEntity, EntityID]] = []
 
     for y in range(level.height):
         for x in range(level.width):
@@ -150,14 +151,14 @@ def to_state(level: Level) -> State:
                 placed.append((obj, eid))
 
                 # Gather nested lists once
-                nested_lists: Dict[str, List[BaseEntity]] = {
+                nested_lists: dict[str, list[BaseEntity]] = {
                     name: items for name, items in obj.iter_nested_objects()
                 }
 
                 # Inventory nested items
                 if "inventory_list" in nested_lists:
                     base_inv = stores["inventory"].get(eid, Inventory(pset()))
-                    item_ids: List[EntityID] = [
+                    item_ids: list[EntityID] = [
                         _alloc_from_obj(item, stores, next_eid_ref, place_pos=None)
                         for item in nested_lists["inventory_list"]
                     ]
@@ -168,7 +169,7 @@ def to_state(level: Level) -> State:
                 # Status nested effects
                 if "status_list" in nested_lists:
                     base_status = stores["status"].get(eid, Status(pset()))
-                    eff_ids: List[EntityID] = [
+                    eff_ids: list[EntityID] = [
                         _alloc_from_obj(eff, stores, next_eid_ref, place_pos=None)
                         for eff in nested_lists["status_list"]
                     ]
@@ -223,7 +224,7 @@ def to_state(level: Level) -> State:
 
 def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
     """Reconstruct a generic mutable level Entity from a State entity id."""
-    kwargs: Dict[str, Any] = {}
+    kwargs: dict[str, Any] = {}
     for store_name, _ in FIELD_TO_COMPONENT.items():
         store = getattr(state, store_name, None)
         if store is not None and eid in store:
@@ -234,7 +235,7 @@ def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
         eid in state.inventory
         and getattr(state.inventory[eid], "item_ids", None) is not None
     ):
-        inventory_list: List[Entity] = [
+        inventory_list: list[Entity] = [
             _entity_object_from_state(state, item_eid)
             for item_eid in state.inventory[eid].item_ids
         ]
@@ -247,7 +248,7 @@ def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
         eid in state.status
         and getattr(state.status[eid], "effect_ids", None) is not None
     ):
-        status_list: List[Entity] = [
+        status_list: list[Entity] = [
             _entity_object_from_state(state, eff_eid)
             for eff_eid in state.status[eid].effect_ids
         ]
@@ -264,7 +265,7 @@ def _restore_entity_references(
     state: State,
     eid: EntityID,
     entity: Entity,
-    placed_objs: Dict[EntityID, Entity],
+    placed_objs: dict[EntityID, Entity],
 ) -> None:
     """Restore reference fields for a positioned `entity` in-place."""
     pf = state.pathfinding.get(eid)
@@ -301,7 +302,7 @@ def from_state(state: State) -> Level:
         message=state.message,
     )
 
-    placed_objs: Dict[EntityID, Entity] = {}
+    placed_objs: dict[EntityID, Entity] = {}
 
     for eid in sorted(state.position.keys()):
         pos = state.position.get(eid)

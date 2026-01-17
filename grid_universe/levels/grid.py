@@ -12,14 +12,14 @@ this representation and the immutable runtime `grid_universe.state.State`.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional, Tuple
 
 from grid_universe.types import MoveFn, ObjectiveFn
 from .entity import BaseEntity
 
 # Grid coordinate alias (x, y)
-Position = Tuple[int, int]
+Position = tuple[int, int]
 
 
 @dataclass
@@ -38,18 +38,18 @@ class Level:
     height: int
     move_fn: MoveFn
     objective_fn: ObjectiveFn
-    seed: Optional[int] = None
+    seed: int | None = None
 
     # 2D array of cells: each cell holds a list of EntityObject
-    grid: List[List[List[BaseEntity]]] = field(init=False)
+    grid: list[list[list[BaseEntity]]] = field(init=False)
 
     # Optional meta (carried through conversion)
     turn: int = 0
     score: int = 0
     win: bool = False
     lose: bool = False
-    message: Optional[str] = None
-    turn_limit: Optional[int] = None
+    message: str | None = None
+    turn_limit: int | None = None
 
     def __post_init__(self) -> None:
         # Initialize empty grid
@@ -65,7 +65,7 @@ class Level:
         self._check_bounds(x, y)
         self.grid[y][x].append(obj)
 
-    def add_many(self, items: List[Tuple[Position, BaseEntity]]) -> None:
+    def add_many(self, items: list[tuple[Position, BaseEntity]]) -> None:
         """
         Place multiple entities. Each entry is ``(pos, obj)``.
         """
@@ -119,7 +119,7 @@ class Level:
         self.grid[y][x] = []
         return n
 
-    def objects_at(self, pos: Position) -> List[BaseEntity]:
+    def objects_at(self, pos: Position) -> list[BaseEntity]:
         """
         Return a shallow copy of the list of objects at pos.
         """

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, Iterable, Tuple, List
+from collections.abc import Iterable
 import random
 from dataclasses import replace
 
@@ -13,7 +13,7 @@ from grid_universe.examples import maze
 TURN_LIMIT = 20
 
 
-CipherObjectivePair = Tuple[str, str]
+CipherObjectivePair = tuple[str, str]
 
 
 def _sample_cipher_pair(
@@ -33,7 +33,7 @@ def _sample_cipher_pair(
     Raises:
         ValueError: If no valid pairs are provided.
     """
-    items: List[CipherObjectivePair] = [
+    items: list[CipherObjectivePair] = [
         (c, o) for c, o in pairs if c and o in OBJECTIVE_FN_REGISTRY
     ]
     if not items:
@@ -46,7 +46,7 @@ def _sample_cipher_pair(
 def to_cipher_level(
     base_state: State,
     cipher_text_pairs: Iterable[CipherObjectivePair],
-    seed: Optional[int] = None,
+    seed: int | None = None,
 ) -> State:
     """Transform an existing state into a cipher micro-level variant.
 
@@ -73,7 +73,7 @@ def generate(
     height: int,
     num_required_items: int,
     cipher_objective_pairs: Iterable[CipherObjectivePair],
-    seed: Optional[int] = None,
+    seed: int | None = None,
 ) -> State:
     """Generate a cipher micro-level using the maze generator and adapt it.
 

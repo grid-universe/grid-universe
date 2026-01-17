@@ -8,7 +8,6 @@ are mutable blueprints that can be converted into an immutable ECS
 
 from __future__ import annotations
 
-from typing import Optional
 from pyrsistent import pset
 
 from grid_universe.components.properties import (
@@ -81,7 +80,7 @@ def create_exit() -> Entity:
     )
 
 
-def create_coin(reward: Optional[int] = None) -> Entity:
+def create_coin(reward: int | None = None) -> Entity:
     """Collectible coin awarding optional score when picked up."""
     return Entity(
         appearance=Appearance(name="coin", icon=True, priority=4),
@@ -90,7 +89,7 @@ def create_coin(reward: Optional[int] = None) -> Entity:
     )
 
 
-def create_core(reward: Optional[int] = None, required: bool = True) -> Entity:
+def create_core(reward: int | None = None, required: bool = True) -> Entity:
     """Key objective collectible ("core") optionally giving reward."""
     return Entity(
         appearance=Appearance(name="core", icon=True, priority=4),
@@ -118,7 +117,7 @@ def create_door(key_id: str) -> Entity:
     )
 
 
-def create_portal(*, pair: Optional[Entity] = None) -> Entity:
+def create_portal(*, pair: Entity | None = None) -> Entity:
     """Portal endpoint (optionally auto-paired by reference).
 
     If ``pair`` is provided we set reciprocal refs so conversion wires the
@@ -137,7 +136,7 @@ def create_portal(*, pair: Optional[Entity] = None) -> Entity:
 
 def create_box(
     pushable: bool = True,
-    moving_direction: Optional[Direction] = None,
+    moving_direction: Direction | None = None,
     moving_on_collision: CollisionBehavior = "bounce",
     moving_speed: int = 1,
 ) -> Entity:
@@ -161,10 +160,10 @@ def create_monster(
     damage: int = 3,
     lethal: bool = False,
     *,
-    moving_direction: Optional[Direction] = None,
+    moving_direction: Direction | None = None,
     moving_on_collision: CollisionBehavior = "bounce",
     moving_speed: int = 1,
-    pathfind_target: Optional[Entity] = None,
+    pathfind_target: Entity | None = None,
     path_type: PathfindingType = PathfindingType.PATH,
 ) -> Entity:
     """Basic enemy with damage and optional lethal + pathfinding target."""
@@ -204,8 +203,8 @@ def create_hazard(
 
 def create_speed_effect(
     multiplier: int,
-    time: Optional[int] = None,
-    usage: Optional[int] = None,
+    time: int | None = None,
+    usage: int | None = None,
 ) -> Entity:
     """Collectible speed effect (optional time / usage limits)."""
     return Entity(
@@ -218,8 +217,8 @@ def create_speed_effect(
 
 
 def create_immunity_effect(
-    time: Optional[int] = None,
-    usage: Optional[int] = None,
+    time: int | None = None,
+    usage: int | None = None,
 ) -> Entity:
     """Collectible immunity effect (optional limits)."""
     return Entity(
@@ -232,8 +231,8 @@ def create_immunity_effect(
 
 
 def create_phasing_effect(
-    time: Optional[int] = None,
-    usage: Optional[int] = None,
+    time: int | None = None,
+    usage: int | None = None,
 ) -> Entity:
     """Collectible phasing effect (optional limits)."""
     return Entity(

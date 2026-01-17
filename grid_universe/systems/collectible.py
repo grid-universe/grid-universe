@@ -16,7 +16,6 @@ The system is idempotent for a given state+entity pairing.
 """
 
 from dataclasses import replace
-from typing import Optional, Set
 from grid_universe.components import Status
 from grid_universe.components.properties.inventory import Inventory
 from grid_universe.state import State
@@ -45,10 +44,10 @@ def collectible_system(state: State, entity_id: EntityID) -> State:
     if not collectable_ids:
         return state
 
-    entity_inventory: Optional[Inventory] = state.inventory.get(entity_id)
-    entity_status: Optional[Status] = state.status.get(entity_id)
+    entity_inventory: Inventory | None = state.inventory.get(entity_id)
+    entity_status: Status | None = state.status.get(entity_id)
     state_score = state.score
-    collected_ids: Set[EntityID] = set()
+    collected_ids: set[EntityID] = set()
 
     for collectable_id in collectable_ids:
         # Collectible is a powerup/effect

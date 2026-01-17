@@ -6,7 +6,6 @@ provided the destination tile is unblocked.
 """
 
 from dataclasses import replace
-from typing import Optional
 from grid_universe.moves import wrap_around_move_fn
 from grid_universe.state import State
 from grid_universe.components import Position
@@ -19,7 +18,7 @@ from grid_universe.runtime import StepContext
 
 def compute_destination(
     state: State, current_pos: Position, next_pos: Position
-) -> Optional[Position]:
+) -> Position | None:
     """Compute push destination given current and occupant next positions.
 
     Args:

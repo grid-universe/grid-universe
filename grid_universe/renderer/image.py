@@ -34,11 +34,12 @@ Performance Notes
 """
 
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
 import colorsys
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Callable, Dict, Optional, Tuple, List, Any
+from typing import Any
 from PIL import Image
 from pyrsistent import pmap
 from pyrsistent.typing import PMap
@@ -58,7 +59,7 @@ DEFAULT_RESOLUTION = 640
 DEFAULT_SUBICON_PERCENT = 0.4
 DEFAULT_ASSET_ROOT = os.path.join(Path(__file__).parent.parent.resolve(), "assets")
 
-ObjectAsset = Tuple[str, Tuple[str, ...]]
+ObjectAsset = tuple[str, tuple[str, ...]]
 
 
 @dataclass(frozen=True)
@@ -75,9 +76,9 @@ class ObjectRendering:
     """
 
     appearance: Appearance
-    properties: Tuple[str, ...]
-    group: Optional[str] = None
-    move_dir: Optional[Tuple[int, int]] = None
+    properties: tuple[str, ...]
+    group: str | None = None
+    move_dir: tuple[int, int] | None = None
     move_speed: int = 0
 
     def asset(self) -> ObjectAsset:
@@ -86,9 +87,9 @@ class ObjectRendering:
 
 ObjectName = str
 ObjectProperty = str
-ObjectPropertiesImageMap = Dict[ObjectName, Dict[Tuple[ObjectProperty, ...], str]]
+ObjectPropertiesImageMap = dict[ObjectName, dict[tuple[ObjectProperty, ...], str]]
 
-TexLookupFn = Callable[[ObjectRendering, int], Optional[Image.Image]]
+TexLookupFn = Callable[[ObjectRendering, int], Image.Image | None]
 ImageMap = HashableDict[ObjectAsset, str]
 
 
@@ -176,7 +177,7 @@ FUTURAMA_IMAGE_MAP: ImageMap = ImageMap(
 
 DEFAULT_IMAGE_MAP: ImageMap = IMAGEN1_IMAGE_MAP
 
-IMAGE_MAP_REGISTRY: Dict[str, ImageMap] = {
+IMAGE_MAP_REGISTRY: dict[str, ImageMap] = {
     "imagen1": IMAGEN1_IMAGE_MAP,
     "kenney": KENNEY_IMAGE_MAP,
     "futurama": FUTURAMA_IMAGE_MAP,
@@ -185,10 +186,10 @@ IMAGE_MAP_REGISTRY: Dict[str, ImageMap] = {
 
 # --- Grouping Rules ---
 
-GroupRule = Callable[[State, EntityID], Optional[str]]
+GroupRule = Callable[[State, EntityID], str | None]
 
 
-def key_door_group_rule(state: State, eid: EntityID) -> Optional[str]:
+def key_door_group_rule(state: State, eid: EntityID) -> str | None:
     if eid in state.key:
         return f"key:{state.key[eid].key_id}"
     if eid in state.locked:
@@ -196,7 +197,7 @@ def key_door_group_rule(state: State, eid: EntityID) -> Optional[str]:
     return None
 
 
-def portal_pair_group_rule(state: State, eid: EntityID) -> Optional[str]:
+def portal_pair_group_rule(state: State, eid: EntityID) -> str | None:
     if eid not in state.portal:
         return None
     pair = state.portal[eid].pair_entity
@@ -204,15 +205,15 @@ def portal_pair_group_rule(state: State, eid: EntityID) -> Optional[str]:
     return f"portal:{a}-{b}"
 
 
-DEFAULT_GROUP_RULES: List[GroupRule] = [
+DEFAULT_GROUP_RULES: list[GroupRule] = [
     key_door_group_rule,
     portal_pair_group_rule,
 ]
 
 
 def derive_groups(
-    state: State, rules: List[GroupRule] = DEFAULT_GROUP_RULES
-) -> Dict[EntityID, Optional[str]]:
+    state: State, rules: list[GroupRule] = DEFAULT_GROUP_RULES
+) -> dict[EntityID, str | None]:
     """Apply grouping rules to each entity.
 
     Later rendering stages may use groups to recolor related entities with a
@@ -227,9 +228,9 @@ def derive_groups(
         Dict[EntityID, str | None]: Mapping of entity id to chosen group id (or ``None`` if ungrouped).
     """
     rule_groups: dict[str, set[str]] = defaultdict(set)
-    out: Dict[EntityID, Optional[str]] = {}
+    out: dict[EntityID, str | None] = {}
     for eid, _ in state.position.items():
-        group: Optional[str] = None
+        group: str | None = None
         for rule in rules:
             group = rule(state, eid)
             if group is not None:
@@ -247,7 +248,7 @@ def derive_groups(
 
 
 @lru_cache(maxsize=2048)
-def group_to_color(group_id: str) -> Tuple[int, int, int]:
+def group_to_color(group_id: str) -> tuple[int, int, int]:
     """Deterministically map a group string to an RGB color.
 
     Uses the group id as a seed to generate stable but visually distinct HSV
@@ -263,7 +264,7 @@ def group_to_color(group_id: str) -> Tuple[int, int, int]:
 
 def apply_recolor_if_group(
     tex: Image.Image,
-    group: Optional[str],
+    group: str | None,
 ) -> Image.Image:
     """Recolor wrapper that sets hue to the group's color while preserving tone.
 
@@ -277,7 +278,7 @@ def apply_recolor_if_group(
 
 
 @lru_cache(maxsize=4096)
-def load_image(path: str, size: int) -> Optional[Image.Image]:
+def load_image(path: str, size: int) -> Image.Image | None:
     """Load and resize an image, returning None if inaccessible or invalid."""
     try:
         return Image.open(path).convert("RGBA").resize((size, size))
@@ -286,11 +287,11 @@ def load_image(path: str, size: int) -> Optional[Image.Image]:
 
 
 @lru_cache(maxsize=256)
-def get_eid_properties_map(state: State) -> Dict[EntityID, Tuple[str, ...]]:
+def get_eid_properties_map(state: State) -> dict[EntityID, tuple[str, ...]]:
     """Build a mapping from eid to its component store names efficiently."""
-    eid_to_props: Dict[EntityID, List[str]] = {}
+    eid_to_props: dict[EntityID, list[str]] = {}
     # Identify component stores once (avoid scanning __dict__ per eid)
-    component_store_names: List[str] = []
+    component_store_names: list[str] = []
     for name, value in state.__dict__.items():
         # Keep only PMap stores (effects + properties)
         if isinstance(value, type(pmap())):
@@ -315,23 +316,23 @@ def get_eid_properties_map(state: State) -> Dict[EntityID, Tuple[str, ...]]:
 
 def get_object_renderings(
     state: State,
-    eids: List[EntityID],
-    groups: Dict[EntityID, Optional[str]],
-    eid_properties_map: Dict[EntityID, Tuple[str, ...]],
-) -> List[ObjectRendering]:
+    eids: list[EntityID],
+    groups: dict[EntityID, str | None],
+    eid_properties_map: dict[EntityID, tuple[str, ...]],
+) -> list[ObjectRendering]:
     """Build rendering descriptors for entity IDs in a single cell.
 
     Inspects component PMaps on the ``State`` to infer property labels,
     movement direction and speed, then packages them in ``ObjectRendering``
     objects for subsequent image lookup and layering decisions.
     """
-    renderings: List[ObjectRendering] = []
+    renderings: list[ObjectRendering] = []
     default_appearance: Appearance = Appearance(name="none")
     for eid in eids:
         appearance = state.appearance.get(eid, default_appearance)
         properties = eid_properties_map[eid]
 
-        move_dir: Optional[Tuple[int, int]] = None
+        move_dir: tuple[int, int] | None = None
         move_speed: int = 0
         if eid in state.moving:
             m = state.moving[eid]
@@ -350,7 +351,7 @@ def get_object_renderings(
     return renderings
 
 
-def choose_background(object_renderings: List[ObjectRendering]) -> ObjectRendering:
+def choose_background(object_renderings: list[ObjectRendering]) -> ObjectRendering:
     """
     Return the lowest-priority background object.
     Higher priority values indicate lower importance.
@@ -370,7 +371,7 @@ def choose_background(object_renderings: List[ObjectRendering]) -> ObjectRenderi
     return max(items, key=lambda x: x.appearance.priority)  # take the lowest priority
 
 
-def choose_main(object_renderings: List[ObjectRendering]) -> Optional[ObjectRendering]:
+def choose_main(object_renderings: list[ObjectRendering]) -> ObjectRendering | None:
     """
     Return the highest-priority non-background object.
     Lower priority values indicate higher importance.
@@ -388,8 +389,8 @@ def choose_main(object_renderings: List[ObjectRendering]) -> Optional[ObjectRend
 
 
 def choose_corner_icons(
-    object_renderings: List[ObjectRendering], main: Optional[ObjectRendering]
-) -> List[ObjectRendering]:
+    object_renderings: list[ObjectRendering], main: ObjectRendering | None
+) -> list[ObjectRendering]:
     """Return up to four icon objects (excluding main) sorted by priority."""
     items = set(
         [
@@ -422,7 +423,7 @@ def get_path(object_asset: ObjectAsset, image_hmap: ObjectPropertiesImageMap) ->
 
 
 @lru_cache(maxsize=128)
-def get_files_in_directory(dir: str) -> List[str]:
+def get_files_in_directory(dir: str) -> list[str]:
     """List image files in a directory."""
     if not os.path.isdir(dir):
         return []
@@ -440,8 +441,8 @@ def get_files_in_directory(dir: str) -> List[str]:
 @lru_cache(maxsize=128)
 def select_image_from_directory(
     dir: str,
-    seed: Optional[int],
-) -> Optional[str]:
+    seed: int | None,
+) -> str | None:
     """Choose a deterministic random image file from a directory."""
     files = get_files_in_directory(dir)
     if not files:
@@ -485,15 +486,14 @@ def render(
     state: State,
     resolution: int = DEFAULT_RESOLUTION,
     subicon_percent: float = DEFAULT_SUBICON_PERCENT,
-    image_map: Optional[ImageMap] = None,
+    image_map: ImageMap | None = None,
     asset_root: str = DEFAULT_ASSET_ROOT,
-    tex_lookup_fn: Optional[TexLookupFn] = None,
-    cache: Optional[
-        Dict[
-            Tuple[str, int, Optional[str], Optional[Tuple[int, int]], int],
-            Optional[Image.Image],
-        ]
-    ] = None,
+    tex_lookup_fn: TexLookupFn | None = None,
+    cache: dict[
+        tuple[str, int, str | None, tuple[int, int] | None, int],
+        Image.Image | None,
+    ]
+    | None = None,
 ) -> Image.Image:
     """Render a ``State`` into a PIL Image.
 
@@ -537,11 +537,11 @@ def render(
     value_to_first_index = {v: i for i, v in enumerate(image_map_values)}
     groups = derive_groups(state)
 
-    eid_properties_map: Dict[EntityID, Tuple[str, ...]] = get_eid_properties_map(state)
+    eid_properties_map: dict[EntityID, tuple[str, ...]] = get_eid_properties_map(state)
 
     def default_get_tex(
         object_rendering: ObjectRendering, size: int
-    ) -> Optional[Image.Image]:
+    ) -> Image.Image | None:
         path = get_path(object_rendering.asset(), image_hmap)
         if not path:
             return None
@@ -582,7 +582,7 @@ def render(
 
     tex_lookup = tex_lookup_fn or default_get_tex
 
-    grid_entities: Dict[Tuple[int, int], List[EntityID]] = {}
+    grid_entities: dict[tuple[int, int], list[EntityID]] = {}
     for eid, pos in state.position.items():
         grid_entities.setdefault((pos.x, pos.y), []).append(eid)
 
@@ -600,7 +600,7 @@ def render(
             set(object_renderings) - set([main] + corner_icons + [background])
         )
 
-        primary_renderings: List[ObjectRendering] = (
+        primary_renderings: list[ObjectRendering] = (
             [background] + others + ([main] if main is not None else [])
         )
 
@@ -628,19 +628,19 @@ class ImageRenderer:
     subicon_percent: float
     image_map: ImageMap
     asset_root: str
-    tex_lookup_fn: Optional[TexLookupFn]
-    _tex_cache: Dict[
-        Tuple[str, int, Optional[str], Optional[Tuple[int, int]], int],
-        Optional[Image.Image],
+    tex_lookup_fn: TexLookupFn | None
+    _tex_cache: dict[
+        tuple[str, int, str | None, tuple[int, int] | None, int],
+        Image.Image | None,
     ]
 
     def __init__(
         self,
         resolution: int = DEFAULT_RESOLUTION,
         subicon_percent: float = DEFAULT_SUBICON_PERCENT,
-        image_map: Optional[ImageMap] = None,
+        image_map: ImageMap | None = None,
         asset_root: str = DEFAULT_ASSET_ROOT,
-        tex_lookup_fn: Optional[TexLookupFn] = None,
+        tex_lookup_fn: TexLookupFn | None = None,
     ):
         self.resolution = resolution
         self.subicon_percent = subicon_percent

@@ -8,7 +8,6 @@ Functions here are used by movement and pathfinding systems to validate
 entity positions and movements within the grid world.
 """
 
-from typing import Set
 from grid_universe.components import Position
 from grid_universe.state import State
 from grid_universe.types import EntityID
@@ -22,7 +21,7 @@ def is_in_bounds(state: State, pos: Position) -> bool:
 
 def wrap_position(x: int, y: int, width: int, height: int) -> Position:
     """Toroidal wrap for coordinates (used by wrap movement)."""
-    return Position(x % width, y % height)
+    return Position(x=x % width, y=y % height)
 
 
 def is_blocked_at(
@@ -41,7 +40,7 @@ def is_blocked_at(
         check_collidable (bool): If True, treat ``Collidable`` as blocking.
         check_pushable (bool): If True, treat ``Pushable`` as blocking.
     """
-    ids_at_pos: Set[EntityID] = entities_at(state, pos)
+    ids_at_pos: set[EntityID] = entities_at(state, pos)
     for other_id in ids_at_pos:
         if (
             (check_blocking and other_id in state.blocking)

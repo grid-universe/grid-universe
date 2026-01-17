@@ -6,7 +6,6 @@ rewardable or cost-bearing entities located on the agent's current tile.
 """
 
 from dataclasses import replace
-from typing import Set, Union
 
 from pyrsistent.typing import PMap
 from grid_universe.state import State
@@ -19,8 +18,8 @@ from grid_universe.utils.terminal import is_terminal_state, is_valid_state
 def get_noncollectible_entities(
     state: State,
     pos: Position,
-    component_map: Union[PMap[EntityID, Rewardable], PMap[EntityID, Cost]],
-) -> Set[EntityID]:
+    component_map: PMap[EntityID, Rewardable] | PMap[EntityID, Cost],
+) -> set[EntityID]:
     """Return entity IDs at ``pos`` with a component but not collectible."""
     at_pos = entities_at(state, pos)
     ids = set(component_map.keys())

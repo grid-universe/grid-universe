@@ -1,6 +1,6 @@
 """Vector and math utilities used by pathfinding / movement heuristics."""
 
-from typing import Any, List
+from typing import Any
 from pyrsistent import pvector
 from pyrsistent.typing import PVector
 
@@ -28,6 +28,6 @@ def position_to_vector(position: Position) -> PVector[int]:
     )
 
 
-def argmax(x: List[Any]) -> int:
+def argmax(x: list[Any]) -> int:
     """Return index of maximum value in list ``x`` (first in tie)."""
     return max(range(len(x)), key=lambda i: x[i])

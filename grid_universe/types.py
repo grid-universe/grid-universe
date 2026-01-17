@@ -1,5 +1,6 @@
+from collections.abc import Callable, Sequence
 from enum import StrEnum, auto
-from typing import Callable, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 
 # Forward declaration for MoveFn typing to avoid circular imports:

@@ -1,6 +1,6 @@
 """Inventory manipulation helpers."""
 
-from typing import Mapping
+from collections.abc import Mapping
 from pyrsistent import PSet, pset
 from grid_universe.components import Inventory, Key
 from grid_universe.types import EntityID

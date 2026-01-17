@@ -1,6 +1,5 @@
 """Health and damage helpers."""
 
-from typing import Tuple
 from pyrsistent import PMap
 
 from grid_universe.components import Health, Dead
@@ -13,7 +12,7 @@ def apply_damage_and_check_death(
     eid: EntityID,
     damage: int,
     lethal: bool,
-) -> Tuple[PMap[EntityID, Health], PMap[EntityID, Dead]]:
+) -> tuple[PMap[EntityID, Health], PMap[EntityID, Dead]]:
     """Apply damage to entity and mark dead if lethal or HP reaches zero."""
     if eid in health_dict:
         hp = health_dict[eid]

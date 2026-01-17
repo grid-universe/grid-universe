@@ -40,8 +40,9 @@ Essential Path:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import StrEnum, auto
-from typing import Any, Callable, Dict, List, Optional, Tuple, Set
+from typing import Any
 
 import random
 
@@ -90,21 +91,21 @@ from grid_universe.utils.maze import (
 # Specs and defaults
 # -------------------------
 
-EffectOption = Dict[str, Any]
-PowerupSpec = Tuple[
-    EffectType, Optional[EffectLimit], Optional[EffectLimitAmount], EffectOption
+EffectOption = dict[str, Any]
+PowerupSpec = tuple[
+    EffectType, EffectLimit | None, EffectLimitAmount | None, EffectOption
 ]
 DamageAmount = int
 IsLethal = bool
-HazardSpec = Tuple[str, DamageAmount, IsLethal]
+HazardSpec = tuple[str, DamageAmount, IsLethal]
 
-DEFAULT_POWERUPS: List[PowerupSpec] = [
+DEFAULT_POWERUPS: list[PowerupSpec] = [
     (EffectType.SPEED, EffectLimit.TIME, 10, {"multiplier": 2}),
     (EffectType.PHASING, EffectLimit.TIME, 10, {}),
     (EffectType.IMMUNITY, EffectLimit.USAGE, 5, {}),
 ]
 
-DEFAULT_HAZARDS: List[HazardSpec] = [
+DEFAULT_HAZARDS: list[HazardSpec] = [
     ("lava", 5, True),
     ("spike", 3, False),
 ]
@@ -117,15 +118,15 @@ class MovementType(StrEnum):
     PATHFINDING_PATH = auto()
 
 
-EnemySpec = Tuple[DamageAmount, IsLethal, MovementType, int]
-BoxSpec = Tuple[bool, int]
+EnemySpec = tuple[DamageAmount, IsLethal, MovementType, int]
+BoxSpec = tuple[bool, int]
 
-DEFAULT_ENEMIES: List[EnemySpec] = [
+DEFAULT_ENEMIES: list[EnemySpec] = [
     (5, True, MovementType.DIRECTIONAL, 2),
     (3, False, MovementType.PATHFINDING_LINE, 1),
 ]
 
-DEFAULT_BOXES: List[BoxSpec] = [
+DEFAULT_BOXES: list[BoxSpec] = [
     (True, 0),
     (False, 1),
     (False, 2),
@@ -153,7 +154,7 @@ def _random_direction(rng: random.Random) -> Direction:
     return rng.choice(["up", "down", "left", "right"])
 
 
-def _pop_or_fallback(positions: List[Position], fallback: Position) -> Position:
+def _pop_or_fallback(positions: list[Position], fallback: Position) -> Position:
     """Pop a position if available else return a fallback.
 
     Useful when the parameterization may request more placements than there
@@ -178,15 +179,15 @@ def generate(
     movement_cost: int = 1,
     required_item_reward: int = 10,
     rewardable_item_reward: int = 10,
-    boxes: List[BoxSpec] = DEFAULT_BOXES,
-    powerups: List[PowerupSpec] = DEFAULT_POWERUPS,
-    hazards: List[HazardSpec] = DEFAULT_HAZARDS,
-    enemies: List[EnemySpec] = DEFAULT_ENEMIES,
+    boxes: list[BoxSpec] = DEFAULT_BOXES,
+    powerups: list[PowerupSpec] = DEFAULT_POWERUPS,
+    hazards: list[HazardSpec] = DEFAULT_HAZARDS,
+    enemies: list[EnemySpec] = DEFAULT_ENEMIES,
     wall_percentage: float = 0.8,
     move_fn: MoveFn = default_move_fn,
     objective_fn: ObjectiveFn = default_objective_fn,
-    seed: Optional[int] = None,
-    turn_limit: Optional[int] = None,
+    seed: int | None = None,
+    turn_limit: int | None = None,
 ) -> State:
     """Generate a randomized maze game state.
 
@@ -234,10 +235,10 @@ def generate(
     )
 
     # 3) Collect positions
-    open_positions: List[Position] = [
+    open_positions: list[Position] = [
         pos for pos, is_open in maze_grid.items() if is_open
     ]
-    wall_positions: List[Position] = [
+    wall_positions: list[Position] = [
         pos for pos, is_open in maze_grid.items() if not is_open
     ]
     rng.shuffle(open_positions)  # randomize for placement variety
@@ -255,7 +256,7 @@ def generate(
     level.add(goal_pos, create_exit())
 
     # 6) Required cores
-    required_positions: List[Position] = []
+    required_positions: list[Position] = []
     for _ in range(num_required_items):
         if not open_positions:
             break
@@ -264,7 +265,7 @@ def generate(
         required_positions.append(pos)
 
     # Compute essential path set
-    essential_path: Set[Position] = all_required_path_positions(
+    essential_path: set[Position] = all_required_path_positions(
         maze_grid, start_pos, required_positions, goal_pos
     )
 
@@ -311,7 +312,7 @@ def generate(
         level.add(pos, create_effect_fn(**extra, **kwargs))
 
     # 11) Non-essential positions (for enemies, hazards, moving boxes)
-    open_non_essential: List[Position] = [
+    open_non_essential: list[Position] = [
         p for p in open_positions if p not in essential_path
     ]
     rng.shuffle(open_non_essential)
@@ -336,7 +337,7 @@ def generate(
         pos = open_non_essential.pop()
 
         # Explicit pathfinding via reference to the agent
-        path_type: Optional[PathfindingType] = None
+        path_type: PathfindingType | None = None
         if mtype == MovementType.PATHFINDING_LINE:
             path_type = PathfindingType.STRAIGHT_LINE
         elif mtype == MovementType.PATHFINDING_PATH:

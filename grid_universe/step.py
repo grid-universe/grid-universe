@@ -1,5 +1,4 @@
 from dataclasses import replace
-from typing import Optional
 from grid_universe.runtime import StepContext
 from grid_universe.actions import Action, MOVE_ACTIONS
 from grid_universe.components.properties.position import Position
@@ -24,7 +23,7 @@ from grid_universe.utils.terminal import is_terminal_state, is_valid_state
 from grid_universe.utils.trail import add_trail_position
 
 
-def step(state: State, action: Action, agent_id: Optional[EntityID] = None) -> State:
+def step(state: State, action: Action, agent_id: EntityID | None = None) -> State:
     """
     Apply an action to the current state, returning the updated state.
 

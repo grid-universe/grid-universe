@@ -46,7 +46,8 @@ import gymnasium as gym
 from gymnasium import spaces
 
 import numpy as np
-from typing import Callable, Optional, Dict, Tuple, Any, List, TypedDict, cast, Union
+from collections.abc import Callable
+from typing import Any, TypedDict, cast
 from numpy.typing import NDArray
 
 from PIL.Image import Image as PILImage
@@ -103,8 +104,8 @@ class AgentInfo(TypedDict):
     """Agent sub‑observation grouping health, effects and inventory."""
 
     health: HealthInfo
-    effects: List[EffectEntry]
-    inventory: List[InventoryItem]
+    effects: list[EffectEntry]
+    inventory: list[InventoryItem]
 
 
 class StatusInfo(TypedDict):
@@ -149,7 +150,7 @@ class Observation(TypedDict):
     info: InfoDict
 
 
-def _serialize_effect(state: State, effect_id: EntityID) -> Dict[str, Any]:
+def _serialize_effect(state: State, effect_id: EntityID) -> dict[str, Any]:
     """Serialize an effect entity.
 
     Args:
@@ -157,7 +158,7 @@ def _serialize_effect(state: State, effect_id: EntityID) -> Dict[str, Any]:
         effect_id (EntityID): Entity id for the effect object.
 
     Returns:
-        Dict[str, Any]: JSON‑friendly payload with id, type, limit metadata and
+        dict[str, Any]: JSON‑friendly payload with id, type, limit metadata and
             speed multiplier if applicable.
     """
     # Start with sentinel defaults to guarantee presence of every field
@@ -200,12 +201,12 @@ def _serialize_effect(state: State, effect_id: EntityID) -> Dict[str, Any]:
     }
 
 
-def _serialize_inventory_item(state: State, item_id: EntityID) -> Dict[str, Any]:
+def _serialize_inventory_item(state: State, item_id: EntityID) -> dict[str, Any]:
     """Serialize an inventory item (key / collectible / generic).
 
     Returns type categorization plus optional appearance hint.
     """
-    item: Dict[str, Any] = {
+    item: dict[str, Any] = {
         "id": int(item_id),
         "type": "item",  # default
         "key_id": "",  # sentinel empty string
@@ -243,20 +244,20 @@ def agent_observation_dict(state: State, agent_id: EntityID) -> AgentInfo:
     """
     # Health
     hp = state.health.get(agent_id)
-    health_dict: Dict[str, Any] = {
+    health_dict: dict[str, Any] = {
         "health": int(hp.health) if hp else -1,
         "max_health": int(hp.max_health) if hp else -1,
     }
 
     # Active effects (status)
-    effects: List[Dict[str, Any]] = []
+    effects: list[dict[str, Any]] = []
     status = state.status.get(agent_id)
     if status is not None:
         for eff_id in status.effect_ids:
             effects.append(_serialize_effect(state, eff_id))
 
     # Inventory items
-    inv_items: List[Dict[str, Any]] = []
+    inv_items: list[dict[str, Any]] = []
     inv = state.inventory.get(agent_id)
     if inv:
         for item_eid in inv.item_ids:
@@ -307,7 +308,7 @@ def env_config_observation_dict(state: State) -> ConfigInfo:
     )
 
 
-class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
+class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
     """Gymnasium ``Env`` implementation for the Grid Universe.
 
     Parameters mirror the procedural level generator plus rendering knobs. The
@@ -352,8 +353,8 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         self._initial_state_kwargs = kwargs
 
         # Runtime state
-        self.state: Optional[State] = None
-        self.agent_id: Optional[EntityID] = None
+        self.state: State | None = None
+        self.agent_id: EntityID | None = None
 
         # Basic config
         self.width: int = int(kwargs.get("width", 9))
@@ -366,7 +367,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         # Rendering setup
         render_width: int = render_resolution
         render_height: int = int(self.height / self.width * render_width)
-        self._image_renderer: Optional[ImageRenderer] = None
+        self._image_renderer: ImageRenderer | None = None
 
         # Observation space helpers (Gymnasium has no Integer/Optional)
         base_chars = (
@@ -478,8 +479,8 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         self.reset()
 
     def reset(
-        self, *, seed: Optional[int] = None, options: Optional[Dict[str, object]] = None
-    ) -> Tuple[Union[Observation, Level], Dict[str, object]]:
+        self, *, seed: int | None = None, options: dict[str, object] | None = None
+    ) -> tuple[Observation | Level, dict[str, object]]:
         """Start a new episode.
 
         Args:
@@ -501,7 +502,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
 
     def step(
         self, action: np.integer | int | Action
-    ) -> Tuple[Union[Observation, Level], float, bool, bool, Dict[str, object]]:
+    ) -> tuple[Observation | Level, float, bool, bool, dict[str, object]]:
         """Apply one environment step.
 
         Args:
@@ -542,7 +543,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         info = self._get_info()
         return obs, reward, terminated, truncated, info
 
-    def render(self, mode: Optional[str] = None) -> Optional[PILImage]:  # type: ignore
+    def render(self, mode: str | None = None) -> PILImage | None:  # type: ignore
         """Render the current state.
 
         Args:
@@ -573,7 +574,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         }
         return info_dict
 
-    def _get_obs(self) -> Union[Observation, Level]:
+    def _get_obs(self) -> Observation | Level:
         """Internal helper constructing the observation per observation_type.
 
         observation_type="image": returns Observation (dict with image + info)
@@ -594,7 +595,7 @@ class GridUniverseEnv(gym.Env[Union[Observation, Level], np.integer]):
         info_dict: InfoDict = self.state_info()
         return cast(Observation, {"image": img_np, "info": info_dict})
 
-    def _get_info(self) -> Dict[str, object]:
+    def _get_info(self) -> dict[str, object]:
         """Return the step info (empty placeholder for compatibility)."""
         return {}
 

@@ -21,7 +21,6 @@ status effects such as immunity or phasing can prevent damage application.
 """
 
 from dataclasses import replace
-from typing import Set, Tuple, Dict
 from pyrsistent import PMap, PSet
 from grid_universe.state import State
 from grid_universe.components import Health, Dead, UsageLimit, Position
@@ -33,9 +32,9 @@ from grid_universe.runtime import StepContext
 
 def _build_trail_cache(
     trail: PMap[Position, PSet[EntityID]],
-) -> Dict[EntityID, Set[Position]]:
+) -> dict[EntityID, set[Position]]:
     """Invert trail mapping into entity -> visited positions set."""
-    cache: Dict[EntityID, Set[Position]] = {}
+    cache: dict[EntityID, set[Position]] = {}
     for pos, ids in trail.items():
         for eid in ids:
             cache.setdefault(eid, set()).add(pos)
@@ -57,8 +56,8 @@ def _pure_vacated_origin(
     target_curr: Position,
     damager_prev: Position,
     damager_curr: Position,
-    target_trail: Set[Position],
-    damager_trail: Set[Position],
+    target_trail: set[Position],
+    damager_trail: set[Position],
 ) -> bool:
     """Return True when target steps onto the damager's *just vacated* origin tile.
 
@@ -80,12 +79,12 @@ def _pure_vacated_origin(
     return True
 
 
-def _candidate_damagers(state: State) -> Set[EntityID]:
+def _candidate_damagers(state: State) -> set[EntityID]:
     """Return all entities capable of dealing damage (normal or lethal)."""
     return set(state.damage) | set(state.lethal_damage)
 
 
-DamageHit = Tuple[EntityID, EntityID, int]  # (target, damager, turn)
+DamageHit = tuple[EntityID, EntityID, int]  # (target, damager, turn)
 
 
 def _apply_single_damage(
@@ -96,7 +95,7 @@ def _apply_single_damage(
     dead: PMap[EntityID, Dead],
     usage_limit: PMap[EntityID, UsageLimit],
     damage_hits: PSet[DamageHit],
-) -> Tuple[
+) -> tuple[
     PMap[EntityID, Health],
     PMap[EntityID, Dead],
     PMap[EntityID, UsageLimit],
@@ -134,9 +133,9 @@ def _apply_damage_for_target(
     dead: PMap[EntityID, Dead],
     usage_limit: PMap[EntityID, UsageLimit],
     damage_hits: PSet[DamageHit],
-    damager_ids: Set[EntityID],
-    trail_cache: Dict[EntityID, Set[Position]],
-) -> Tuple[
+    damager_ids: set[EntityID],
+    trail_cache: dict[EntityID, set[Position]],
+) -> tuple[
     PMap[EntityID, Health],
     PMap[EntityID, Dead],
     PMap[EntityID, UsageLimit],

@@ -14,7 +14,7 @@ or define custom functions adhering to the same signature.
 """
 
 import random
-from typing import Sequence, Dict
+from collections.abc import Sequence
 from grid_universe.components import Position
 from grid_universe.actions import Action
 from grid_universe.state import State
@@ -59,7 +59,7 @@ def wrap_around_move_fn(
 
 def mirror_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Position]:
     """Horizontally mirrored movement (LEFT<->RIGHT)."""
-    mirror_map: Dict[Action, Action] = {
+    mirror_map: dict[Action, Action] = {
         Action.LEFT: Action.RIGHT,
         Action.RIGHT: Action.LEFT,
         Action.UP: Action.UP,
@@ -157,7 +157,7 @@ default_move_fn: MoveFn = cardinal_move_fn
 
 
 # Move function registry for per-level assignment
-MOVE_FN_REGISTRY: Dict[str, MoveFn] = {
+MOVE_FN_REGISTRY: dict[str, MoveFn] = {
     "default": default_move_fn,
     "cardinal": cardinal_move_fn,
     "wrap": wrap_around_move_fn,

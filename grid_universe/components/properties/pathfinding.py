@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from enum import StrEnum, auto
-from typing import Optional
 
 from grid_universe.types import EntityID
 
@@ -24,5 +23,5 @@ class Pathfinding:
             toward the target.
     """
 
-    target: Optional[EntityID] = None
+    target: EntityID | None = None
     type: PathfindingType = PathfindingType.PATH

@@ -7,7 +7,6 @@ Each function adheres to the ``ObjectiveFn`` signature, accepting the current
 the win condition has been met.
 """
 
-from typing import Dict
 from grid_universe.state import State
 from grid_universe.types import EntityID, ObjectiveFn
 from grid_universe.utils.ecs import entities_with_components_at
@@ -59,7 +58,7 @@ default_objective_fn: ObjectiveFn = collect_and_exit_objective_fn
 """Default objective function if none is specified in level config."""
 
 
-OBJECTIVE_FN_REGISTRY: Dict[str, ObjectiveFn] = {
+OBJECTIVE_FN_REGISTRY: dict[str, ObjectiveFn] = {
     "default": default_objective_fn,
     "collect": collect_objective_fn,
     "exit": exit_objective_fn,
