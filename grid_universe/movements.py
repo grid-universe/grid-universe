@@ -6,19 +6,17 @@ and return a sequence of ``Position`` instances representing the path taken.
 Different movement functions can simulate various terrain types or movement
 mechanics (e.g., slippery surfaces, wind effects, gravity).
 
-The default movement function is a single-step cardinal move in the intended
-direction.
-
-Users can select from built-in movement functions via the ``MOVE_FN_REGISTRY``
-or define custom functions adhering to the same signature.
+Users can select from built-in movement classes via the ``MOVEMENT_REGISTRY``
+or define custom movements by subclassing ``BaseMovement``.
 """
 
+from dataclasses import dataclass
 import random
 from collections.abc import Sequence
 from grid_universe.components import Position
 from grid_universe.actions import Action
 from grid_universe.state import State
-from grid_universe.types import EntityID, MoveFn
+from grid_universe.types import EntityID, MovementFn
 from grid_universe.utils.grid import is_blocked_at
 
 
@@ -28,6 +26,9 @@ MOVEMENT_MAP = {
     Action.LEFT: (-1, 0),
     Action.RIGHT: (1, 0),
 }
+
+
+# Built-in Movement Functions
 
 
 def cardinal_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Position]:
@@ -66,7 +67,7 @@ def mirror_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Posi
         Action.DOWN: Action.DOWN,
     }
     mirrored = mirror_map[action]
-    return default_move_fn(state, eid, mirrored)
+    return cardinal_move_fn(state, eid, mirrored)
 
 
 def slippery_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Position]:
@@ -152,22 +153,88 @@ def gravity_move_fn(state: State, eid: EntityID, action: Action) -> Sequence[Pos
     return path
 
 
-default_move_fn: MoveFn = cardinal_move_fn
-"""Alias for the default single-step movement function."""
+# Built-in Move Classes
 
 
-# Move function registry for per-level assignment
-MOVE_FN_REGISTRY: dict[str, MoveFn] = {
-    "default": default_move_fn,
-    "cardinal": cardinal_move_fn,
-    "wrap": wrap_around_move_fn,
-    "mirror": mirror_move_fn,
-    "slippery": slippery_move_fn,
-    "windy": windy_move_fn,
-    "gravity": gravity_move_fn,
+@dataclass(frozen=True)
+class BaseMovement:
+    """Base class for movement functions."""
+
+    name: str
+    description: str
+    function: MovementFn
+
+    def __call__(
+        self, state: State, eid: EntityID, action: Action
+    ) -> Sequence[Position]:
+        """Evaluate the movement function."""
+        return self.function(state, eid, action)
+
+
+@dataclass(frozen=True)
+class CardinalMovement(BaseMovement):
+    """Cardinal movement function."""
+
+    name: str = "cardinal"
+    description: str = "Single-step cardinal movement."
+    function: MovementFn = cardinal_move_fn
+
+
+@dataclass(frozen=True)
+class WrapAroundMovement(BaseMovement):
+    """Wrap-around movement function."""
+
+    name: str = "wrap-around"
+    description: str = "Cardinal movement with wrap-around at grid edges."
+    function: MovementFn = wrap_around_move_fn
+
+
+@dataclass(frozen=True)
+class MirrorMovement(BaseMovement):
+    """Mirror movement function."""
+
+    name: str = "mirror"
+    description: str = "Horizontally mirrored movement (LEFT<->RIGHT)."
+    function: MovementFn = mirror_move_fn
+
+
+@dataclass(frozen=True)
+class SlipperyMovement(BaseMovement):
+    """Slippery movement function."""
+
+    name: str = "slippery"
+    description: str = "Cardinal movement with sliding until blocked."
+    function: MovementFn = slippery_move_fn
+
+
+@dataclass(frozen=True)
+class WindyMovement(BaseMovement):
+    """Windy movement function."""
+
+    name: str = "windy"
+    description: str = "Cardinal movement with random wind drift."
+    function: MovementFn = windy_move_fn
+
+
+@dataclass(frozen=True)
+class GravityMovement(BaseMovement):
+    """Gravity movement function."""
+
+    name: str = "gravity"
+    description: str = "Cardinal movement followed by falling downward until blocked."
+    function: MovementFn = gravity_move_fn
+
+
+MOVEMENT_REGISTRY: dict[str, BaseMovement] = {
+    "cardinal": CardinalMovement(),
+    "wrap-around": WrapAroundMovement(),
+    "mirror": MirrorMovement(),
+    "slippery": SlipperyMovement(),
+    "windy": WindyMovement(),
+    "gravity": GravityMovement(),
 }
-"""Registry of built-in movement function names to callables.
+"""Registry of built-in movement objects by name.
 
-Users may supply a custom function directly in a ``State`` or extend this
-registry before level generation.
+Use these movement objects when creating ``State`` instances. Each object
+wraps a movement function along with metadata.
 """

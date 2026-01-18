@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from pyrsistent import PMap, pmap
 
 from grid_universe.components.effects import (
@@ -33,7 +35,11 @@ from grid_universe.components.properties import (
     Rewardable,
     Status,
 )
-from grid_universe.types import EntityID, MoveFn, ObjectiveFn
+from grid_universe.types import EntityID
+
+if TYPE_CHECKING:
+    from grid_universe.objectives import BaseObjective
+    from grid_universe.movements import BaseMovement
 
 
 @dataclass(frozen=True)
@@ -43,8 +49,8 @@ class State:
     Attributes:
         width (int): Grid width in tiles.
         height (int): Grid height in tiles.
-        move_fn (MoveFn): Movement function determining entity step paths.
-        objective_fn (ObjectiveFn): Objective function determining win condition.
+        movement (BaseMovement): Movement function configuration.
+        objective (BaseObjective): Objective configuration.
         immunity (PMap[EntityID, Immunity]): Effect component map.
         phasing (PMap[EntityID, Phasing]): Effect component map.
         speed (PMap[EntityID, Speed]): Effect component map.
@@ -86,8 +92,8 @@ class State:
     # Level
     width: int
     height: int
-    move_fn: "MoveFn"
-    objective_fn: "ObjectiveFn"
+    movement: BaseMovement
+    objective: BaseObjective
 
     # Components
     ## Effects

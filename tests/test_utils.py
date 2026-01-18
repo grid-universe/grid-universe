@@ -1,7 +1,8 @@
 from typing import Dict, Tuple, List, Optional, Type, TypeVar, TypedDict
 from pyrsistent import pmap, pset
 from pyrsistent.typing import PMap
-from grid_universe.objectives import default_objective_fn
+from grid_universe.movements import CardinalMovement, BaseMovement
+from grid_universe.objectives import CollectAndExitObjective, BaseObjective
 from grid_universe.state import State
 from grid_universe.components import (
     Position,
@@ -32,8 +33,7 @@ from grid_universe.components import (
     Status,
 )
 from grid_universe.entity import new_entity_id
-from grid_universe.types import EntityID, MoveFn, ObjectiveFn
-from grid_universe.moves import default_move_fn
+from grid_universe.types import EntityID
 
 
 class MinimalEntities(TypedDict):
@@ -80,8 +80,8 @@ def make_minimal_key_door_state() -> Tuple[State, MinimalEntities]:
     state = State(
         width=3,
         height=3,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=pmap(agent),
         locked=pmap(locked),
@@ -156,8 +156,8 @@ def make_agent_box_wall_state(
     state = State(
         width=width,
         height=height,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=pmap(agent),
         pushable=pmap(pushable),
@@ -199,8 +199,8 @@ def filter_component_map(
 def make_agent_state(
     *,
     agent_pos: Tuple[int, int],
-    move_fn: Optional[MoveFn] = None,
-    objective_fn: Optional[ObjectiveFn] = None,
+    movement: Optional[BaseMovement] = None,
+    objective: Optional[BaseObjective] = None,
     extra_components: Optional[Dict[str, Dict[EntityID, object]]] = None,
     width: int = 5,
     height: int = 5,
@@ -214,13 +214,15 @@ def make_agent_state(
     inventory: Dict[EntityID, Inventory] = {agent_id: Inventory(pset())}
     dead_map: PMap[EntityID, Dead] = pmap({agent_id: Dead()}) if agent_dead else pmap()
 
+    # Set defaults if not provided
+    movement_obj = movement if movement is not None else CardinalMovement()
+    objective_obj = objective if objective is not None else CollectAndExitObjective()
+
     state: State = State(
         width=width,
         height=height,
-        move_fn=move_fn if move_fn is not None else default_move_fn,
-        objective_fn=(
-            objective_fn if objective_fn is not None else default_objective_fn
-        ),
+        movement=movement_obj,
+        objective=objective_obj,
         position=pmap(positions),
         agent=pmap(agent_map),
         pushable=pmap(filter_component_map(extra_components, "pushable", Pushable)),

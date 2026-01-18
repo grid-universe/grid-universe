@@ -4,6 +4,8 @@ from dataclasses import asdict
 from typing import Any, Dict, List, Optional, Tuple
 
 
+from grid_universe.movements import BaseMovement
+from grid_universe.objectives import BaseObjective
 from grid_universe.levels.grid import Level
 from grid_universe.levels.convert import to_state, from_state
 from grid_universe.levels.entity import Entity, FIELD_TO_COMPONENT
@@ -173,8 +175,12 @@ def build_sample_level() -> Level:
     lvl = Level(
         width=7,
         height=5,
-        move_fn=lambda s, e, a: [],
-        objective_fn=lambda s, a: False,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, e, a: []
+        ),
+        objective=BaseObjective(
+            name="test", description="Test", functions=(lambda s, a: False,)
+        ),
         seed=123,
     )
 

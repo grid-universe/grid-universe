@@ -4,7 +4,8 @@ from typing import Tuple, List
 import pytest
 from pyrsistent import pmap
 
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
+from grid_universe.movements import BaseMovement
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.components import (
@@ -50,8 +51,10 @@ def make_entity_on_portal_state(
     return State(
         width=10,
         height=10,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(position),
         agent=pmap(agent),
         pushable=pmap(pushable),
@@ -193,8 +196,10 @@ def test_portal_pair_missing_does_not_crash() -> None:
     state: State = State(
         width=5,
         height=5,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(position),
         agent=pmap({agent_id: Agent()}),
         portal=pmap(portal),
@@ -241,8 +246,10 @@ def test_multiple_entities_on_portal_all_blocked() -> None:
     state = State(
         width=10,
         height=10,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(position),
         agent=pmap({agent_id: Agent()}),
         pushable=pmap({pushable_id: Pushable()}),
@@ -300,8 +307,10 @@ def test_entity_chained_portals_no_infinite_teleport() -> None:
     state: State = State(
         width=10,
         height=10,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(position),
         agent=pmap({agent_id: Agent()}),
         portal=pmap(portal),

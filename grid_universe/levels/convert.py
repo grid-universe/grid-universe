@@ -92,8 +92,8 @@ def _build_state(level: Level, stores: dict[str, dict[EntityID, Any]]) -> State:
     return State(
         width=level.width,
         height=level.height,
-        move_fn=level.move_fn,
-        objective_fn=level.objective_fn,
+        movement=level.movement,
+        objective=level.objective,
         # effects
         immunity=pmap(stores["immunity"]),
         phasing=pmap(stores["phasing"]),
@@ -291,8 +291,8 @@ def from_state(state: State) -> Level:
     level = Level(
         width=state.width,
         height=state.height,
-        move_fn=state.move_fn,
-        objective_fn=state.objective_fn,
+        movement=state.movement,
+        objective=state.objective,
         seed=state.seed,
         turn=state.turn,
         score=state.score,

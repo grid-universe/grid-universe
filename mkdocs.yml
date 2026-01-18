@@ -68,8 +68,8 @@ nav:
       - Gameplay Levels: api/examples/gameplay_levels.md
       - Cipher Levels: api/examples/cipher_objective_levels.md
     - Renderer: api/renderer/texture.md
-    - Moves & Objectives:
-      - Moves: api/moves.md
+    - Movements & Objectives:
+      - Movements: api/movements.md
       - Objectives: api/objectives.md
     - Utils:
       - ecs: api/utils/ecs.md

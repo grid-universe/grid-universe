@@ -51,11 +51,9 @@ from grid_universe.types import (
     EffectLimit,
     EffectLimitAmount,
     EffectType,
-    MoveFn,
-    ObjectiveFn,
 )
-from grid_universe.moves import default_move_fn
-from grid_universe.objectives import default_objective_fn
+from grid_universe.movements import BaseMovement, CardinalMovement
+from grid_universe.objectives import BaseObjective, CollectAndExitObjective
 from grid_universe.components.properties import (
     PathfindingType,
     Direction,
@@ -184,8 +182,8 @@ def generate(
     hazards: list[HazardSpec] = DEFAULT_HAZARDS,
     enemies: list[EnemySpec] = DEFAULT_ENEMIES,
     wall_percentage: float = 0.8,
-    move_fn: MoveFn = default_move_fn,
-    objective_fn: ObjectiveFn = default_objective_fn,
+    movement: BaseMovement = CardinalMovement(),
+    objective: BaseObjective = CollectAndExitObjective(),
     seed: int | None = None,
     turn_limit: int | None = None,
 ) -> State:
@@ -211,8 +209,8 @@ def generate(
         hazards (List[HazardSpec]): Hazard specifications ``(appearance, damage, lethal)``.
         enemies (List[EnemySpec]): Enemy specifications ``(damage, lethal, movement type, speed)``.
         wall_percentage (float): Fraction of original maze walls to retain (``0.0`` => open field, ``1.0`` => perfect maze).
-        move_fn (MoveFn): Movement candidate function injected into the level.
-        objective_fn (ObjectiveFn): Win condition predicate injected into the level.
+        movement (BaseMovement): Movement system configuration for the level.
+        objective (BaseObjective): Win condition configuration for the level.
         seed (int | None): RNG seed for deterministic generation.
 
     Returns:
@@ -228,8 +226,8 @@ def generate(
     level = Level(
         width=width,
         height=height,
-        move_fn=move_fn,
-        objective_fn=objective_fn,
+        movement=movement,
+        objective=objective,
         seed=seed,
         turn_limit=turn_limit,
     )

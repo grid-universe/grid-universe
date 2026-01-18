@@ -5,7 +5,6 @@ from grid_universe.components.properties.position import Position
 from grid_universe.systems.damage import damage_system
 from grid_universe.systems.pathfinding import pathfinding_system
 from grid_universe.systems.status import status_gc_system, status_tick_system
-from grid_universe.types import MoveFn
 from grid_universe.state import State
 from grid_universe.systems.movement import movement_system
 from grid_universe.systems.moving import moving_system
@@ -91,7 +90,6 @@ def _step_move(
         State: Updated state after applying the movement action.
         StepContext: Updated step context after applying the movement action.
     """
-    move_fn: MoveFn = state.move_fn
     current_pos = state.position.get(agent_id)
     if not current_pos:
         return state, ctx  # agent has no position, cannot move
@@ -110,7 +108,7 @@ def _step_move(
             state = replace(state, usage_limit=usage_limit)
 
     for _ in range(move_count):
-        positions = move_fn(state, agent_id, action)
+        positions = state.movement(state, agent_id, action)
         if len(positions) == 0:
             positions = [current_pos]  # no move possible
         for next_pos in positions:

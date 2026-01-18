@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from grid_universe.levels.grid import Level
 from grid_universe.levels.convert import to_state
-from grid_universe.moves import default_move_fn
-from grid_universe.objectives import default_objective_fn, exit_objective_fn
+from grid_universe.movements import CardinalMovement
+from grid_universe.objectives import CollectAndExitObjective, ExitObjective
 from grid_universe.state import State
 from grid_universe.levels.factories import (
     create_floor,
@@ -93,8 +93,8 @@ def build_level_basic_movement(seed: int = 100) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -121,8 +121,8 @@ def build_level_maze_turns(seed: int = 101) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -153,8 +153,8 @@ def build_level_optional_coin(seed: int = 102) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -187,8 +187,8 @@ def build_level_required_one(seed: int = 103) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -217,8 +217,8 @@ def build_level_required_two(seed: int = 104) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -249,8 +249,8 @@ def build_level_key_door(seed: int = 105) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -280,8 +280,8 @@ def build_level_hazard_detour(seed: int = 106) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -312,8 +312,8 @@ def build_level_portal_shortcut(seed: int = 107) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -342,8 +342,8 @@ def build_level_pushable_box(seed: int = 108) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -370,8 +370,8 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -422,8 +422,8 @@ def build_level_power_shield(seed: int = 110) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -456,8 +456,8 @@ def build_level_power_ghost(seed: int = 111) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -487,8 +487,8 @@ def build_level_power_boots(seed: int = 112) -> State:
     lvl = Level(
         w,
         h,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
@@ -539,8 +539,8 @@ def build_level_capstone(seed: int = 113) -> State:
     level = Level(
         width=7,
         height=7,
-        move_fn=default_move_fn,
-        objective_fn=exit_objective_fn,
+        movement=CardinalMovement(),
+        objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
     )

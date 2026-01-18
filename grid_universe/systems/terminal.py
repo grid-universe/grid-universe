@@ -24,7 +24,7 @@ def win_system(state: State, agent_id: EntityID) -> State:
     if not is_valid_state(state, agent_id) or is_terminal_state(state, agent_id):
         return state
 
-    if state.objective_fn(state, agent_id):
+    if state.objective(state, agent_id):
         return replace(state, win=True)
     return state
 

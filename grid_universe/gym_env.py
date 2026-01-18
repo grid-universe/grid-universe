@@ -119,8 +119,8 @@ class StatusInfo(TypedDict):
 class ConfigInfo(TypedDict):
     """Static / semi‑static config describing the active level & functions."""
 
-    move_fn: str
-    objective_fn: str
+    movement: str
+    objective: str
     seed: int  # -1 if None
     width: int
     height: int
@@ -293,13 +293,11 @@ def env_status_observation_dict(state: State) -> StatusInfo:
 
 def env_config_observation_dict(state: State) -> ConfigInfo:
     """Config portion of observation (function names, seed, dimensions)."""
-    move_fn_name = getattr(state.move_fn, "__name__", str(state.move_fn))
-    objective_fn_name = getattr(state.objective_fn, "__name__", str(state.objective_fn))
     return cast(
         ConfigInfo,
         {
-            "move_fn": move_fn_name,
-            "objective_fn": objective_fn_name,
+            "movement": state.movement.name,
+            "objective": state.objective.name,
             "seed": state.seed if state.seed is not None else -1,
             "width": state.width,
             "height": state.height,
@@ -450,8 +448,8 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
                                 ),
                                 "config": spaces.Dict(
                                     {
-                                        "move_fn": text_space_medium,
-                                        "objective_fn": text_space_medium,
+                                        "movement": text_space_medium,
+                                        "objective": text_space_medium,
                                         "seed": int_box(
                                             -1_000_000_000, 1_000_000_000
                                         ),  # use -1 to represent None if needed

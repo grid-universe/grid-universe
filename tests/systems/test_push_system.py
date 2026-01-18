@@ -1,7 +1,8 @@
 from dataclasses import replace
 from typing import Dict, List, Tuple, Optional
 from pyrsistent import pmap, pset
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
+from grid_universe.movements import BaseMovement
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.components import (
@@ -72,15 +73,19 @@ def make_push_state(
     state: State = State(
         width=width,
         height=height,
-        move_fn=lambda s, eid, dir: [
-            Position(
-                s.position[eid].x
-                + (1 if dir == Action.RIGHT else -1 if dir == Action.LEFT else 0),
-                s.position[eid].y
-                + (1 if dir == Action.DOWN else -1 if dir == Action.UP else 0),
-            )
-        ],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test",
+            description="Test movement",
+            function=lambda s, eid, dir: [
+                Position(
+                    s.position[eid].x
+                    + (1 if dir == Action.RIGHT else -1 if dir == Action.LEFT else 0),
+                    s.position[eid].y
+                    + (1 if dir == Action.DOWN else -1 if dir == Action.UP else 0),
+                )
+            ],
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=pmap(agent),
         pushable=pmap(pushable),

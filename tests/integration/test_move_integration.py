@@ -15,7 +15,8 @@ from grid_universe.components import (
     Speed,
     Phasing,
 )
-from grid_universe.objectives import default_objective_fn
+from grid_universe.movements import BaseMovement
+from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.step import step
 from grid_universe.actions import Action
 from pyrsistent import pmap, pset
@@ -90,7 +91,7 @@ def test_move_pushes_box_out_of_bounds() -> None:
 
 @pytest.mark.parametrize("agent_speed_multiplier", [1, 2])
 def test_move_wrapping_enabled(agent_speed_multiplier: int) -> None:
-    from grid_universe.moves import wrap_around_move_fn
+    from grid_universe.movements import WrapAroundMovement
 
     state, agent_id, _, _ = make_agent_box_wall_state(
         agent_pos=(4, 0), width=5, height=1
@@ -100,7 +101,7 @@ def test_move_wrapping_enabled(agent_speed_multiplier: int) -> None:
         speed = pmap({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
         status = pmap({agent_id: Status(effect_ids=pset([speed_effect_id]))})
         state = replace(state, speed=speed, status=status)
-    state = replace(state, move_fn=wrap_around_move_fn)
+    state = replace(state, movement=WrapAroundMovement())
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
     expected_agent_pos = (agent_speed_multiplier - 1) % state.width
@@ -338,8 +339,10 @@ def test_move_with_minimal_state() -> None:
     state = State(
         width=2,
         height=2,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
     )
     action = Action.RIGHT
     new_state = step(state, action, agent_id=9999)

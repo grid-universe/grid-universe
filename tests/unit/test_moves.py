@@ -1,54 +1,59 @@
 # tests/unit/test_moves.py
 
 import pytest
+import random
 from typing import List, Sequence, Tuple, Dict
 from dataclasses import replace
 
-from grid_universe.moves import (
-    default_move_fn,
-    wrap_around_move_fn,
-    mirror_move_fn,
+from grid_universe.movements import (
+    CardinalMovement,
+    WrapAroundMovement,
+    MirrorMovement,
+    SlipperyMovement,
+    GravityMovement,
+    WindyMovement,
+    BaseMovement,
     slippery_move_fn,
     windy_move_fn,
     gravity_move_fn,
 )
 from grid_universe.actions import Action
+from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.components import Position, Blocking
-from grid_universe.objectives import default_objective_fn
-from grid_universe.types import EntityID, MoveFn
+from grid_universe.types import EntityID
 from tests.test_utils import make_agent_state
 
 
 @pytest.mark.parametrize(
-    "move_fn, start, Action, expected",
+    "movement, start, Action, expected",
     [
-        # default_move_fn, all Actions
-        (default_move_fn, (2, 2), Action.UP, (2, 1)),
-        (default_move_fn, (2, 2), Action.DOWN, (2, 3)),
-        (default_move_fn, (2, 2), Action.LEFT, (1, 2)),
-        (default_move_fn, (2, 2), Action.RIGHT, (3, 2)),
-        # default_move_fn, out-of-bounds
-        (default_move_fn, (0, 0), Action.LEFT, (-1, 0)),
-        (default_move_fn, (0, 0), Action.UP, (0, -1)),
-        (default_move_fn, (4, 4), Action.DOWN, (4, 5)),
-        (default_move_fn, (4, 4), Action.RIGHT, (5, 4)),
-        # wrap_around_move_fn, edge wrap
-        (wrap_around_move_fn, (0, 1), Action.LEFT, (4, 1)),
-        (wrap_around_move_fn, (4, 1), Action.RIGHT, (0, 1)),
-        (wrap_around_move_fn, (2, 0), Action.UP, (2, 4)),
-        (wrap_around_move_fn, (2, 4), Action.DOWN, (2, 0)),
-        # wrap_around_move_fn, not at edge (should not wrap)
-        (wrap_around_move_fn, (2, 2), Action.UP, (2, 1)),
-        (wrap_around_move_fn, (2, 2), Action.LEFT, (1, 2)),
-        # mirror_move_fn
-        (mirror_move_fn, (2, 2), Action.UP, (2, 1)),  # UP mirrored to UP
-        (mirror_move_fn, (2, 2), Action.DOWN, (2, 3)),  # DOWN mirrored to DOWN
-        (mirror_move_fn, (2, 2), Action.LEFT, (3, 2)),  # LEFT mirrored to RIGHT
-        (mirror_move_fn, (2, 2), Action.RIGHT, (1, 2)),  # RIGHT mirrored to LEFT
-        # mirror_move_fn, out-of-bounds mirror
-        (mirror_move_fn, (0, 0), Action.LEFT, (1, 0)),  # mirrors to right
+        # CardinalMovement, all Actions
+        (CardinalMovement(), (2, 2), Action.UP, (2, 1)),
+        (CardinalMovement(), (2, 2), Action.DOWN, (2, 3)),
+        (CardinalMovement(), (2, 2), Action.LEFT, (1, 2)),
+        (CardinalMovement(), (2, 2), Action.RIGHT, (3, 2)),
+        # CardinalMovement, out-of-bounds
+        (CardinalMovement(), (0, 0), Action.LEFT, (-1, 0)),
+        (CardinalMovement(), (0, 0), Action.UP, (0, -1)),
+        (CardinalMovement(), (4, 4), Action.DOWN, (4, 5)),
+        (CardinalMovement(), (4, 4), Action.RIGHT, (5, 4)),
+        # WrapAroundMovement, edge wrap
+        (WrapAroundMovement(), (0, 1), Action.LEFT, (4, 1)),
+        (WrapAroundMovement(), (4, 1), Action.RIGHT, (0, 1)),
+        (WrapAroundMovement(), (2, 0), Action.UP, (2, 4)),
+        (WrapAroundMovement(), (2, 4), Action.DOWN, (2, 0)),
+        # WrapAroundMovement, not at edge (should not wrap)
+        (WrapAroundMovement(), (2, 2), Action.UP, (2, 1)),
+        (WrapAroundMovement(), (2, 2), Action.LEFT, (1, 2)),
+        # MirrorMovement
+        (MirrorMovement(), (2, 2), Action.UP, (2, 1)),  # UP mirrored to UP
+        (MirrorMovement(), (2, 2), Action.DOWN, (2, 3)),  # DOWN mirrored to DOWN
+        (MirrorMovement(), (2, 2), Action.LEFT, (3, 2)),  # LEFT mirrored to RIGHT
+        (MirrorMovement(), (2, 2), Action.RIGHT, (1, 2)),  # RIGHT mirrored to LEFT
+        # MirrorMovement, out-of-bounds mirror
+        (MirrorMovement(), (0, 0), Action.LEFT, (1, 0)),  # mirrors to right
         (
-            mirror_move_fn,
+            MirrorMovement(),
             (0, 0),
             Action.RIGHT,
             (-1, 0),
@@ -56,7 +61,7 @@ from tests.test_utils import make_agent_state
     ],
 )
 def test_simple_moves(
-    move_fn: MoveFn,
+    movement: BaseMovement,
     start: Tuple[int, int],
     Action: Action,
     expected: Tuple[int, int],
@@ -64,42 +69,48 @@ def test_simple_moves(
     width: int = 5
     height: int = 5
     state, agent_id = make_agent_state(
-        agent_pos=start, move_fn=move_fn, width=width, height=height
+        agent_pos=start,
+        movement=movement,
+        width=width,
+        height=height,
     )
-    positions: Sequence[Position] = move_fn(state, agent_id, Action)
+    positions: Sequence[Position] = movement(state, agent_id, Action)
     assert positions and positions[0] == Position(*expected)
 
 
 @pytest.mark.parametrize(
-    "move_fn",
+    "movement",
     [
-        default_move_fn,
-        wrap_around_move_fn,
-        mirror_move_fn,
-        slippery_move_fn,
-        windy_move_fn,
-        gravity_move_fn,
+        CardinalMovement(),
+        WrapAroundMovement(),
+        MirrorMovement(),
+        SlipperyMovement(),
+        WindyMovement(),
+        GravityMovement(),
     ],
 )
 def test_move_fn_missing_position_raises(
-    move_fn: MoveFn,
+    movement: BaseMovement,
 ) -> None:
     width: int = 3
     height: int = 3
     state, agent_id = make_agent_state(
-        agent_pos=(1, 1), move_fn=move_fn, width=width, height=height
+        agent_pos=(1, 1),
+        movement=movement,
+        width=width,
+        height=height,
     )
     state = replace(state, position=state.position.remove(agent_id))
     with pytest.raises(KeyError):
-        move_fn(state, agent_id, Action.UP)
+        movement(state, agent_id, Action.UP)
 
 
 def test_wrap_around_move_fn_raises_on_missing_size() -> None:
-    state, agent_id = make_agent_state(agent_pos=(1, 1))
+    state, agent_id = make_agent_state(agent_pos=(1, 1), movement=WrapAroundMovement())
     # Remove width/height using dataclasses.replace (frozen dataclass)
     state = replace(state, width=None, height=None)  # type: ignore
     with pytest.raises(ValueError):
-        wrap_around_move_fn(state, agent_id, Action.UP)
+        state.movement(state, agent_id, Action.UP)
 
 
 @pytest.mark.parametrize(
@@ -138,8 +149,8 @@ def test_slippery_move_fn(
     }
     state, agent_id = make_agent_state(
         agent_pos=start,
-        move_fn=slippery_move_fn,
-        objective_fn=default_objective_fn,
+        movement=SlipperyMovement(),
+        objective=CollectAndExitObjective(),
         width=width,
         height=height,
         extra_components=extra,
@@ -177,8 +188,8 @@ def test_gravity_move_fn(
     }
     state, agent_id = make_agent_state(
         agent_pos=start,
-        move_fn=gravity_move_fn,
-        objective_fn=default_objective_fn,
+        movement=GravityMovement(),
+        objective=CollectAndExitObjective(),
         width=width,
         height=height,
         extra_components=extra,
@@ -211,8 +222,6 @@ def test_windy_move_fn(
     blockers: List[Tuple[int, int]],
     expected: List[Tuple[int, int]],
 ) -> None:
-    import grid_universe.moves as moves_mod
-
     class DummyRng:
         def random(self) -> float:
             return wind_first
@@ -220,7 +229,7 @@ def test_windy_move_fn(
         def choice(self, *_) -> Tuple[int, int]:
             return wind_dir
 
-    monkeypatch.setattr(moves_mod.random, "Random", lambda *_args, **_kw: DummyRng())
+    monkeypatch.setattr(random, "Random", lambda *_args, **_kw: DummyRng())
     width: int = 5
     height: int = 5
     blocking_entities: Dict[EntityID, Blocking] = {}
@@ -235,8 +244,8 @@ def test_windy_move_fn(
     }
     state, agent_id = make_agent_state(
         agent_pos=start,
-        move_fn=windy_move_fn,
-        objective_fn=default_objective_fn,
+        movement=WindyMovement(),
+        objective=CollectAndExitObjective(),
         width=width,
         height=height,
         extra_components=extra,

@@ -9,13 +9,13 @@ from grid_universe.components import (
     LethalDamage,
     Health,
 )
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.types import EntityID
-from grid_universe.moves import (
-    wrap_around_move_fn,
-    slippery_move_fn,
-    windy_move_fn,
-    gravity_move_fn,
+from grid_universe.movements import (
+    WrapAroundMovement,
+    SlipperyMovement,
+    WindyMovement,
+    GravityMovement,
 )
 from grid_universe.step import step
 from tests.test_utils import make_agent_state
@@ -36,7 +36,7 @@ def test_wrap_around_at_edges(
     start: Tuple[int, int], action: Action, expected: Tuple[int, int]
 ) -> None:
     state, agent_id = make_agent_state(
-        agent_pos=start, move_fn=wrap_around_move_fn, width=5, height=5
+        agent_pos=start, movement=WrapAroundMovement(), width=5, height=5
     )
     state2 = step(state, action, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == expected
@@ -46,7 +46,7 @@ def test_wrap_around_blocked_destination() -> None:
     wall_id: EntityID = 2
     extra = {"position": {wall_id: Position(0, 2)}, "blocking": {wall_id: Blocking()}}
     state, agent_id = make_agent_state(
-        agent_pos=(4, 2), extra_components=extra, move_fn=wrap_around_move_fn, width=5
+        agent_pos=(4, 2), extra_components=extra, movement=WrapAroundMovement(), width=5
     )
     state2 = step(
         state,
@@ -64,7 +64,7 @@ def test_wrap_around_push_box() -> None:
         "pushable": {box_id: Pushable()},
     }
     state, agent_id = make_agent_state(
-        agent_pos=(4, 2), extra_components=extra, move_fn=wrap_around_move_fn, width=5
+        agent_pos=(4, 2), extra_components=extra, movement=WrapAroundMovement(), width=5
     )
     state2 = step(
         state,
@@ -83,7 +83,7 @@ def test_wrap_around_push_box_from_edge():
         "pushable": {box_id: Pushable()},
     }
     state, agent_id = make_agent_state(
-        agent_pos=(4, 2), extra_components=extra, move_fn=wrap_around_move_fn, width=5
+        agent_pos=(4, 2), extra_components=extra, movement=WrapAroundMovement(), width=5
     )
     state2 = step(
         state,
@@ -101,7 +101,7 @@ def test_wrap_around_win_on_exit() -> None:
         "exit": {exit_id: Exit()},
     }
     state, agent_id = make_agent_state(
-        agent_pos=(4, 2), extra_components=extra, move_fn=wrap_around_move_fn, width=5
+        agent_pos=(4, 2), extra_components=extra, movement=WrapAroundMovement(), width=5
     )
     state2 = step(
         state,
@@ -123,8 +123,8 @@ def test_wrap_around_lose_on_hazard() -> None:
     state, agent_id = make_agent_state(
         agent_pos=(4, 2),
         extra_components=extra,
-        move_fn=wrap_around_move_fn,
-        objective_fn=default_objective_fn,
+        movement=WrapAroundMovement(),
+        objective=CollectAndExitObjective(),
         width=5,
         agent_id=agent_id,
     )
@@ -144,7 +144,7 @@ def test_slippery_slides_until_blocked() -> None:
     wall_id: EntityID = 2
     extra = {"position": {wall_id: Position(4, 2)}, "blocking": {wall_id: Blocking()}}
     state, agent_id = make_agent_state(
-        agent_pos=(1, 2), extra_components=extra, move_fn=slippery_move_fn, width=5
+        agent_pos=(1, 2), extra_components=extra, movement=SlipperyMovement(), width=5
     )
     state2 = step(
         state,
@@ -157,7 +157,7 @@ def test_slippery_slides_until_blocked() -> None:
 
 def test_slippery_slides_to_edge() -> None:
     state, agent_id = make_agent_state(
-        agent_pos=(1, 2), move_fn=slippery_move_fn, width=5
+        agent_pos=(1, 2), movement=SlipperyMovement(), width=5
     )
     state2 = step(
         state,
@@ -175,7 +175,7 @@ def test_slippery_push_box_and_slide() -> None:
         "pushable": {box_id: Pushable()},
     }
     state, agent_id = make_agent_state(
-        agent_pos=(1, 2), extra_components=extra, move_fn=slippery_move_fn, width=5
+        agent_pos=(1, 2), extra_components=extra, movement=SlipperyMovement(), width=5
     )
     state2 = step(
         state,
@@ -194,7 +194,7 @@ def test_slippery_slide_win_on_exit() -> None:
         "exit": {exit_id: Exit()},
     }
     state, agent_id = make_agent_state(
-        agent_pos=(1, 2), extra_components=extra, move_fn=slippery_move_fn, width=5
+        agent_pos=(1, 2), extra_components=extra, movement=SlipperyMovement(), width=5
     )
     state2 = step(
         state,
@@ -216,8 +216,8 @@ def test_slippery_slide_lose_on_hazard() -> None:
     state, agent_id = make_agent_state(
         agent_pos=(1, 2),
         extra_components=extra,
-        move_fn=slippery_move_fn,
-        objective_fn=default_objective_fn,
+        movement=SlipperyMovement(),
+        objective=CollectAndExitObjective(),
         width=5,
         agent_id=agent_id,
     )
@@ -243,10 +243,10 @@ class DummyRng:
 
 def test_windy_random_move(monkeypatch) -> None:
     # Monkeypatch random to always trigger wind to the right
-    import grid_universe.moves as moves_mod
+    import grid_universe.movements as moves_mod
 
     monkeypatch.setattr(moves_mod.random, "Random", lambda *_args, **_kw: DummyRng())
-    state, agent_id = make_agent_state(agent_pos=(1, 1), move_fn=windy_move_fn)
+    state, agent_id = make_agent_state(agent_pos=(1, 1), movement=WindyMovement())
     state2 = step(
         state,
         Action.DOWN,
@@ -258,12 +258,12 @@ def test_windy_random_move(monkeypatch) -> None:
 
 def test_windy_blocked_by_wall(monkeypatch) -> None:
     wall_id: EntityID = 2
-    import grid_universe.moves as moves_mod
+    import grid_universe.movements as moves_mod
 
     monkeypatch.setattr(moves_mod.random, "Random", lambda *_args, **_kw: DummyRng())
     extra = {"position": {wall_id: Position(2, 2)}, "blocking": {wall_id: Blocking()}}
     state, agent_id = make_agent_state(
-        agent_pos=(1, 1), extra_components=extra, move_fn=windy_move_fn
+        agent_pos=(1, 1), extra_components=extra, movement=WindyMovement()
     )
     state2 = step(
         state,
@@ -276,7 +276,7 @@ def test_windy_blocked_by_wall(monkeypatch) -> None:
 
 def test_windy_win_on_exit(monkeypatch) -> None:
     exit_id: EntityID = 5
-    import grid_universe.moves as moves_mod
+    import grid_universe.movements as moves_mod
 
     monkeypatch.setattr(moves_mod.random, "Random", lambda *_args, **_kw: DummyRng())
     extra = {
@@ -284,7 +284,7 @@ def test_windy_win_on_exit(monkeypatch) -> None:
         "exit": {exit_id: Exit()},
     }
     state, agent_id = make_agent_state(
-        agent_pos=(1, 1), extra_components=extra, move_fn=windy_move_fn
+        agent_pos=(1, 1), extra_components=extra, movement=WindyMovement()
     )
     state2 = step(
         state,
@@ -298,7 +298,7 @@ def test_windy_win_on_exit(monkeypatch) -> None:
 def test_windy_lose_on_hazard(monkeypatch) -> None:
     agent_id: EntityID = 1
     hazard_id: EntityID = 20
-    import grid_universe.moves as moves_mod
+    import grid_universe.movements as moves_mod
 
     monkeypatch.setattr(moves_mod.random, "Random", lambda *_args, **_kw: DummyRng())
     extra = {
@@ -309,8 +309,8 @@ def test_windy_lose_on_hazard(monkeypatch) -> None:
     state, agent_id = make_agent_state(
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=windy_move_fn,
-        objective_fn=default_objective_fn,
+        movement=WindyMovement(),
+        objective=CollectAndExitObjective(),
         agent_id=agent_id,
     )
     state2 = step(
@@ -329,7 +329,7 @@ def test_gravity_falls_until_blocked() -> None:
     wall_id: EntityID = 2
     extra = {"position": {wall_id: Position(1, 4)}, "blocking": {wall_id: Blocking()}}
     state, agent_id = make_agent_state(
-        agent_pos=(1, 1), extra_components=extra, move_fn=gravity_move_fn, height=5
+        agent_pos=(1, 1), extra_components=extra, movement=GravityMovement(), height=5
     )
     state2 = step(
         state,
@@ -342,7 +342,7 @@ def test_gravity_falls_until_blocked() -> None:
 
 def test_gravity_stops_at_bottom() -> None:
     state, agent_id = make_agent_state(
-        agent_pos=(1, 1), move_fn=gravity_move_fn, height=5
+        agent_pos=(1, 1), movement=GravityMovement(), height=5
     )
     state2 = step(
         state,
@@ -360,7 +360,7 @@ def test_gravity_win_by_falling_on_exit() -> None:
         "exit": {exit_id: Exit()},
     }
     state, agent_id = make_agent_state(
-        agent_pos=(1, 1), extra_components=extra, move_fn=gravity_move_fn, height=5
+        agent_pos=(1, 1), extra_components=extra, movement=GravityMovement(), height=5
     )
     state2 = step(
         state,
@@ -382,8 +382,8 @@ def test_gravity_lose_by_falling_on_hazard() -> None:
     state, agent_id = make_agent_state(
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=gravity_move_fn,
-        objective_fn=default_objective_fn,
+        movement=GravityMovement(),
+        objective=CollectAndExitObjective(),
         height=5,
         agent_id=agent_id,
     )

@@ -15,7 +15,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
-from grid_universe.types import MoveFn, ObjectiveFn
+from grid_universe.movements import BaseMovement
+from grid_universe.objectives import BaseObjective
 from .entity import BaseEntity
 
 # Grid coordinate alias (x, y)
@@ -28,7 +29,7 @@ class Level:
     Grid-centric, mutable level representation.
 
     - ``grid[y][x]`` is a list of `grid_universe.levels.entity.BaseEntity` instances at that cell.
-    - The level stores configuration such as ``move_fn``, ``objective_fn``, ``seed``, and simple
+    - The level stores configuration such as ``movement``, ``objective``, ``seed``, and simple
         meta (turn/score/etc.).
     - Use `grid_universe.levels.convert.to_state` / `grid_universe.levels.convert.from_state`
         to convert between ``Level`` and the immutable ECS `grid_universe.state.State`.
@@ -36,8 +37,8 @@ class Level:
 
     width: int
     height: int
-    move_fn: MoveFn
-    objective_fn: ObjectiveFn
+    movement: BaseMovement
+    objective: BaseObjective
     seed: int | None = None
 
     # 2D array of cells: each cell holds a list of EntityObject

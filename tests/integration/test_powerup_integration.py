@@ -2,7 +2,8 @@ from dataclasses import replace
 from typing import Dict, Set, Tuple, Optional
 
 from pyrsistent import pmap, pset
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
+from grid_universe.movements import BaseMovement
 from grid_universe.state import State
 from grid_universe.components import (
     Agent,
@@ -89,15 +90,19 @@ def make_agent_and_powerup_state(
     state: State = State(
         width=4,
         height=2,
-        move_fn=lambda s, eid, d: [
-            Position(
-                s.position[eid].x
-                + (1 if d == Action.RIGHT else -1 if d == Action.LEFT else 0),
-                s.position[eid].y
-                + (1 if d == Action.DOWN else -1 if d == Action.UP else 0),
-            )
-        ],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test",
+            description="Test",
+            function=lambda s, eid, d: [
+                Position(
+                    s.position[eid].x
+                    + (1 if d == Action.RIGHT else -1 if d == Action.LEFT else 0),
+                    s.position[eid].y
+                    + (1 if d == Action.DOWN else -1 if d == Action.UP else 0),
+                )
+            ],
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=pmap(agent),
         collectible=pmap(collectible),

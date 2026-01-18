@@ -1,7 +1,8 @@
 from dataclasses import replace
 from typing import Dict, List, Tuple
 from pyrsistent import pmap, pset, PMap
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
+from grid_universe.movements import BaseMovement
 from grid_universe.systems.terminal import win_system, lose_system
 from grid_universe.components import (
     Agent,
@@ -55,8 +56,10 @@ def make_terminal_state(
     state: State = State(
         width=10,
         height=10,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=pmap(agent),
         exit=pmap({exit_id: Exit()}),

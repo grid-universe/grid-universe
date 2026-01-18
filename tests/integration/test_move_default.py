@@ -1,4 +1,4 @@
-from typing import Tuple, Sequence
+from typing import Tuple
 import pytest
 
 from pyrsistent import pset
@@ -14,17 +14,17 @@ from grid_universe.components import (
     Status,
     Phasing,
 )
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.types import EntityID
 from grid_universe.step import step
-from grid_universe.moves import default_move_fn
+from grid_universe.movements import CardinalMovement, BaseMovement
 from tests.test_utils import make_agent_state
 
 
 def test_agent_moves_right() -> None:
     agent_id: EntityID = 1
     state, _ = make_agent_state(
-        agent_id=agent_id, agent_pos=(1, 1), move_fn=default_move_fn
+        agent_id=agent_id, agent_pos=(1, 1), movement=CardinalMovement()
     )
     state2 = step(
         state,
@@ -48,7 +48,7 @@ def test_agent_moves_in_all_actions(
 ) -> None:
     agent_id: EntityID = 1
     state, _ = make_agent_state(
-        agent_id=agent_id, agent_pos=start, move_fn=default_move_fn
+        agent_id=agent_id, agent_pos=start, movement=CardinalMovement()
     )
     state2 = step(state, action, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == expected
@@ -66,7 +66,7 @@ def test_agent_moves_in_all_actions(
 def test_agent_blocked_by_edge(start: Tuple[int, int], action: Action) -> None:
     agent_id: EntityID = 1
     state, _ = make_agent_state(
-        agent_id=agent_id, agent_pos=start, move_fn=default_move_fn
+        agent_id=agent_id, agent_pos=start, movement=CardinalMovement()
     )
     state2 = step(state, action, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == start
@@ -80,8 +80,8 @@ def test_agent_blocked_by_wall() -> None:
         agent_id=agent_id,
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
     )
     state2 = step(
         state,
@@ -102,8 +102,8 @@ def test_agent_pushes_single_box() -> None:
         agent_id=agent_id,
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
     )
     state2 = step(
         state,
@@ -126,8 +126,8 @@ def test_agent_blocked_by_chain_of_boxes() -> None:
         agent_id=agent_id,
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
     )
     state2 = step(
         state,
@@ -153,8 +153,8 @@ def test_agent_with_ghost_moves_through_wall() -> None:
         agent_id=agent_id,
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
     )
     state2 = step(
         state,
@@ -175,8 +175,8 @@ def test_agent_with_double_speed_moves_two_steps() -> None:
         agent_id=agent_id,
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
     )
     state2 = step(
         state,
@@ -197,8 +197,8 @@ def test_agent_wins_on_exit() -> None:
         agent_id=agent_id,
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
     )
     state2 = step(
         state,
@@ -221,8 +221,8 @@ def test_agent_loses_on_hazard() -> None:
         agent_id=agent_id,
         agent_pos=(1, 1),
         extra_components=extra,
-        move_fn=default_move_fn,
-        objective_fn=default_objective_fn,
+        movement=CardinalMovement(),
+        objective=CollectAndExitObjective(),
     )
     state2 = step(
         state,
@@ -235,12 +235,13 @@ def test_agent_loses_on_hazard() -> None:
 
 def test_agent_move_fn_returns_empty_list() -> None:
     agent_id: EntityID = 1
-
-    def empty_move_fn(state, eid, action) -> Sequence[Position]:
-        return []
-
+    empty_movement = BaseMovement(
+        name="empty",
+        description="Movement that returns empty list",
+        function=lambda state, eid, action: [],
+    )
     state, _ = make_agent_state(
-        agent_id=agent_id, agent_pos=(1, 1), move_fn=empty_move_fn
+        agent_id=agent_id, agent_pos=(1, 1), movement=empty_movement
     )
     state2 = step(
         state,

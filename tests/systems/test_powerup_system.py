@@ -1,7 +1,8 @@
 from dataclasses import replace
 from typing import List, Dict, Tuple, Optional, TypedDict, Literal
 from pyrsistent import pmap, pset, PMap, PSet
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
+from grid_universe.movements import BaseMovement
 from grid_universe.state import State
 from grid_universe.components import (
     Status,
@@ -81,8 +82,10 @@ def build_agent_with_effects(
     state: State = State(
         width=3,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap({agent_id: Position(0, 0)}),
         agent=pmap(agent),
         inventory=pmap(inventory),
@@ -232,8 +235,10 @@ def test_status_system_no_agents() -> None:
     state = State(
         width=1,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
     )
     state2 = status_system(state)
     assert state2.status == pmap()
@@ -276,8 +281,10 @@ def test_status_cleanup_for_missing_effect() -> None:
     state = State(
         width=1,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap({agent_id: Position(0, 0)}),
         agent=pmap({agent_id: Agent()}),
         status=pmap({agent_id: Status(effect_ids=pset([ghost_effect]))}),

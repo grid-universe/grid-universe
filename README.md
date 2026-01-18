@@ -12,7 +12,7 @@ Pure Entity–Component–System with functional systems, procedural generators,
 </p>
 
 <p align="center">
-    <em>Immutable ECS gridworld with procedural generation, deterministic replay, Gymnasium wrapper, and pluggable movement & objectives.</em>
+    <em>Immutable ECS gridworld with procedural generation, deterministic replay, Gymnasium wrapper, and pluggable movements & objectives.</em>
 </p>
 
 <p align="center">
@@ -127,9 +127,9 @@ Entities = integer IDs; components = persistent maps; systems = pure `State → 
 
 ---
 
-**Movement Functions** (via `MOVE_FN_REGISTRY`): `default`, `wrap`, `slippery`, `windy`, `gravity`
+**Movements** (via `MOVEMENT_REGISTRY`): `cardinal`, `wrap`, `slippery`, `windy`, `gravity`, `mirror`
 
-**Objective Functions** (via `OBJECTIVE_FN_REGISTRY`): `default`, `exit`, `collect`, `collect_exit`, `unlock`, `push`
+**Objectives** (via `OBJECTIVE_REGISTRY`): `exit`, `collect`, `collect_and_exit`, `unlock`, `push`
 
 **Gym Env**: `Discrete(7)` actions, `(H,W,4)` RGBA image obs + info dict (agent health/effects/inventory, score, turn). Reward = delta score.
 
@@ -137,8 +137,8 @@ Entities = integer IDs; components = persistent maps; systems = pure `State → 
 
 ## Extending
 
-- **Movement**: `MoveFn(state, eid, action) -> Sequence[Position]` → register in `MOVE_FN_REGISTRY`
-- **Objective**: `ObjectiveFn(state, agent_id) -> bool` → register in `OBJECTIVE_FN_REGISTRY`  
+- **Movement**: Subclass `BaseMovement` with `name`, `description`, `function` → register in `MOVEMENT_REGISTRY`
+- **Objective**: Subclass `BaseObjective` with `name`, `description`, `functions` → register in `OBJECTIVE_REGISTRY`  
 - **Component**: Add dataclass to `State` + mutable `Entity` + converters
 - **System**: Pure `State → State`; insert in `step()` order
 - **Rendering**: Extend `DEFAULT_IMAGE_MAP` or add recolor rules
@@ -153,17 +153,17 @@ Entities = integer IDs; components = persistent maps; systems = pure `State → 
 
 ```
 grid_universe/
-  state.py, step.py       # Core: immutable State, step reducer
-  actions.py              # Action enum
-  moves.py, objectives.py # Registries for movement/objective functions
-  gym_env.py              # Gymnasium wrapper
-  components/             # properties/ (Position, Health, etc.), effects/ (Speed, Immunity, etc.)
-  systems/                # Pure systems (movement, portal, damage, collectible, etc.)
-  levels/                 # Mutable Level builder, factories, State conversion
-  renderer/               # Image renderer, texture loading
-  utils/                  # ECS, grid, status, inventory, maze gen, etc.
-  examples/               # maze.py, gameplay_levels.py, cipher_objective_levels.py
-  assets/                 # Texture packs
+  state.py, step.py           # Core: immutable State, step reducer
+  actions.py                  # Action enum
+  movements.py, objectives.py # Registries for movements/objectives
+  gym_env.py                  # Gymnasium wrapper
+  components/                 # properties/ (Position, Health, etc.), effects/ (Speed, Immunity, etc.)
+  systems/                    # Pure systems (movement, portal, damage, collectible, etc.)
+  levels/                     # Mutable Level builder, factories, State conversion
+  renderer/                   # Image renderer, texture loading
+  utils/                      # ECS, grid, status, inventory, maze gen, etc.
+  examples/                   # maze.py, gameplay_levels.py, cipher_objective_levels.py
+  assets/                     # Texture packs
 tests/, docs/, scripts/
 ```
 

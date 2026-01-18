@@ -2,7 +2,8 @@ from dataclasses import replace
 from typing import Dict, List, Tuple, Optional
 from pyrsistent import pmap, pset
 from grid_universe.actions import Action
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
+from grid_universe.movements import BaseMovement
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.components import (
@@ -50,8 +51,10 @@ def make_agent_tile_state(
     state: State = State(
         width=3,
         height=1,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=pmap(agent_map),
         collectible=pmap(collectible_map),
@@ -204,8 +207,10 @@ def test_multiple_agents_separate_scores() -> None:
     state: State = State(
         width=2,
         height=1,
-        move_fn=lambda s, eid, d: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, d: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=pmap(agent_map),
         rewardable=pmap(rewardable),

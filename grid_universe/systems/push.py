@@ -6,7 +6,7 @@ provided the destination tile is unblocked.
 """
 
 from dataclasses import replace
-from grid_universe.moves import wrap_around_move_fn
+from grid_universe.movements import wrap_around_move_fn
 from grid_universe.state import State
 from grid_universe.components import Position
 from grid_universe.types import EntityID
@@ -31,7 +31,7 @@ def compute_destination(
     dest_x = next_pos.x + dx
     dest_y = next_pos.y + dy
 
-    if state.move_fn is wrap_around_move_fn:
+    if state.movement.function is wrap_around_move_fn:
         return wrap_position(dest_x, dest_y, state.width, state.height)
 
     target_position = Position(dest_x, dest_y)

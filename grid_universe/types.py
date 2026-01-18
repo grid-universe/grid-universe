@@ -3,7 +3,7 @@ from enum import StrEnum, auto
 from typing import TYPE_CHECKING
 
 
-# Forward declaration for MoveFn typing to avoid circular imports:
+# Forward declaration for MovementFn typing to avoid circular imports:
 if TYPE_CHECKING:
     from grid_universe.state import State
     from grid_universe.actions import Action
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 EntityID = int
 """Type alias for entity identifiers."""
 
-MoveFn = Callable[["State", "EntityID", "Action"], Sequence["Position"]]
+MovementFn = Callable[["State", "EntityID", "Action"], Sequence["Position"]]
 """Function type for computing possible moves for an entity."""
 
 ObjectiveFn = Callable[["State", "EntityID"], bool]

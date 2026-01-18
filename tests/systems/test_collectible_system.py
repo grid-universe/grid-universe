@@ -1,6 +1,7 @@
 from typing import Tuple, Dict
 from pyrsistent.typing import PMap
-from grid_universe.objectives import default_objective_fn
+from grid_universe.objectives import CollectAndExitObjective
+from grid_universe.movements import BaseMovement
 from grid_universe.systems.collectible import collectible_system
 from grid_universe.components import (
     Agent,
@@ -51,8 +52,12 @@ def make_collectible_state(
     state = State(
         width=3,
         height=1,
-        move_fn=lambda s, eid, dir: [Position(pos[eid].x + 1, 0)],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test",
+            description="Test",
+            function=lambda s, eid, dir: [Position(pos[eid].x + 1, 0)],
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=agent,
         collectible=collectible,
@@ -118,8 +123,10 @@ def test_pickup_multiple_collectibles_all_types() -> None:
     state = State(
         width=3,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=agent,
         collectible=collectible,
@@ -152,8 +159,10 @@ def test_pickup_no_inventory_does_nothing() -> None:
     state = State(
         width=2,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=agent,
         collectible=collectible,
@@ -175,8 +184,10 @@ def test_pickup_nothing_present_does_nothing() -> None:
     state = State(
         width=1,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap({agent_id: Position(0, 0)}),
         agent=agent,
         inventory=inventory,
@@ -202,8 +213,10 @@ def test_pickup_required_collectible() -> None:
     state = State(
         width=2,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap(pos),
         agent=agent,
         collectible=collectible,
@@ -227,8 +240,10 @@ def test_pickup_after_collectible_already_removed() -> None:
     state = State(
         width=1,
         height=1,
-        move_fn=lambda s, eid, dir: [],
-        objective_fn=default_objective_fn,
+        movement=BaseMovement(
+            name="test", description="Test", function=lambda s, eid, dir: []
+        ),
+        objective=CollectAndExitObjective(),
         position=pmap({agent_id: Position(0, 0)}),
         agent=agent,
         inventory=inventory,
