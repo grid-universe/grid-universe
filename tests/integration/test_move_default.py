@@ -215,7 +215,7 @@ def test_agent_loses_on_hazard() -> None:
     extra = {
         "position": {hazard_id: Position(2, 1)},
         "lethal_damage": {hazard_id: LethalDamage()},
-        "health": {agent_id: Health(health=1, max_health=1)},
+        "health": {agent_id: Health(current_health=1, max_health=1)},
     }
     state, _ = make_agent_state(
         agent_id=agent_id,

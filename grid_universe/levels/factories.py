@@ -49,7 +49,7 @@ def create_agent(health: int = 5) -> Entity:
     return Entity(
         agent=Agent(),
         appearance=Appearance(name="human", priority=0),
-        health=Health(health=health, max_health=health),
+        health=Health(current_health=health, max_health=health),
         collidable=Collidable(),
         inventory=Inventory(pset()),
         status=Status(pset()),

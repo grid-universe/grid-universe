@@ -7,9 +7,9 @@ class Health:
     Health component.
 
     Attributes:
-        health: Current health points.
+        current_health: Current health points.
         max_health: Maximum health points.
     """
 
-    health: int
+    current_health: int
     max_health: int

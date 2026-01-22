@@ -65,7 +65,7 @@ def make_agent_and_powerup_state(
     collectible: Dict[EntityID, Collectible] = {powerup_id: Collectible()}
     status: Dict[EntityID, Status] = {agent_id: Status(effect_ids=pset())}
     health: Dict[EntityID, Health] = {
-        agent_id: Health(health=agent_health, max_health=agent_health)
+        agent_id: Health(current_health=agent_health, max_health=agent_health)
     }
     immunity: Dict[EntityID, Immunity] = {}
     phasing: Dict[EntityID, Phasing] = {}
@@ -339,10 +339,10 @@ def test_immunity_blocks_hazard_functionally() -> None:
     )
     # Damage should be blocked, health stays 7
     state = step(state, Action.WAIT, agent_id=agent_id)
-    assert state.health[agent_id].health == 7
+    assert state.health[agent_id].current_health == 7
     # On next turn, immunity is gone, next damage applies
     state = step(state, Action.WAIT, agent_id=agent_id)
-    assert state.health[agent_id].health == 2
+    assert state.health[agent_id].current_health == 2
 
 
 def test_phasing_allows_movement_through_blocking_functionally() -> None:

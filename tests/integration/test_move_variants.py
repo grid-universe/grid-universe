@@ -116,7 +116,7 @@ def test_wrap_around_lose_on_hazard() -> None:
     agent_id: EntityID = 1
     hazard_id: EntityID = 20
     extra = {
-        "health": {agent_id: Health(health=1, max_health=1)},
+        "health": {agent_id: Health(current_health=1, max_health=1)},
         "position": {hazard_id: Position(0, 2)},
         "lethal_damage": {hazard_id: LethalDamage()},
     }
@@ -209,7 +209,7 @@ def test_slippery_slide_lose_on_hazard() -> None:
     agent_id: EntityID = 1
     hazard_id: EntityID = 20
     extra = {
-        "health": {agent_id: Health(health=1, max_health=1)},
+        "health": {agent_id: Health(current_health=1, max_health=1)},
         "position": {hazard_id: Position(4, 2)},
         "lethal_damage": {hazard_id: LethalDamage()},
     }
@@ -302,7 +302,7 @@ def test_windy_lose_on_hazard(monkeypatch) -> None:
 
     monkeypatch.setattr(moves_mod.random, "Random", lambda *_args, **_kw: DummyRng())
     extra = {
-        "health": {agent_id: Health(health=1, max_health=1)},
+        "health": {agent_id: Health(current_health=1, max_health=1)},
         "position": {hazard_id: Position(2, 2)},
         "lethal_damage": {hazard_id: LethalDamage()},
     }
@@ -375,7 +375,7 @@ def test_gravity_lose_by_falling_on_hazard() -> None:
     agent_id: EntityID = 1
     hazard_id: EntityID = 20
     extra = {
-        "health": {agent_id: Health(health=1, max_health=1)},
+        "health": {agent_id: Health(current_health=1, max_health=1)},
         "position": {hazard_id: Position(1, 4)},
         "lethal_damage": {hazard_id: LethalDamage()},
     }

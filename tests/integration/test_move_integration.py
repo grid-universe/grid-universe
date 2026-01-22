@@ -153,25 +153,25 @@ def test_move_onto_hazard_takes_damage() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
     hazard_id = 200
     pos = state.position.set(hazard_id, Position(1, 0))
-    health = pmap({agent_id: Health(health=5, max_health=5)})
+    health = pmap({agent_id: Health(current_health=5, max_health=5)})
     damage = pmap({hazard_id: Damage(amount=1)})
     # No "Hazard" class, just use correct damage
     state = replace(state, position=pos, health=health, damage=damage)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
-    assert new_state.health[agent_id].health == 4
+    assert new_state.health[agent_id].current_health == 4
 
 
 def test_move_onto_enemy_takes_damage() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
     enemy_id = 300
     pos = state.position.set(enemy_id, Position(1, 0))
-    health = pmap({agent_id: Health(health=5, max_health=5)})
+    health = pmap({agent_id: Health(current_health=5, max_health=5)})
     damage = pmap({enemy_id: Damage(amount=2)})
     state = replace(state, position=pos, health=health, damage=damage)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
-    assert new_state.health[agent_id].health == 3
+    assert new_state.health[agent_id].current_health == 3
 
 
 def test_move_onto_reward_cost_collectible_tile() -> None:
@@ -306,12 +306,12 @@ def test_move_on_hazard_and_enemy_both_damage() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
     hazard_id, enemy_id = 201, 202
     pos = state.position.set(hazard_id, Position(1, 0)).set(enemy_id, Position(1, 0))
-    health = pmap({agent_id: Health(health=10, max_health=10)})
+    health = pmap({agent_id: Health(current_health=10, max_health=10)})
     damage = pmap({hazard_id: Damage(amount=2), enemy_id: Damage(amount=3)})
     state = replace(state, position=pos, health=health, damage=damage)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
-    assert new_state.health[agent_id].health == 5
+    assert new_state.health[agent_id].current_health == 5
 
 
 def test_move_out_of_bounds_action_negative_index() -> None:

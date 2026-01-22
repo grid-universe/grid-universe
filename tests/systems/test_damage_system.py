@@ -46,7 +46,7 @@ def build_agent_with_sources(
     position: Dict[EntityID, Position] = {agent_id: Position(*agent_pos)}
     agent_map: Dict[EntityID, Agent] = {agent_id: Agent()}
     health: Dict[EntityID, Health] = {
-        agent_id: Health(health=agent_health, max_health=agent_health)
+        agent_id: Health(current_health=agent_health, max_health=agent_health)
     }
     appearance: Dict[EntityID, Appearance] = {agent_id: Appearance(name="human")}
     collidable: Dict[EntityID, Collidable] = {agent_id: Collidable()}
@@ -100,7 +100,7 @@ def assert_health(state: State, agent_id: EntityID, expected: int) -> None:
     assert agent_id in state.health, (
         f"agent_id {agent_id} not in health map: {state.health}"
     )
-    assert state.health[agent_id].health == expected
+    assert state.health[agent_id].current_health == expected
 
 
 def test_agent_takes_damage_from_single_source() -> None:
@@ -213,7 +213,7 @@ def test_already_dead_agent_not_affected() -> None:
     state2: State = step_damage(state)
     assert agent_id in state2.dead
     assert agent_id in state2.health
-    assert state2.health[agent_id].health == 10
+    assert state2.health[agent_id].current_health == 10
 
 
 def test_agent_with_no_health_component() -> None:
@@ -246,8 +246,8 @@ def test_multiple_agents_each_take_appropriate_damage() -> None:
     }
     agent_map: Dict[EntityID, Agent] = {agent1: Agent(), agent2: Agent()}
     health: Dict[EntityID, Health] = {
-        agent1: Health(health=10, max_health=10),
-        agent2: Health(health=10, max_health=10),
+        agent1: Health(current_health=10, max_health=10),
+        agent2: Health(current_health=10, max_health=10),
     }
     appearance: Dict[EntityID, Appearance] = {
         agent1: Appearance(name="human"),
@@ -277,8 +277,8 @@ def test_multiple_agents_each_take_appropriate_damage() -> None:
         damage=pmap(damage_map),
     )
     state2: State = step_damage(state)
-    assert agent1 in state2.health and state2.health[agent1].health == 8
-    assert agent2 in state2.health and state2.health[agent2].health == 7
+    assert agent1 in state2.health and state2.health[agent1].current_health == 8
+    assert agent2 in state2.health and state2.health[agent2].current_health == 7
 
 
 def test_agent_with_immunity_component_blocks_damage() -> None:
@@ -311,7 +311,7 @@ def test_agent_with_multiple_health_entries_is_robust() -> None:
         sources=[{"damage": 2, "pos": (0, 0)}],
     )
     state = replace(
-        state, health=state.health.set(agent_id, Health(health=5, max_health=10))
+        state, health=state.health.set(agent_id, Health(current_health=5, max_health=10))
     )
     state2: State = step_damage(state)
     assert_health(state2, agent_id, 3)

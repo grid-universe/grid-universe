@@ -68,7 +68,7 @@ def make_damage_state(
 
     # Agent Health
     health: Dict[EntityID, Health] = {
-        agent_id: Health(health=agent_hp, max_health=agent_hp)
+        agent_id: Health(current_health=agent_hp, max_health=agent_hp)
     }
     extra["health"] = health
 
@@ -116,7 +116,7 @@ def move_agent_to(state: State, agent_id: EntityID, pos: Tuple[int, int]) -> Sta
 
 
 def agent_health(state: State, agent_id: EntityID) -> int:
-    return state.health[agent_id].health if agent_id in state.health else -1
+    return state.health[agent_id].current_health if agent_id in state.health else -1
 
 
 def agent_is_dead(state: State, agent_id: EntityID) -> bool:
@@ -365,7 +365,7 @@ def test_damage_on_crossing_swap_positions(
     extra: Dict[str, Dict[EntityID, Any]] = {
         "position": {damager_id: Position(damager_start_x, 0)},
         "damage": {damager_id: Damage(amount=4)},
-        "health": {agent_id: Health(health=10, max_health=10)},
+        "health": {agent_id: Health(current_health=10, max_health=10)},
         "moving": {
             damager_id: Moving(
                 direction="left",
@@ -406,7 +406,7 @@ def test_damage_on_path_intersection_trail(
     extra: Dict[str, Dict[EntityID, Any]] = {
         "position": {damager_id: Position(damager_initial_x, 2)},
         "damage": {damager_id: Damage(amount=5)},
-        "health": {agent_id: Health(health=10, max_health=10)},
+        "health": {agent_id: Health(current_health=10, max_health=10)},
         "moving": {
             damager_id: Moving(
                 direction="right",
@@ -442,7 +442,7 @@ def test_no_damage_agent_moves_away_before_damager_arrives(
     extra: Dict[str, Dict[EntityID, Any]] = {
         "position": {damager_id: Position(0, 0)},
         "damage": {damager_id: Damage(amount=7)},
-        "health": {agent_id: Health(health=9, max_health=9)},
+        "health": {agent_id: Health(current_health=9, max_health=9)},
         "moving": {
             damager_id: Moving(
                 direction="right",
@@ -475,7 +475,7 @@ def test_no_damage_damager_moves_away_from_incoming_agent(
     extra: Dict[str, Dict[EntityID, Any]] = {
         "position": {damager_id: Position(2, 0)},
         "damage": {damager_id: Damage(amount=3)},
-        "health": {agent_id: Health(health=6, max_health=6)},
+        "health": {agent_id: Health(current_health=6, max_health=6)},
         "moving": {
             damager_id: Moving(
                 direction="down",
@@ -518,7 +518,7 @@ def test_no_damage_agent_teleports_past_damager_via_portals() -> None:
             portal2_id: Position(3, 0),
         },
         "damage": {damager_id: Damage(amount=5)},
-        "health": {agent_id: Health(health=10, max_health=10)},
+        "health": {agent_id: Health(current_health=10, max_health=10)},
         "portal": {
             portal1_id: Portal(pair_entity=portal2_id),
             portal2_id: Portal(pair_entity=portal1_id),

@@ -245,7 +245,7 @@ def agent_observation_dict(state: State, agent_id: EntityID) -> AgentInfo:
     # Health
     hp = state.health.get(agent_id)
     health_dict: dict[str, Any] = {
-        "health": int(hp.health) if hp else -1,
+        "current_health": int(hp.current_health) if hp else -1,
         "max_health": int(hp.max_health) if hp else -1,
     }
 
@@ -413,7 +413,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
         # Health: -1 to indicate missing
         health_space = spaces.Dict(
             {
-                "health": int_box(-1, 1_000_000),
+                "current_health": int_box(-1, 1_000_000),
                 "max_health": int_box(-1, 1_000_000),
             }
         )
