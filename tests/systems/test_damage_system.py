@@ -311,7 +311,8 @@ def test_agent_with_multiple_health_entries_is_robust() -> None:
         sources=[{"damage": 2, "pos": (0, 0)}],
     )
     state = replace(
-        state, health=state.health.set(agent_id, Health(current_health=5, max_health=10))
+        state,
+        health=state.health.set(agent_id, Health(current_health=5, max_health=10)),
     )
     state2: State = step_damage(state)
     assert_health(state2, agent_id, 3)
