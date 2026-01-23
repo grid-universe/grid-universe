@@ -4,6 +4,8 @@ from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Final, cast
 
+from grid_universe.entity import new_entity_id
+from grid_universe.types import EntityID
 from grid_universe.components.properties import (
     Agent,
     Appearance,
@@ -93,7 +95,10 @@ class BaseEntity:
     Minimal base for mutable grid state entities.
     """
 
+    entity_id: EntityID = field(default_factory=new_entity_id)
+
     def __post_init__(self) -> None:
+        assert self.entity_id is not None, "Entity must have a valid entity_id"
         validate_entity(self)
 
     def iter_components(self) -> Iterator[tuple[FieldName, Any]]:
@@ -235,6 +240,7 @@ def copy_entity_components(
     dst: BaseEntity,
     include_nested: bool = True,
     include_refs: bool = True,
+    preserve_entity_id: bool = False,
 ) -> BaseEntity:
     """
     Copy present fields from src to dst:
@@ -243,9 +249,20 @@ def copy_entity_components(
       - Nested lists: fields in NESTED_FIELDS (shallow copies) when include_nested=True and present.
       - References: fields in REFERENCE_FIELD_TO_COMPONENT when include_refs=True and present.
 
+    Args:
+      src: Source entity.
+      dst: Destination entity.
+      include_nested: Whether to copy nested lists.
+      include_refs: Whether to copy reference fields.
+      preserve_entity_id: Whether to copy the entity_id from src to dst.
+
     Returns:
       dst (for chaining).
     """
+    # Entity ID
+    if preserve_entity_id:
+        dst.entity_id = src.entity_id
+
     # Components/effects
     for name in FIELD_TO_COMPONENT.keys():
         if hasattr(src, name) and hasattr(dst, name):

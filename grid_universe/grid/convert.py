@@ -75,12 +75,11 @@ def _init_store_maps() -> dict[str, dict[EntityID, Any]]:
 def _alloc_from_obj(
     obj: BaseEntity,
     stores: dict[str, dict[EntityID, Any]],
-    next_eid_ref: list[int],
     place_pos: Position | None = None,
 ) -> EntityID:
-    """Allocate a new EntityID, copy ECS/effect components from obj, and optionally set Position."""
-    eid: EntityID = next_eid_ref[0]
-    next_eid_ref[0] += 1
+    """Copy ECS/effect components from obj, and optionally set Position."""
+    eid: EntityID = obj.entity_id
+    assert eid is not None, "Entity must have an EntityID"
 
     for store_name, comp in obj.iter_components():
         stores[store_name][eid] = comp
@@ -142,16 +141,18 @@ def _build_state(gridstate: GridState, stores: dict[str, dict[EntityID, Any]]) -
 def to_state(gridstate: GridState) -> State:
     """Convert a GridState (grid of BaseEntity objects) into an immutable State."""
     stores: dict[str, dict[EntityID, Any]] = _init_store_maps()
-    next_eid_ref: list[int] = [0]
 
     # source object -> eid for on-grid objects
     obj_to_eid: dict[int, EntityID] = {}
     placed: list[tuple[BaseEntity, EntityID]] = []
+    seen_ids: set[EntityID] = set()
 
-    for y in range(gridstate.height):
-        for x in range(gridstate.width):
-            for obj in gridstate.grid[y][x]:
-                eid = _alloc_from_obj(obj, stores, next_eid_ref, place_pos=(x, y))
+    for x in range(gridstate.width):
+        for y in range(gridstate.height):
+            for obj in gridstate.grid[x][y]:
+                eid = _alloc_from_obj(obj, stores, place_pos=(x, y))
+                assert eid not in seen_ids, f"Duplicate EntityID {eid} detected"
+                seen_ids.add(eid)
                 obj_to_eid[id(obj)] = eid
                 placed.append((obj, eid))
 
@@ -164,7 +165,7 @@ def to_state(gridstate: GridState) -> State:
                 if "inventory_list" in nested_lists:
                     base_inv = stores["inventory"].get(eid, Inventory(pset()))
                     item_ids: list[EntityID] = [
-                        _alloc_from_obj(item, stores, next_eid_ref, place_pos=None)
+                        _alloc_from_obj(item, stores, place_pos=None)
                         for item in nested_lists["inventory_list"]
                     ]
                     stores["inventory"][eid] = Inventory(
@@ -175,7 +176,7 @@ def to_state(gridstate: GridState) -> State:
                 if "status_list" in nested_lists:
                     base_status = stores["status"].get(eid, Status(pset()))
                     eff_ids: list[EntityID] = [
-                        _alloc_from_obj(eff, stores, next_eid_ref, place_pos=None)
+                        _alloc_from_obj(eff, stores, place_pos=None)
                         for eff in nested_lists["status_list"]
                     ]
                     stores["status"][eid] = Status(
@@ -262,7 +263,7 @@ def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
     else:
         kwargs["status_list"] = []
 
-    entity = Entity(**kwargs)
+    entity = Entity(entity_id=eid, **kwargs)
     return entity
 
 
@@ -318,7 +319,7 @@ def from_state(state: State) -> GridState:
             continue
         obj = _entity_object_from_state(state, eid)
         placed_objs[eid] = obj
-        gridstate.grid[y][x].append(obj)
+        gridstate.add((x, y), obj)
 
     for eid, obj in placed_objs.items():
         _restore_entity_references(state, eid, obj, placed_objs)

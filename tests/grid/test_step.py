@@ -27,9 +27,9 @@ def find_entity_position(
     gridstate: GridState, entity: Entity
 ) -> tuple[int, int] | None:
     """Find the position of an entity in the grid, return None if not found."""
-    for y in range(gridstate.height):
-        for x in range(gridstate.width):
-            if entity in gridstate.grid[y][x]:
+    for x in range(gridstate.width):
+        for y in range(gridstate.height):
+            if entity in gridstate.grid[x][y]:
                 return (x, y)
     return None
 
@@ -39,7 +39,7 @@ def has_component_at_pos(
 ) -> bool:
     """Check if any entity at the given position has the specified component."""
     x, y = pos
-    for obj in gridstate.grid[y][x]:
+    for obj in gridstate.grid[x][y]:
         if getattr(obj, component_name, None) is not None:
             return True
     return False
@@ -375,7 +375,7 @@ def test_step_use_key_unlock_door() -> None:
     final_state = step(new_grid_state, Action.RIGHT)
     # Find agent in final state (should be at door position now)
     agent_in_final = None
-    for obj in final_state.grid[1][2]:
+    for obj in final_state.grid[2][1]:
         if getattr(obj, "agent", None) is not None:
             agent_in_final = obj
             break
@@ -560,7 +560,7 @@ def test_step_terminal_state_no_further_steps() -> None:
     assert gridstate.win is True
     # Find agent position before trying to move
     agent_found = False
-    for obj in gridstate.grid[1][2]:  # Agent should be at (2, 1)
+    for obj in gridstate.grid[2][1]:  # Agent should be at (2, 1)
         if getattr(obj, "agent", None) is not None:
             agent_found = True
             break
@@ -571,7 +571,7 @@ def test_step_terminal_state_no_further_steps() -> None:
 
     # Agent should still be at exit (2, 1)
     agent_still_there = False
-    for obj in new_grid_state.grid[1][2]:
+    for obj in new_grid_state.grid[2][1]:
         if getattr(obj, "agent", None) is not None:
             agent_still_there = True
             break
@@ -629,7 +629,7 @@ def test_step_preserves_original_grid_state() -> None:
     # New state should have moved agent to (2,1)
     # Check by looking for agent component at (2,1)
     agent_found_at_new_pos = False
-    for obj in new_grid_state.grid[1][2]:
+    for obj in new_grid_state.grid[2][1]:
         if getattr(obj, "agent", None) is not None:
             agent_found_at_new_pos = True
             break

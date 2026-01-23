@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Mapping, Sequence, cast
 
 
 from grid_universe.movements import BaseMovement
 from grid_universe.objectives import BaseObjective
 from grid_universe.grid.gridstate import GridState
 from grid_universe.grid.convert import to_state, from_state
-from grid_universe.grid.entity import Entity, FIELD_TO_COMPONENT
+from grid_universe.grid.entity import BaseEntity, Entity, FIELD_TO_COMPONENT
 from grid_universe.grid.factories import (
     create_agent,
     create_coin,
@@ -27,7 +27,7 @@ from grid_universe.components.properties import PathfindingType
 # ---------- Helpers: Canonicalization ----------
 
 
-def _obj_component_signature(obj: Entity) -> Dict[str, Any]:
+def _obj_component_signature(obj: BaseEntity) -> Dict[str, Any]:
     """
     Capture an Entity's components (excluding GridState-only nested lists/refs) as a dict.
     """
@@ -39,7 +39,7 @@ def _obj_component_signature(obj: Entity) -> Dict[str, Any]:
     return sig
 
 
-def _obj_nested_signature(objs: List[Entity]) -> List[Dict[str, Any]]:
+def _obj_nested_signature(objs: Sequence[BaseEntity]) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     for o in objs:
         out.append(_obj_component_signature(o))
@@ -56,10 +56,10 @@ def canonicalize_grid_state(
     Entries are sorted deterministically.
     """
     cells: Dict[Tuple[int, int], List[Dict[str, Any]]] = {}
-    for y in range(gridstate.height):
-        for x in range(gridstate.width):
+    for x in range(gridstate.width):
+        for y in range(gridstate.height):
             entries: List[Dict[str, Any]] = []
-            for obj in gridstate.grid[y][x]:
+            for obj in gridstate.grid[x][y]:
                 entries.append(
                     {
                         "components": _obj_component_signature(obj),
@@ -79,7 +79,81 @@ def canonicalize_grid_state(
     return cells
 
 
-def _state_entity_component_signature(state, eid) -> Dict[str, Any]:
+def _stable_sig(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        items = cast(Mapping[Any, Any], value).items()
+        return tuple((k, _stable_sig(v)) for k, v in sorted(items))
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes)):
+        seq = cast(Sequence[Any], value)
+        return tuple(_stable_sig(v) for v in seq)
+    return value
+
+
+def collect_gridstate_entity_id_map(
+    gridstate: GridState,
+) -> Dict[Tuple[Any, ...], List[int]]:
+    """
+    Collect entity_id values keyed by a stable signature so we can verify preservation.
+    Keys include position, component signature, nested signatures, and reference targets.
+    """
+    obj_pos: Dict[int, Tuple[int, int]] = {}
+    for x in range(gridstate.width):
+        for y in range(gridstate.height):
+            for obj in gridstate.grid[x][y]:
+                obj_pos[id(obj)] = (x, y)
+
+    ids_by_key: Dict[Tuple[Any, ...], List[int]] = {}
+
+    for x in range(gridstate.width):
+        for y in range(gridstate.height):
+            for obj in gridstate.grid[x][y]:
+                ref_target = getattr(obj, "pathfind_target_ref", None)
+                ref_portal = getattr(obj, "portal_pair_ref", None)
+                tgt_pos = (
+                    obj_pos.get(id(ref_target)) if ref_target is not None else None
+                )
+                portal_pos = (
+                    obj_pos.get(id(ref_portal)) if ref_portal is not None else None
+                )
+
+                nested_map = {name: items for name, items in obj.iter_nested_objects()}
+                inv_list = nested_map.get("inventory_list", [])
+                status_list = nested_map.get("status_list", [])
+
+                comp_sig = _stable_sig(_obj_component_signature(obj))
+                inv_sig = _stable_sig(_obj_nested_signature(inv_list))
+                status_sig = _stable_sig(_obj_nested_signature(status_list))
+
+                key = (
+                    "placed",
+                    (x, y),
+                    comp_sig,
+                    inv_sig,
+                    status_sig,
+                    tgt_pos,
+                    portal_pos,
+                )
+                if obj.entity_id is not None:
+                    ids_by_key.setdefault(key, []).append(obj.entity_id)
+
+                for list_name, nested in obj.iter_nested_objects():
+                    for child in nested:
+                        child_key = (
+                            "nested",
+                            (x, y),
+                            comp_sig,
+                            list_name,
+                            _stable_sig(_obj_component_signature(child)),
+                        )
+                        if child.entity_id is not None:
+                            ids_by_key.setdefault(child_key, []).append(child.entity_id)
+
+    for key in ids_by_key:
+        ids_by_key[key].sort()
+    return ids_by_key
+
+
+def _state_entity_component_signature(state: Any, eid: int) -> Dict[str, Any]:
     """
     Capture non-ID-bearing components of an entity as a plain dict. Excludes Position,
     Inventory, Status. Encodes pathfinding target by target position and portal pair by pair position.
@@ -118,7 +192,7 @@ def _state_entity_component_signature(state, eid) -> Dict[str, Any]:
     return sig
 
 
-def _state_nested_signatures(state, ids: List[int]) -> List[Dict[str, Any]]:
+def _state_nested_signatures(state: Any, ids: List[int]) -> List[Dict[str, Any]]:
     """
     Signature for nested entities (inventory items or status effects), which have no Position.
     """
@@ -128,7 +202,7 @@ def _state_nested_signatures(state, ids: List[int]) -> List[Dict[str, Any]]:
     return out
 
 
-def canonicalize_state(state) -> Dict[Tuple[int, int], List[Dict[str, Any]]]:
+def canonicalize_state(state: Any) -> Dict[Tuple[int, int], List[Dict[str, Any]]]:
     """
     Build a canonical, comparable structure for State:
       { (x,y): [ {components: {...}, inventory: [...], status: [...]}, ... ] }
@@ -243,14 +317,21 @@ def test_level_roundtrip_lossless() -> None:
         f"GridState roundtrip mismatch.\nOriginal: {can1}\nRoundtrip: {can2}"
     )
 
+    # Entity IDs preserved (by signature)
+    id_map1 = collect_gridstate_entity_id_map(grid_state1)
+    id_map2 = collect_gridstate_entity_id_map(grid_state2)
+    assert id_map1 == id_map2, (
+        f"GridState entity_id roundtrip mismatch.\nOriginal: {id_map1}\nRoundtrip: {id_map2}"
+    )
+
     # Wiring refs: find agent and monster, ensure monster.target_ref is agent
     # Also ensure portals are paired by portal_pair_ref bidirectionally
     agent_obj = None
     monster_obj = None
     portal_objs: List[Entity] = []
-    for y in range(grid_state2.height):
-        for x in range(grid_state2.width):
-            for obj in grid_state2.grid[y][x]:
+    for x in range(grid_state2.width):
+        for y in range(grid_state2.height):
+            for obj in grid_state2.grid[x][y]:
                 if obj.agent is not None:
                     agent_obj = obj
                 if (
@@ -283,4 +364,11 @@ def test_state_roundtrip_lossless() -> None:
     can2 = canonicalize_state(state2)
     assert can1 == can2, (
         f"State roundtrip mismatch.\nOriginal: {can1}\nRoundtrip: {can2}"
+    )
+
+    # Entity IDs preserved through State -> GridState -> State (by signature)
+    id_map1 = collect_gridstate_entity_id_map(from_state(state1))
+    id_map2 = collect_gridstate_entity_id_map(from_state(state2))
+    assert id_map1 == id_map2, (
+        f"State entity_id roundtrip mismatch.\nOriginal: {id_map1}\nRoundtrip: {id_map2}"
     )

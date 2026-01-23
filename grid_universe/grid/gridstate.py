@@ -38,7 +38,7 @@ class GridState:
     about game states in a spatial, grid-based manner. It stores entities in a 2D grid
     structure alongside game configuration and metadata.
 
-    - ``grid[y][x]`` is a list of `grid_universe.grid.entity.BaseEntity` instances at that cell.
+    - ``grid[x][y]`` is a list of `grid_universe.grid.entity.BaseEntity` instances at that cell.
     - Stores configuration such as ``movement``, ``objective``, ``seed``, and metadata
         (turn/score/win/lose/etc.).
     - Convert to/from the immutable ECS `grid_universe.state.State` using
@@ -65,7 +65,7 @@ class GridState:
 
     def __post_init__(self) -> None:
         # Initialize empty grid
-        self.grid = [[[] for _ in range(self.width)] for _ in range(self.height)]
+        self.grid = [[[] for _ in range(self.height)] for _ in range(self.width)]
 
     # -------- Grid editing API --------
 
@@ -75,7 +75,7 @@ class GridState:
         """
         x, y = pos
         self._check_bounds(x, y)
-        self.grid[y][x].append(obj)
+        self.grid[x][y].append(obj)
 
     def add_many(self, items: list[tuple[Position, BaseEntity]]) -> None:
         """
@@ -91,7 +91,7 @@ class GridState:
         """
         x, y = pos
         self._check_bounds(x, y)
-        cell = self.grid[y][x]
+        cell = self.grid[x][y]
         for i, o in enumerate(cell):
             if o is obj:
                 del cell[i]
@@ -105,10 +105,10 @@ class GridState:
         """
         x, y = pos
         self._check_bounds(x, y)
-        cell = self.grid[y][x]
+        cell = self.grid[x][y]
         keep = [o for o in cell if not predicate(o)]
         removed = len(cell) - len(keep)
-        self.grid[y][x] = keep
+        self.grid[x][y] = keep
         return removed
 
     def move_obj(self, from_pos: Position, obj: BaseEntity, to_pos: Position) -> bool:
@@ -127,8 +127,8 @@ class GridState:
         """
         x, y = pos
         self._check_bounds(x, y)
-        n = len(self.grid[y][x])
-        self.grid[y][x] = []
+        n = len(self.grid[x][y])
+        self.grid[x][y] = []
         return n
 
     def objects_at(self, pos: Position) -> list[BaseEntity]:
@@ -137,7 +137,7 @@ class GridState:
         """
         x, y = pos
         self._check_bounds(x, y)
-        return list(self.grid[y][x])
+        return list(self.grid[x][y])
 
     # -------- Internal helpers --------
 
