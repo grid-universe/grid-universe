@@ -1,9 +1,14 @@
-"""Conversion utilities between mutable ``Level`` and runtime ``State``.
+"""Conversion utilities between ``GridState`` and ``State``.
+
+GridState and State are complementary representations of game state:
+
+- **GridState**: Mutable, grid-centric, ideal for authoring and editing
+- **State**: Immutable, ECS-based, optimized for simulation and stepping
 
 Two primary operations:
 
-* ``to_state``: Materialize immutable ECS world from a grid of ``BaseEntity``.
-* ``from_state``: Reconstruct a mutable ``Level`` representation from a runtime state.
+* ``to_state``: Build immutable ECS State from a GridState with grid-based entities.
+* ``from_state``: Build mutable GridState from an ECS State for editing/inspection.
 
 Handles wiring of portals, pathfinding targets, inventory & status effect
 embedding (nested lists -> separate entities), and assigns deterministic
@@ -28,8 +33,8 @@ from grid_universe.components.properties import (
     PathfindingType,
     Portal,
 )
-from grid_universe.levels.grid import Level, Position
-from grid_universe.levels.entity import BaseEntity, Entity, FIELD_TO_COMPONENT
+from grid_universe.grid.gridstate import GridState, Position
+from grid_universe.grid.entity import BaseEntity, Entity, FIELD_TO_COMPONENT
 
 
 def _init_store_maps() -> dict[str, dict[EntityID, Any]]:
@@ -87,13 +92,13 @@ def _alloc_from_obj(
     return eid
 
 
-def _build_state(level: Level, stores: dict[str, dict[EntityID, Any]]) -> State:
+def _build_state(gridstate: GridState, stores: dict[str, dict[EntityID, Any]]) -> State:
     """Convert mutable dict stores to pyrsistent maps and construct immutable State."""
     return State(
-        width=level.width,
-        height=level.height,
-        movement=level.movement,
-        objective=level.objective,
+        width=gridstate.width,
+        height=gridstate.height,
+        movement=gridstate.movement,
+        objective=gridstate.objective,
         # effects
         immunity=pmap(stores["immunity"]),
         phasing=pmap(stores["phasing"]),
@@ -124,18 +129,18 @@ def _build_state(level: Level, stores: dict[str, dict[EntityID, Any]]) -> State:
         rewardable=pmap(stores["rewardable"]),
         status=pmap(stores["status"]),
         # meta
-        turn=level.turn,
-        score=level.score,
-        win=level.win,
-        lose=level.lose,
-        message=level.message,
-        turn_limit=level.turn_limit,
-        seed=level.seed,
+        turn=gridstate.turn,
+        score=gridstate.score,
+        win=gridstate.win,
+        lose=gridstate.lose,
+        message=gridstate.message,
+        turn_limit=gridstate.turn_limit,
+        seed=gridstate.seed,
     )
 
 
-def to_state(level: Level) -> State:
-    """Convert a Level (grid of BaseEntity objects) into an immutable State."""
+def to_state(gridstate: GridState) -> State:
+    """Convert a GridState (grid of BaseEntity objects) into an immutable State."""
     stores: dict[str, dict[EntityID, Any]] = _init_store_maps()
     next_eid_ref: list[int] = [0]
 
@@ -143,9 +148,9 @@ def to_state(level: Level) -> State:
     obj_to_eid: dict[int, EntityID] = {}
     placed: list[tuple[BaseEntity, EntityID]] = []
 
-    for y in range(level.height):
-        for x in range(level.width):
-            for obj in level.grid[y][x]:
+    for y in range(gridstate.height):
+        for x in range(gridstate.width):
+            for obj in gridstate.grid[y][x]:
                 eid = _alloc_from_obj(obj, stores, next_eid_ref, place_pos=(x, y))
                 obj_to_eid[id(obj)] = eid
                 placed.append((obj, eid))
@@ -178,7 +183,7 @@ def to_state(level: Level) -> State:
                     )
 
     # Build immutable State before wiring
-    state: State = _build_state(level, stores)
+    state: State = _build_state(gridstate, stores)
 
     # Wiring: pathfinding target references
     sp = state.pathfinding
@@ -223,7 +228,7 @@ def to_state(level: Level) -> State:
 
 
 def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
-    """Reconstruct a generic mutable level Entity from a State entity id."""
+    """Reconstruct a generic mutable grid state Entity from a State entity id."""
     kwargs: dict[str, Any] = {}
     for store_name, _ in FIELD_TO_COMPONENT.items():
         store = getattr(state, store_name, None)
@@ -286,9 +291,9 @@ def _restore_entity_references(
         entity.portal = Portal(pair_entity=-1)
 
 
-def from_state(state: State) -> Level:
-    """Convert an immutable State back into a mutable Level (grid of generic Entity objects)."""
-    level = Level(
+def from_state(state: State) -> GridState:
+    """Convert an immutable State back into a mutable GridState (grid of generic Entity objects)."""
+    gridstate = GridState(
         width=state.width,
         height=state.height,
         movement=state.movement,
@@ -309,34 +314,34 @@ def from_state(state: State) -> Level:
         if pos is None:
             continue
         x, y = pos.x, pos.y
-        if not (0 <= x < level.width and 0 <= y < level.height):
+        if not (0 <= x < gridstate.width and 0 <= y < gridstate.height):
             continue
         obj = _entity_object_from_state(state, eid)
         placed_objs[eid] = obj
-        level.grid[y][x].append(obj)
+        gridstate.grid[y][x].append(obj)
 
     for eid, obj in placed_objs.items():
         _restore_entity_references(state, eid, obj, placed_objs)
 
-    return level
+    return gridstate
 
 
-def level_to_initial_state_fn(level: Level) -> Callable[..., State]:
-    """Create the initial State for the given Level."""
+def grid_state_to_initial_state_fn(gridstate: GridState) -> Callable[..., State]:
+    """Create the initial State for the given GridState."""
 
     def initial_state_fn(*args: Any, **kwargs: Any) -> State:
-        return to_state(level)
+        return to_state(gridstate)
 
     return initial_state_fn
 
 
-def level_fn_to_initial_state_fn(
-    level_fn: Callable[..., Level],
+def grid_state_fn_to_initial_state_fn(
+    grid_state_fn: Callable[..., GridState],
 ) -> Callable[..., State]:
-    """Convert a level-building function into an initial state function."""
+    """Convert a grid-state-building function into an initial state function."""
 
     def initial_state_fn(*args: Any, **kwargs: Any) -> State:
-        level = level_fn(*args, **kwargs)
-        return to_state(level)
+        gridstate = grid_state_fn(*args, **kwargs)
+        return to_state(gridstate)
 
     return initial_state_fn

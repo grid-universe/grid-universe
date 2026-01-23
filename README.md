@@ -27,7 +27,7 @@ Pure Entity–Component–System with functional systems, procedural generators,
 
 - **Immutable ECS** – Pure `State -> State` transformations for debugging & reproducibility
 - **Deterministic** – All randomness from `(seed, turn)`, bit-perfect reproducibility
-- **Fast iteration** – Mutable `Level` ↔ immutable `State` conversion
+- **Fast iteration** – Mutable `GridState` ↔ immutable `State` conversion
 - **Rich mechanics** – Portals, keys/doors, pushables, hazards, enemies, powerups (speed, immunity, phasing)
 - **RL ready** – Gymnasium env with image obs, structured info, 7-action discrete space
 - **Procedural** – Maze generator with configurable density
@@ -86,19 +86,30 @@ state = step(state, Action.UP)
 
 **Manual Level**
 ```python
-from grid_universe.levels.grid import Level
-from grid_universe.levels.factories import create_floor, create_agent, create_exit
-from grid_universe.levels.convert import to_state
+from grid_universe.grid.gridstate import GridState
+from grid_universe.grid.factories import create_floor, create_agent, create_exit
+from grid_universe.grid.convert import to_state
+from grid_universe.movements import CardinalMovement
+from grid_universe.objectives import ExitObjective
 
-level = Level(width=5, height=5, seed=123)
-level.add((1, 1), create_agent())
-level.add((3, 3), create_exit())
-state = to_state(level)
+gridstate = GridState(
+  width=5,
+  height=5,
+  movement=CardinalMovement(),
+  objective=ExitObjective(),
+  seed=123,
+)
+for y in range(gridstate.height):
+  for x in range(gridstate.width):
+    gridstate.add((x, y), create_floor())
+gridstate.add((1, 1), create_agent())
+gridstate.add((3, 3), create_exit())
+state = to_state(gridstate)
 ```
 
 **Gymnasium**
 ```python
-from grid_universe.gym_env import GridUniverseEnv
+from grid_universe.env import GridUniverseEnv
 from grid_universe.examples.maze import generate
 
 env = GridUniverseEnv(initial_state_fn=generate, width=7, height=7, seed=7)
@@ -156,10 +167,10 @@ grid_universe/
   state.py, step.py           # Core: immutable State, step reducer
   actions.py                  # Action enum
   movements.py, objectives.py # Registries for movements/objectives
-  gym_env.py                  # Gymnasium wrapper
+  env.py                      # Gymnasium wrapper
   components/                 # properties/ (Position, Health, etc.), effects/ (Speed, Immunity, etc.)
   systems/                    # Pure systems (movement, portal, damage, collectible, etc.)
-  levels/                     # Mutable Level builder, factories, State conversion
+  grid/                       # Mutable grid representation
   renderer/                   # Image renderer, texture loading
   utils/                      # ECS, grid, status, inventory, maze gen, etc.
   examples/                   # maze.py, gameplay_levels.py, cipher_objective_levels.py

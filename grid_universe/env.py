@@ -5,7 +5,7 @@ info dictionaries (agent status / inventory / active effects, environment
 config). Reward is the delta of ``state.score`` per step. ``terminated`` is
 ``True`` on win, ``truncated`` on lose.
 
-Observation schema (see docs for full details):
+ImageObservation schema (see docs for full details):
 
 ```python
 {
@@ -22,13 +22,13 @@ Observation schema (see docs for full details):
 or
 
 ```python
-Level  # if observation_type="level"
+GridState  # if observation_type="gridstate"
 ```
 
 Usage:
 
 ```python
-from grid_universe.gym_env import GridUniverseEnv
+from grid_universe.env import GridUniverseEnv
 from grid_universe.examples.maze import generate as maze_generate
 
 env = GridUniverseEnv(initial_state_fn=maze_generate, width=9, height=9, seed=123)
@@ -53,9 +53,9 @@ from numpy.typing import NDArray
 from PIL.Image import Image as PILImage
 
 from grid_universe.state import State
-from grid_universe.levels.convert import from_state  # for Level observation type
-from grid_universe.levels.grid import (
-    Level,
+from grid_universe.grid.convert import from_state  # for GridState observation type
+from grid_universe.grid.gridstate import (
+    GridState,
 )
 from grid_universe.actions import Action as Action
 from grid_universe.renderer.image import (
@@ -96,7 +96,7 @@ class InventoryItem(TypedDict):
 class HealthInfo(TypedDict):
     """Health block; -1 indicates missing (agent has no health component)."""
 
-    health: int
+    current_health: int
     max_health: int
 
 
@@ -117,7 +117,7 @@ class StatusInfo(TypedDict):
 
 
 class ConfigInfo(TypedDict):
-    """Static / semi‑static config describing the active level & functions."""
+    """Environment configuration."""
 
     movement: str
     objective: str
@@ -139,7 +139,7 @@ class InfoDict(TypedDict):
 ImageArray = NDArray[np.uint8]
 
 
-class Observation(TypedDict):
+class ImageObservation(TypedDict):
     """Top‑level observation returned by the environment.
 
     image: RGBA image array (H x W x 4, dtype=uint8)
@@ -306,12 +306,8 @@ def env_config_observation_dict(state: State) -> ConfigInfo:
     )
 
 
-class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
-    """Gymnasium ``Env`` implementation for the Grid Universe.
-
-    Parameters mirror the procedural level generator plus rendering knobs. The
-    action space is ``Discrete(len(Action))``; see `grid_universe.actions`.
-    """
+class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
+    """Gymnasium ``Env`` implementation for the Grid Universe."""
 
     metadata = {"render_modes": ["human", "rgb_array"]}
 
@@ -334,10 +330,10 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
             initial_state_fn (Callable[..., State]): Callable returning an initial ``State``.
             **kwargs: Forwarded to ``initial_state_fn`` (e.g., size, densities, seed).
         """
-        # Observation type: "image" (default behavior) or "level" (returns Level dataclass)
-        if observation_type not in {"image", "level"}:
+        # Observation type: "image" (default behavior) or "gridstate" (returns GridState dataclass)
+        if observation_type not in {"image", "gridstate"}:
             raise ValueError(
-                f"Unsupported observation_type '{observation_type}'. Expected 'image' or 'level'."
+                f"Unsupported observation_type '{observation_type}'. Expected 'image' or 'gridstate'."
             )
         if render_mode not in self.metadata["render_modes"]:
             raise ValueError(
@@ -346,7 +342,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
 
         self._observation_type = observation_type
 
-        # Generator/config kwargs for level creation
+        # Initial state factory and kwargs
         self._initial_state_fn = initial_state_fn
         self._initial_state_kwargs = kwargs
 
@@ -421,7 +417,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
         if self._observation_type == "image":
             # Full observation space: image + structured info dict
             self.observation_space = cast(
-                gym.Space[Observation],
+                gym.Space[ImageObservation],
                 spaces.Dict(
                     {
                         "image": spaces.Box(
@@ -465,8 +461,8 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
                 ),
             )
         else:
-            # For Level observations we cannot define a strict Gym space (arbitrary Python object).
-            # Provide a placeholder space (Discrete(1)) with documented contract that observations are Level.
+            # For GridState observations we cannot define a strict Gym space (arbitrary Python object).
+            # Provide a placeholder space (Discrete(1)) with documented contract that observations are GridState.
             # Users leveraging RL libraries should stick to observation_type="image".
             self.observation_space = spaces.Discrete(1)
 
@@ -478,7 +474,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
 
     def reset(
         self, *, seed: int | None = None, options: dict[str, object] | None = None
-    ) -> tuple[Observation | Level, dict[str, object]]:
+    ) -> tuple[ImageObservation | GridState, dict[str, object]]:
         """Start a new episode.
 
         Args:
@@ -486,7 +482,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
             options (dict | None): Gymnasium options (unused).
 
         Returns:
-            Tuple[Observation, dict]: Observation dict and empty info dict per Gymnasium API.
+            Tuple[ImageObservation, dict]: ImageObservation dict and empty info dict per Gymnasium API.
         """
         self.state = self._initial_state_fn(**self._initial_state_kwargs)
         try:
@@ -500,7 +496,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
 
     def step(
         self, action: np.integer | int | Action
-    ) -> tuple[Observation | Level, float, bool, bool, dict[str, object]]:
+    ) -> tuple[ImageObservation | GridState, float, bool, bool, dict[str, object]]:
         """Apply one environment step.
 
         Args:
@@ -508,7 +504,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
                 member) selecting an action from the discrete action space.
 
         Returns:
-            Tuple[Observation, float, bool, bool, dict]: ``(observation, reward, terminated, truncated, info)``.
+            Tuple[ImageObservation, float, bool, bool, dict]: ``(observation, reward, terminated, truncated, info)``.
         """
         assert self.state is not None and self.agent_id is not None
 
@@ -572,17 +568,16 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
         }
         return info_dict
 
-    def _get_obs(self) -> Observation | Level:
+    def _get_obs(self) -> ImageObservation | GridState:
         """Internal helper constructing the observation per observation_type.
 
-        observation_type="image": returns Observation (dict with image + info)
-        observation_type="level": returns a mutable ``Level`` object produced
-            via levels.convert.from_state(state). This allows algorithms to
+        observation_type="image": returns ImageObservation (dict with image + info)
+        observation_type="gridstate": returns a mutable ``GridState`` object produced
+            via grid.convert.from_state(state). This allows algorithms to
             reason over symbolic grid/entity structures directly.
         """
         assert self.state is not None and self.agent_id is not None
-        if self._observation_type == "level":
-            # Return mutable Level view
+        if self._observation_type == "gridstate":
             return from_state(self.state)
 
         # Default image observation path
@@ -591,7 +586,7 @@ class GridUniverseEnv(gym.Env[Observation | Level, np.integer]):
         img = self._image_renderer.render(self.state)
         img_np: ImageArray = np.array(img)
         info_dict: InfoDict = self.state_info()
-        return cast(Observation, {"image": img_np, "info": info_dict})
+        return cast(ImageObservation, {"image": img_np, "info": info_dict})
 
     def _get_info(self) -> dict[str, object]:
         """Return the step info (empty placeholder for compatibility)."""

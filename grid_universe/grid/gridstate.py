@@ -1,13 +1,19 @@
-"""Mutable grid/level representation.
+"""Mutable grid-based state representation.
 
-The `grid_universe.levels.grid.Level` dataclass is an alternative,
-mutable representation of a `grid_universe.state.State`. It provides a
+The `grid_universe.grid.gridstate.GridState` dataclass is a first-class,
+mutable representation for building and editing game states. It provides a
 simple grid editing API (add/remove/move) and stores the configuration needed
-to build a runtime state.
+for simulation.
 
-Use `grid_universe.levels.factories` to create `grid_universe.levels.entity.BaseEntity`
-objects conveniently, and `grid_universe.levels.convert` to convert between
-this representation and the immutable runtime `grid_universe.state.State`.
+GridState and the immutable `grid_universe.state.State` are complementary
+representations optimized for different use cases:
+
+- **GridState**: Mutable, grid-centric, ideal for authoring and editing
+- **State**: Immutable, ECS-based, optimized for simulation and stepping
+
+Use `grid_universe.grid.factories` to create `grid_universe.grid.entity.BaseEntity`
+objects conveniently, and `grid_universe.grid.convert` to convert between
+representations as needed.
 """
 
 from __future__ import annotations
@@ -24,15 +30,20 @@ Position = tuple[int, int]
 
 
 @dataclass
-class Level:
+class GridState:
     """
-    Grid-centric, mutable level representation.
+    Mutable, grid-centric state representation.
 
-    - ``grid[y][x]`` is a list of `grid_universe.levels.entity.BaseEntity` instances at that cell.
-    - The level stores configuration such as ``movement``, ``objective``, ``seed``, and simple
-        meta (turn/score/etc.).
-    - Use `grid_universe.levels.convert.to_state` / `grid_universe.levels.convert.from_state`
-        to convert between ``Level`` and the immutable ECS `grid_universe.state.State`.
+    GridState is a first-class representation for building, editing, and reasoning
+    about game states in a spatial, grid-based manner. It stores entities in a 2D grid
+    structure alongside game configuration and metadata.
+
+    - ``grid[y][x]`` is a list of `grid_universe.grid.entity.BaseEntity` instances at that cell.
+    - Stores configuration such as ``movement``, ``objective``, ``seed``, and metadata
+        (turn/score/win/lose/etc.).
+    - Convert to/from the immutable ECS `grid_universe.state.State` using
+        `grid_universe.grid.convert.to_state` / `grid_universe.grid.convert.from_state`
+        when needed for simulation.
     """
 
     width: int
@@ -60,7 +71,7 @@ class Level:
 
     def add(self, pos: Position, obj: BaseEntity) -> None:
         """
-        Place an `grid_universe.levels.entity.BaseEntity` into the cell at pos (x, y).
+        Place an `grid_universe.grid.entity.BaseEntity` into the cell at pos (x, y).
         """
         x, y = pos
         self._check_bounds(x, y)

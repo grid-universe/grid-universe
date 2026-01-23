@@ -3,7 +3,7 @@
 Each helper returns a preconfigured `Entity` with a common pattern
 (agent, floor, wall, coin, key, door, portal, hazards, effects, etc.). These
 are mutable blueprints that can be converted into an immutable ECS
-`grid_universe.state.State` via `grid_universe.levels.convert.to_state`.
+`grid_universe.state.State` via `grid_universe.grid.convert.to_state`.
 """
 
 from __future__ import annotations

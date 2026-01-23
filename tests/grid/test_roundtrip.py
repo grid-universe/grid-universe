@@ -6,10 +6,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from grid_universe.movements import BaseMovement
 from grid_universe.objectives import BaseObjective
-from grid_universe.levels.grid import Level
-from grid_universe.levels.convert import to_state, from_state
-from grid_universe.levels.entity import Entity, FIELD_TO_COMPONENT
-from grid_universe.levels.factories import (
+from grid_universe.grid.gridstate import GridState
+from grid_universe.grid.convert import to_state, from_state
+from grid_universe.grid.entity import Entity, FIELD_TO_COMPONENT
+from grid_universe.grid.factories import (
     create_agent,
     create_coin,
     create_core,
@@ -29,7 +29,7 @@ from grid_universe.components.properties import PathfindingType
 
 def _obj_component_signature(obj: Entity) -> Dict[str, Any]:
     """
-    Capture an Entity's components (excluding Level-only nested lists/refs) as a dict.
+    Capture an Entity's components (excluding GridState-only nested lists/refs) as a dict.
     """
     sig: Dict[str, Any] = {}
     for store_name, _ in FIELD_TO_COMPONENT.items():
@@ -47,17 +47,19 @@ def _obj_nested_signature(objs: List[Entity]) -> List[Dict[str, Any]]:
     return out
 
 
-def canonicalize_level(level: Level) -> Dict[Tuple[int, int], List[Dict[str, Any]]]:
+def canonicalize_grid_state(
+    gridstate: GridState,
+) -> Dict[Tuple[int, int], List[Dict[str, Any]]]:
     """
-    Build a canonical structure for Level:
+    Build a canonical structure for GridState:
       { (x,y): [ {components: {...}, inventory_list: [...], status_list: [...]}, ... ] }
     Entries are sorted deterministically.
     """
     cells: Dict[Tuple[int, int], List[Dict[str, Any]]] = {}
-    for y in range(level.height):
-        for x in range(level.width):
+    for y in range(gridstate.height):
+        for x in range(gridstate.width):
             entries: List[Dict[str, Any]] = []
-            for obj in level.grid[y][x]:
+            for obj in gridstate.grid[y][x]:
                 entries.append(
                     {
                         "components": _obj_component_signature(obj),
@@ -163,16 +165,16 @@ def canonicalize_state(state) -> Dict[Tuple[int, int], List[Dict[str, Any]]]:
 # ---------- Test fixtures ----------
 
 
-def build_sample_level() -> Level:
+def build_sample_grid_state() -> GridState:
     """
-    Build a Level that exercises:
+    Build a GridState that exercises:
     - agent with empty Inventory/Status components and nested lists
     - items/effects in inventory_list/status_list
     - portals paired by reference
     - monster pathfinding to agent by reference
     - some walls/floors
     """
-    lvl = Level(
+    lvl = GridState(
         width=7,
         height=5,
         movement=BaseMovement(
@@ -227,18 +229,18 @@ def build_sample_level() -> Level:
 
 def test_level_roundtrip_lossless() -> None:
     """
-    Level -> State -> Level preserves component structure and nested lists.
+    GridState -> State -> GridState preserves component structure and nested lists.
     Also verifies wiring refs are restored (pathfinding target, portal pair).
     """
-    level1 = build_sample_level()
-    state = to_state(level1)
-    level2 = from_state(state)
+    grid_state1 = build_sample_grid_state()
+    state = to_state(grid_state1)
+    grid_state2 = from_state(state)
 
     # Canonical compare
-    can1 = canonicalize_level(level1)
-    can2 = canonicalize_level(level2)
+    can1 = canonicalize_grid_state(grid_state1)
+    can2 = canonicalize_grid_state(grid_state2)
     assert can1 == can2, (
-        f"Level roundtrip mismatch.\nOriginal: {can1}\nRoundtrip: {can2}"
+        f"GridState roundtrip mismatch.\nOriginal: {can1}\nRoundtrip: {can2}"
     )
 
     # Wiring refs: find agent and monster, ensure monster.target_ref is agent
@@ -246,9 +248,9 @@ def test_level_roundtrip_lossless() -> None:
     agent_obj = None
     monster_obj = None
     portal_objs: List[Entity] = []
-    for y in range(level2.height):
-        for x in range(level2.width):
-            for obj in level2.grid[y][x]:
+    for y in range(grid_state2.height):
+        for x in range(grid_state2.width):
+            for obj in grid_state2.grid[y][x]:
                 if obj.agent is not None:
                     agent_obj = obj
                 if (
@@ -269,13 +271,13 @@ def test_level_roundtrip_lossless() -> None:
 
 def test_state_roundtrip_lossless() -> None:
     """
-    State -> Level -> State preserves positioned entities, nested inventory/status entities,
+    State -> GridState -> State preserves positioned entities, nested inventory/status entities,
     and pathfinding/portal semantics (compared canonically by positions).
     """
-    level = build_sample_level()
-    state1 = to_state(level)
-    level2 = from_state(state1)
-    state2 = to_state(level2)
+    gridstate = build_sample_grid_state()
+    state1 = to_state(gridstate)
+    grid_state2 = from_state(state1)
+    state2 = to_state(grid_state2)
 
     can1 = canonicalize_state(state1)
     can2 = canonicalize_state(state2)

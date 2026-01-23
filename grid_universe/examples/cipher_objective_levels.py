@@ -3,8 +3,8 @@ from collections.abc import Iterable
 import random
 from dataclasses import replace
 
-from grid_universe.gym_env import GridUniverseEnv, Observation
-from grid_universe.levels.grid import Level
+from grid_universe.env import GridUniverseEnv, ImageObservation
+from grid_universe.grid.gridstate import GridState
 from grid_universe.state import State
 from grid_universe.objectives import OBJECTIVE_REGISTRY, BaseObjective
 from grid_universe.examples import maze
@@ -118,8 +118,8 @@ def generate(
     return to_cipher_level(base, cipher_objective_pairs, seed=seed)
 
 
-def redact_objective(obs: Observation | Level) -> Observation | Level:
-    if isinstance(obs, Level):
+def redact_objective(obs: ImageObservation | GridState) -> ImageObservation | GridState:
+    if isinstance(obs, GridState):
         obs = replace(obs, objective=REDACTED_OBJECTIVE)
     else:
         obs["info"]["config"]["objective"] = "<REDACTED>"

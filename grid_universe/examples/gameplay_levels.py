@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from grid_universe.levels.grid import Level
-from grid_universe.levels.convert import to_state
+from grid_universe.grid.gridstate import GridState
+from grid_universe.grid.convert import to_state
 from grid_universe.movements import CardinalMovement
 from grid_universe.objectives import CollectAndExitObjective, ExitObjective
 from grid_universe.state import State
-from grid_universe.levels.factories import (
+from grid_universe.grid.factories import (
     create_floor,
     create_wall,
     create_agent,
@@ -58,21 +58,21 @@ TURN_LIMIT = 50
 # -------------------------
 
 
-def _floors(level: Level, cost: int = TILE_COST) -> None:
+def _floors(gridstate: GridState, cost: int = TILE_COST) -> None:
     """Fill the grid with floor tiles carrying uniform Cost=cost per step."""
-    for y in range(level.height):
-        for x in range(level.width):
-            level.add((x, y), create_floor(cost_amount=cost))
+    for y in range(gridstate.height):
+        for x in range(gridstate.width):
+            gridstate.add((x, y), create_floor(cost_amount=cost))
 
 
-def _border(level: Level) -> None:
+def _border(gridstate: GridState) -> None:
     """Draw wall border (background walls)."""
-    for x in range(level.width):
-        level.add((x, 0), create_wall())
-        level.add((x, level.height - 1), create_wall())
-    for y in range(level.height):
-        level.add((0, y), create_wall())
-        level.add((level.width - 1, y), create_wall())
+    for x in range(gridstate.width):
+        gridstate.add((x, 0), create_wall())
+        gridstate.add((x, gridstate.height - 1), create_wall())
+    for y in range(gridstate.height):
+        gridstate.add((0, y), create_wall())
+        gridstate.add((gridstate.width - 1, y), create_wall())
 
 
 # -------------------------
@@ -90,7 +90,7 @@ def build_level_basic_movement(seed: int = 100) -> State:
         State: Authored immutable state.
     """
     w, h = 7, 5
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -98,14 +98,14 @@ def build_level_basic_movement(seed: int = 100) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    lvl.add((1, h // 2), create_agent(health=5))
-    lvl.add((w - 2, h // 2), create_exit())
+    _floors(gridstate)
+    gridstate.add((1, h // 2), create_agent(health=5))
+    gridstate.add((w - 2, h // 2), create_exit())
     # corridor wall
     for y in range(h):
         if y != h // 2:
-            lvl.add((w // 2, y), create_wall())
-    return to_state(lvl)
+            gridstate.add((w // 2, y), create_wall())
+    return to_state(gridstate)
 
 
 def build_level_maze_turns(seed: int = 101) -> State:
@@ -118,7 +118,7 @@ def build_level_maze_turns(seed: int = 101) -> State:
         State: Authored immutable state.
     """
     w, h = 9, 7
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -126,16 +126,16 @@ def build_level_maze_turns(seed: int = 101) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    _border(lvl)
+    _floors(gridstate)
+    _border(gridstate)
     for x in range(2, w - 2):
-        lvl.add((x, 2), create_wall())
+        gridstate.add((x, 2), create_wall())
     for x in range(2, w - 2):
         if x != w // 2:
-            lvl.add((x, h - 3), create_wall())
-    lvl.add((1, 1), create_agent(health=5))
-    lvl.add((w - 2, h - 2), create_exit())
-    return to_state(lvl)
+            gridstate.add((x, h - 3), create_wall())
+    gridstate.add((1, 1), create_agent(health=5))
+    gridstate.add((w - 2, h - 2), create_exit())
+    return to_state(gridstate)
 
 
 def build_level_optional_coin(seed: int = 102) -> State:
@@ -150,7 +150,7 @@ def build_level_optional_coin(seed: int = 102) -> State:
         State: Authored immutable state.
     """
     w, h = 9, 7
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -158,20 +158,20 @@ def build_level_optional_coin(seed: int = 102) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    _border(lvl)
-    lvl.add((1, 2), create_wall())
-    lvl.add((3, 3), create_wall())
+    _floors(gridstate)
+    _border(gridstate)
+    gridstate.add((1, 2), create_wall())
+    gridstate.add((3, 3), create_wall())
     for x in range(3, w - 2):
-        lvl.add((x, 2), create_wall())
+        gridstate.add((x, 2), create_wall())
     for x in range(2, w - 2):
         if x != w // 2:
-            lvl.add((x, h - 3), create_wall())
-    lvl.add((1, 1), create_agent(health=5))
-    lvl.add((w - 2, h - 2), create_exit())
+            gridstate.add((x, h - 3), create_wall())
+    gridstate.add((1, 1), create_agent(health=5))
+    gridstate.add((w - 2, h - 2), create_exit())
     for x in range(1, w - 2, 1):
-        lvl.add((x, h - 2), create_coin(reward=COIN_REWARD))
-    return to_state(lvl)
+        gridstate.add((x, h - 2), create_coin(reward=COIN_REWARD))
+    return to_state(gridstate)
 
 
 def build_level_required_one(seed: int = 103) -> State:
@@ -184,7 +184,7 @@ def build_level_required_one(seed: int = 103) -> State:
         State: Authored immutable state.
     """
     w, h = 9, 7
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -192,16 +192,16 @@ def build_level_required_one(seed: int = 103) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    _border(lvl)
+    _floors(gridstate)
+    _border(gridstate)
     for y in range(1, h - 1):
         if y != h // 2:
-            lvl.add((w // 2, y), create_wall())
-    lvl.add((1, h // 2), create_agent(health=5))
-    lvl.add((w - 2, h // 2), create_exit())
+            gridstate.add((w // 2, y), create_wall())
+    gridstate.add((1, h // 2), create_agent(health=5))
+    gridstate.add((w - 2, h // 2), create_exit())
     core = create_core(reward=CORE_REWARD, required=True)  # reward=0
-    lvl.add((w // 2 - 1, h // 2 - 1), core)
-    return to_state(lvl)
+    gridstate.add((w // 2 - 1, h // 2 - 1), core)
+    return to_state(gridstate)
 
 
 def build_level_required_two(seed: int = 104) -> State:
@@ -214,7 +214,7 @@ def build_level_required_two(seed: int = 104) -> State:
         State: Authored immutable state.
     """
     w, h = 11, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -222,18 +222,20 @@ def build_level_required_two(seed: int = 104) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    _border(lvl)
+    _floors(gridstate)
+    _border(gridstate)
     midx, midy = w // 2, h // 2
     for x in range(1, w - 1):
         for y in range(1, h - 1):
             if x != midx and y != midy:
-                lvl.add((x, y), create_wall())
-    lvl.add((1, midy), create_agent(health=6))
-    lvl.add((w - 2, midy), create_exit())
-    lvl.add((midx, 1), create_core(reward=CORE_REWARD, required=True))  # reward=0
-    lvl.add((midx, h - 2), create_core(reward=CORE_REWARD, required=True))  # reward=0
-    return to_state(lvl)
+                gridstate.add((x, y), create_wall())
+    gridstate.add((1, midy), create_agent(health=6))
+    gridstate.add((w - 2, midy), create_exit())
+    gridstate.add((midx, 1), create_core(reward=CORE_REWARD, required=True))  # reward=0
+    gridstate.add(
+        (midx, h - 2), create_core(reward=CORE_REWARD, required=True)
+    )  # reward=0
+    return to_state(gridstate)
 
 
 def build_level_key_door(seed: int = 105) -> State:
@@ -246,7 +248,7 @@ def build_level_key_door(seed: int = 105) -> State:
         State: Authored immutable state.
     """
     w, h = 11, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -254,15 +256,15 @@ def build_level_key_door(seed: int = 105) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
+    _floors(gridstate)
     for y in range(h):
         if y != h // 2:
-            lvl.add((w // 2, y), create_wall())
-    lvl.add((1, h // 2), create_agent(health=5))
-    lvl.add((w - 2, h // 2), create_exit())
-    lvl.add((2, h // 2 - 1), create_key(key_id="alpha"))
-    lvl.add((w // 2, h // 2), create_door(key_id="alpha"))
-    return to_state(lvl)
+            gridstate.add((w // 2, y), create_wall())
+    gridstate.add((1, h // 2), create_agent(health=5))
+    gridstate.add((w - 2, h // 2), create_exit())
+    gridstate.add((2, h // 2 - 1), create_key(key_id="alpha"))
+    gridstate.add((w // 2, h // 2), create_door(key_id="alpha"))
+    return to_state(gridstate)
 
 
 def build_level_hazard_detour(seed: int = 106) -> State:
@@ -277,7 +279,7 @@ def build_level_hazard_detour(seed: int = 106) -> State:
         State: Authored immutable state.
     """
     w, h = 11, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -285,18 +287,18 @@ def build_level_hazard_detour(seed: int = 106) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    lvl.add((1, h // 2), create_agent(health=6))
-    lvl.add((w - 2, h // 2), create_exit())
+    _floors(gridstate)
+    gridstate.add((1, h // 2), create_agent(health=6))
+    gridstate.add((w - 2, h // 2), create_exit())
     # Central hazard (2 dmg); side wall encourages detour, but cost remains uniform except coin tiles
-    lvl.add(
+    gridstate.add(
         (w // 2 - 1, h // 2),
         create_hazard("spike", damage=HAZARD_DAMAGE, lethal=False),
     )
     for y in range(1, h - 1):
         if y != h // 2:
-            lvl.add((w // 2 - 1, y), create_wall())
-    return to_state(lvl)
+            gridstate.add((w // 2 - 1, y), create_wall())
+    return to_state(gridstate)
 
 
 def build_level_portal_shortcut(seed: int = 107) -> State:
@@ -309,7 +311,7 @@ def build_level_portal_shortcut(seed: int = 107) -> State:
         State: Authored immutable state.
     """
     w, h = 11, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -317,16 +319,16 @@ def build_level_portal_shortcut(seed: int = 107) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    lvl.add((1, h // 2), create_agent(health=5))
-    lvl.add((w - 2, h // 2), create_exit())
+    _floors(gridstate)
+    gridstate.add((1, h // 2), create_agent(health=5))
+    gridstate.add((w - 2, h // 2), create_exit())
     p1 = create_portal()
     p2 = create_portal(pair=p1)
-    lvl.add((2, 1), p1)
-    lvl.add((w - 1, h // 2), p2)
+    gridstate.add((2, 1), p1)
+    gridstate.add((w - 1, h // 2), p2)
     for x in range(3, w - 3):
-        lvl.add((x, h // 2 - 1), create_wall())
-    return to_state(lvl)
+        gridstate.add((x, h // 2 - 1), create_wall())
+    return to_state(gridstate)
 
 
 def build_level_pushable_box(seed: int = 108) -> State:
@@ -339,7 +341,7 @@ def build_level_pushable_box(seed: int = 108) -> State:
         State: Authored immutable state.
     """
     w, h = 11, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -347,14 +349,14 @@ def build_level_pushable_box(seed: int = 108) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
+    _floors(gridstate)
     for y in range(h):
         if y != h // 2:
-            lvl.add((w // 2, y), create_wall())
-    lvl.add((1, h // 2), create_agent(health=5))
-    lvl.add((w - 2, h // 2), create_exit())
-    lvl.add((w // 2 - 1, h // 2), create_box(pushable=True))
-    return to_state(lvl)
+            gridstate.add((w // 2, y), create_wall())
+    gridstate.add((1, h // 2), create_agent(health=5))
+    gridstate.add((w - 2, h // 2), create_exit())
+    gridstate.add((w // 2 - 1, h // 2), create_box(pushable=True))
+    return to_state(gridstate)
 
 
 def build_level_enemy_patrol(seed: int = 109) -> State:
@@ -367,7 +369,7 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
         State: Authored immutable state.
     """
     w, h = 13, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -375,13 +377,13 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    lvl.add((2, h // 2), create_agent(health=1))
-    lvl.add((w - 2, h // 2), create_exit())
+    _floors(gridstate)
+    gridstate.add((2, h // 2), create_agent(health=1))
+    gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
         if y not in [h // 2, h // 2 + 1]:
-            lvl.add((w // 2, y), create_wall())
-            lvl.add((w // 2 + 1, y), create_wall())
+            gridstate.add((w // 2, y), create_wall())
+            gridstate.add((w // 2 + 1, y), create_wall())
     enemy1 = create_monster(
         damage=ENEMY_DAMAGE,
         lethal=False,
@@ -396,9 +398,9 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
         moving_on_collision="bounce",
         moving_speed=1,
     )
-    lvl.add((w // 2, h // 2), enemy1)
-    lvl.add((w // 2 + 1, h // 2), enemy2)
-    return to_state(lvl)
+    gridstate.add((w // 2, h // 2), enemy1)
+    gridstate.add((w // 2 + 1, h // 2), enemy2)
+    return to_state(gridstate)
 
 
 # -------------------------
@@ -419,7 +421,7 @@ def build_level_power_shield(seed: int = 110) -> State:
         State: Authored immutable state.
     """
     w, h = 11, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -427,18 +429,18 @@ def build_level_power_shield(seed: int = 110) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    lvl.add((1, h // 2), create_agent(health=2))
-    lvl.add((w - 2, h // 2), create_exit())
+    _floors(gridstate)
+    gridstate.add((1, h // 2), create_agent(health=2))
+    gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
         if y != h // 2:
-            lvl.add((w // 2, y), create_wall())
-    lvl.add((2, h // 2 - 3), create_immunity_effect(usage=5))  # Shield
-    lvl.add(
+            gridstate.add((w // 2, y), create_wall())
+    gridstate.add((2, h // 2 - 3), create_immunity_effect(usage=5))  # Shield
+    gridstate.add(
         (w // 2, h // 2),
         create_hazard("spike", damage=HAZARD_DAMAGE, lethal=False),
     )
-    return to_state(lvl)
+    return to_state(gridstate)
 
 
 def build_level_power_ghost(seed: int = 111) -> State:
@@ -453,7 +455,7 @@ def build_level_power_ghost(seed: int = 111) -> State:
         State: Authored immutable state.
     """
     w, h = 13, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -461,15 +463,15 @@ def build_level_power_ghost(seed: int = 111) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    lvl.add((1, h // 2), create_agent(health=5))
-    lvl.add((w - 2, h // 2), create_exit())
+    _floors(gridstate)
+    gridstate.add((1, h // 2), create_agent(health=5))
+    gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
         if y != h // 2:
-            lvl.add((w // 2, y), create_wall())
-    lvl.add((2, h // 2 - 3), create_phasing_effect(time=5))  # Ghost
-    lvl.add((w // 2, h // 2), create_door(key_id="alpha"))  # no key anywhere
-    return to_state(lvl)
+            gridstate.add((w // 2, y), create_wall())
+    gridstate.add((2, h // 2 - 3), create_phasing_effect(time=5))  # Ghost
+    gridstate.add((w // 2, h // 2), create_door(key_id="alpha"))  # no key anywhere
+    return to_state(gridstate)
 
 
 def build_level_power_boots(seed: int = 112) -> State:
@@ -484,7 +486,7 @@ def build_level_power_boots(seed: int = 112) -> State:
         State: Authored immutable state.
     """
     w, h = 13, 9
-    lvl = Level(
+    gridstate = GridState(
         w,
         h,
         movement=CardinalMovement(),
@@ -492,15 +494,15 @@ def build_level_power_boots(seed: int = 112) -> State:
         seed=seed,
         turn_limit=TURN_LIMIT,
     )
-    _floors(lvl)
-    lvl.add((1, h // 2), create_agent(health=1))
-    lvl.add((w - 2, h // 2), create_exit())
+    _floors(gridstate)
+    gridstate.add((1, h // 2), create_agent(health=1))
+    gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
         if y not in [h // 2, h // 2 + 1]:
-            lvl.add((w // 2, y), create_wall())
-            lvl.add((w // 2 + 1, y), create_wall())
-            lvl.add((w // 2 + 2, y), create_wall())
-    lvl.add(
+            gridstate.add((w // 2, y), create_wall())
+            gridstate.add((w // 2 + 1, y), create_wall())
+            gridstate.add((w // 2 + 2, y), create_wall())
+    gridstate.add(
         (w // 2 - 1, h // 2 + 1), create_speed_effect(multiplier=2, time=5)
     )  # Boots
     enemy1 = create_monster(
@@ -524,10 +526,10 @@ def build_level_power_boots(seed: int = 112) -> State:
         moving_on_collision="bounce",
         moving_speed=1,
     )
-    lvl.add((w // 2, h // 2), enemy1)
-    lvl.add((w // 2 + 1, h // 2), enemy2)
-    lvl.add((w // 2 + 2, h // 2), enemy3)
-    return to_state(lvl)
+    gridstate.add((w // 2, h // 2), enemy1)
+    gridstate.add((w // 2 + 1, h // 2), enemy2)
+    gridstate.add((w // 2 + 2, h // 2), enemy3)
+    return to_state(gridstate)
 
 
 # -------------------------
@@ -536,7 +538,7 @@ def build_level_power_boots(seed: int = 112) -> State:
 
 
 def build_level_capstone(seed: int = 113) -> State:
-    level = Level(
+    gridstate = GridState(
         width=7,
         height=7,
         movement=CardinalMovement(),
@@ -545,28 +547,28 @@ def build_level_capstone(seed: int = 113) -> State:
         turn_limit=TURN_LIMIT,
     )
 
-    _floors(level)
+    _floors(gridstate)
 
-    level.add((0, 0), create_agent(health=5))
-    level.add((3, 0), create_wall())
-    level.add((5, 0), create_wall())
-    level.add((1, 1), create_wall())
-    level.add((1, 2), create_wall())
-    level.add((3, 2), create_wall())
-    level.add((4, 2), create_wall())
-    level.add((6, 2), create_wall())
-    level.add((0, 3), create_wall())
-    level.add((3, 3), create_wall())
-    level.add((5, 3), create_wall())
-    level.add((6, 3), create_core(reward=CORE_REWARD, required=True))
-    level.add((0, 4), create_key(key_id="my_key"))
-    level.add((1, 4), create_wall())
-    level.add((3, 4), create_door(key_id="my_key"))
-    level.add((3, 5), create_wall())
-    level.add((5, 5), create_wall())
-    level.add((6, 5), create_wall())
-    level.add((1, 6), create_wall())
-    level.add(
+    gridstate.add((0, 0), create_agent(health=5))
+    gridstate.add((3, 0), create_wall())
+    gridstate.add((5, 0), create_wall())
+    gridstate.add((1, 1), create_wall())
+    gridstate.add((1, 2), create_wall())
+    gridstate.add((3, 2), create_wall())
+    gridstate.add((4, 2), create_wall())
+    gridstate.add((6, 2), create_wall())
+    gridstate.add((0, 3), create_wall())
+    gridstate.add((3, 3), create_wall())
+    gridstate.add((5, 3), create_wall())
+    gridstate.add((6, 3), create_core(reward=CORE_REWARD, required=True))
+    gridstate.add((0, 4), create_key(key_id="my_key"))
+    gridstate.add((1, 4), create_wall())
+    gridstate.add((3, 4), create_door(key_id="my_key"))
+    gridstate.add((3, 5), create_wall())
+    gridstate.add((5, 5), create_wall())
+    gridstate.add((6, 5), create_wall())
+    gridstate.add((1, 6), create_wall())
+    gridstate.add(
         (2, 6),
         create_monster(
             damage=ENEMY_DAMAGE,
@@ -575,10 +577,10 @@ def build_level_capstone(seed: int = 113) -> State:
             moving_speed=1,
         ),
     )
-    level.add((3, 6), create_wall())
-    level.add((6, 6), create_exit())
+    gridstate.add((3, 6), create_wall())
+    gridstate.add((6, 6), create_exit())
 
-    return to_state(level)
+    return to_state(gridstate)
 
 
 # -------------------------

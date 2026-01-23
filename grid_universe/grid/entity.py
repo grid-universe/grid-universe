@@ -76,7 +76,7 @@ REFERENCE_FIELD_TO_COMPONENT: Final[Mapping[FieldName, ComponentType]] = {
     "portal_pair_ref": Portal,
 }
 
-# Level-only nested lists (contain BaseEntity instances); tuple avoids forward-ref type mismatch
+# Grid representation nested lists (contain BaseEntity instances); tuple avoids forward-ref type mismatch
 NESTED_FIELDS: Final[tuple[FieldName, ...]] = ("inventory_list", "status_list")
 
 
@@ -90,7 +90,7 @@ def _empty_objs() -> list["BaseEntity"]:
 @dataclass
 class BaseEntity:
     """
-    Minimal base for mutable level entities.
+    Minimal base for mutable grid state entities.
     """
 
     def __post_init__(self) -> None:
@@ -171,11 +171,11 @@ class Entity(BaseEntity):
     time_limit: TimeLimit | None = None
     usage_limit: UsageLimit | None = None
 
-    # Level-only nested objects (not placed on the grid; materialized during conversion)
+    # Grid representation nested objects (not placed on the grid; materialized during conversion)
     inventory_list: list[BaseEntity] = field(default_factory=_empty_objs)
     status_list: list[BaseEntity] = field(default_factory=_empty_objs)
 
-    # Level-only reference fields (resolved during conversion)
+    # Grid representation reference fields (resolved during conversion)
     pathfind_target_ref: BaseEntity | None = None
     pathfinding_type: PathfindingType | None = None
     portal_pair_ref: BaseEntity | None = None

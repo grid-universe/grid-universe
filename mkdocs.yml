@@ -38,7 +38,7 @@ nav:
     - State: api/state.md
     - Step: api/step.md
     - Actions: api/actions.md
-    - Env: api/gym_env.md
+    - Env: api/env.md
     - Types: api/types.md
     - Entity: api/entity.md
     - Runtime: api/runtime.md
@@ -58,16 +58,17 @@ nav:
       - status: api/systems/status.md
       - terminal: api/systems/terminal.md
       - tile: api/systems/tile.md
-    - Levels:
-      - Level: api/levels/level.md
-      - Entity: api/levels/entity.md
-      - Convert: api/levels/convert.md
-      - Factories: api/levels/factories.md
+    - Grid Representation:
+      - Grid State: api/grid/gridstate.md
+      - Entity: api/grid/entity.md
+      - Convert: api/grid/convert.md
+      - Factories: api/grid/factories.md
+      - Step: api/grid/step.md
     - Examples:
       - Maze: api/examples/maze.md
       - Gameplay Levels: api/examples/gameplay_levels.md
       - Cipher Levels: api/examples/cipher_objective_levels.md
-    - Renderer: api/renderer/texture.md
+    - Renderer: api/renderer/image.md
     - Movements & Objectives:
       - Movements: api/movements.md
       - Objectives: api/objectives.md

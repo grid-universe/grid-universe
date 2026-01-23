@@ -1,7 +1,7 @@
 """Procedural maze level generator example.
 
 This module demonstrates building a parameterized maze-based level using the
-``Level`` editing API and factory helpers, then converting to an immutable
+``GridState`` editing API and factory helpers, then converting to an immutable
 ``State`` suitable for simulation or Gym-style environments.
 
 Design Goals
@@ -58,10 +58,10 @@ from grid_universe.components.properties import (
     PathfindingType,
     Direction,
 )
-from grid_universe.levels.grid import Level, Position
-from grid_universe.levels.convert import to_state
-from grid_universe.levels.entity import Entity
-from grid_universe.levels.factories import (
+from grid_universe.grid.gridstate import GridState, Position
+from grid_universe.grid.convert import to_state
+from grid_universe.grid.entity import Entity
+from grid_universe.grid.factories import (
     create_agent,
     create_floor,
     create_wall,
@@ -222,8 +222,8 @@ def generate(
     maze_grid = generate_perfect_maze(width, height, rng)
     maze_grid = adjust_maze_wall_percentage(maze_grid, wall_percentage, rng)
 
-    # 2) Level
-    level = Level(
+    # 2) GridState
+    gridstate = GridState(
         width=width,
         height=height,
         movement=movement,
@@ -243,15 +243,15 @@ def generate(
 
     # 4) Floors on all open cells
     for pos in open_positions:
-        level.add(pos, create_floor(cost_amount=movement_cost))
+        gridstate.add(pos, create_floor(cost_amount=movement_cost))
 
     # 5) Agent and exit
     start_pos: Position = _pop_or_fallback(open_positions, (0, 0))
     agent = create_agent(health=health)
-    level.add(start_pos, agent)
+    gridstate.add(start_pos, agent)
 
     goal_pos: Position = _pop_or_fallback(open_positions, (width - 1, height - 1))
-    level.add(goal_pos, create_exit())
+    gridstate.add(goal_pos, create_exit())
 
     # 6) Required cores
     required_positions: list[Position] = []
@@ -259,7 +259,7 @@ def generate(
         if not open_positions:
             break
         pos = open_positions.pop()
-        level.add(pos, create_core(reward=required_item_reward, required=True))
+        gridstate.add(pos, create_core(reward=required_item_reward, required=True))
         required_positions.append(pos)
 
     # Compute essential path set
@@ -271,7 +271,7 @@ def generate(
     for _ in range(num_rewardable_items):
         if not open_positions:
             break
-        level.add(open_positions.pop(), create_coin(reward=rewardable_item_reward))
+        gridstate.add(open_positions.pop(), create_coin(reward=rewardable_item_reward))
 
     # 8) Portals (explicit pairing by reference)
     for _ in range(num_portals):
@@ -279,8 +279,8 @@ def generate(
             break
         p1 = create_portal()
         p2 = create_portal(pair=p1)  # reciprocal reference
-        level.add(open_positions.pop(), p1)
-        level.add(open_positions.pop(), p2)
+        gridstate.add(open_positions.pop(), p1)
+        gridstate.add(open_positions.pop(), p2)
 
     # 9) Doors/keys
     for i in range(num_doors):
@@ -289,8 +289,8 @@ def generate(
         key_pos = open_positions.pop()
         door_pos = open_positions.pop()
         key_id_str = f"key{i}"
-        level.add(key_pos, create_key(key_id=key_id_str))
-        level.add(door_pos, create_door(key_id=key_id_str))
+        gridstate.add(key_pos, create_key(key_id=key_id_str))
+        gridstate.add(door_pos, create_door(key_id=key_id_str))
 
     # 10) Powerups (as pickups)
     create_effect_fn_map: dict[EffectType, Callable[..., Entity]] = {
@@ -307,7 +307,7 @@ def generate(
             "time": lim_amount if lim_type == EffectLimit.TIME else None,
             "usage": lim_amount if lim_type == EffectLimit.USAGE else None,
         }
-        level.add(pos, create_effect_fn(**extra, **kwargs))
+        gridstate.add(pos, create_effect_fn(**extra, **kwargs))
 
     # 11) Non-essential positions (for enemies, hazards, moving boxes)
     open_non_essential: list[Position] = [
@@ -326,7 +326,7 @@ def generate(
             moving_direction=direction,
             moving_speed=speed,
         )
-        level.add(pos, box)
+        gridstate.add(pos, box)
 
     # 13) Enemies (wire pathfinding to agent by reference if requested)
     for dmg, lethal, mtype, mspeed in enemies:
@@ -355,20 +355,20 @@ def generate(
                 moving_speed=mspeed,
             )
 
-        level.add(pos, enemy)
+        gridstate.add(pos, enemy)
 
     # 14) Hazards
     for app_name, dmg, lethal in hazards:
         if not open_non_essential:
             break
-        level.add(
+        gridstate.add(
             open_non_essential.pop(),
             create_hazard(app_name, damage=dmg, lethal=lethal, priority=7),
         )
 
     # 15) Walls
     for pos in wall_positions:
-        level.add(pos, create_wall())
+        gridstate.add(pos, create_wall())
 
     # Convert to immutable State (wiring is resolved inside to_state)
-    return to_state(level)
+    return to_state(gridstate)
