@@ -429,8 +429,10 @@ def get_path(object_asset: ObjectAsset, image_hmap: ObjectPropertiesImageMap) ->
         raise ValueError(f"Object rendering {object_asset} is not found in image map")
     nearest_object_properties = max(
         image_hmap[object_name].keys(),
-        key=lambda x: len(set(x).intersection(object_properties))
-        - len(set(x) - set(object_properties)),
+        key=lambda x: (
+            len(set(x).intersection(object_properties))
+            - len(set(x) - set(object_properties))
+        ),
     )
     return image_hmap[object_name][nearest_object_properties]
 

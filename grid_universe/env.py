@@ -472,6 +472,14 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
         # Initialize first episode
         self.reset()
 
+    @property
+    def gridstate(self) -> GridState:
+        """Return the current state as a GridState dataclass"""
+        assert self.state is not None, (
+            "Environment state is not initialized. Call reset() to initialize."
+        )
+        return from_state(self.state)
+
     def reset(
         self, *, seed: int | None = None, options: dict[str, object] | None = None
     ) -> tuple[ImageObservation | GridState, dict[str, object]]:
@@ -578,7 +586,7 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
         """
         assert self.state is not None and self.agent_id is not None
         if self._observation_type == "gridstate":
-            return from_state(self.state)
+            return self.gridstate
 
         # Default image observation path
         self._setup_renderer()
