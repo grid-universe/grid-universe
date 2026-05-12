@@ -255,7 +255,7 @@ def build_sample_grid_state() -> GridState:
             name="test", description="Test", function=lambda s, e, a: []
         ),
         objective=BaseObjective(
-            name="test", description="Test", functions=(lambda s, a: False,)
+            name="test", description="Test", functions=(lambda s, a, ctx: False,)
         ),
         seed=123,
     )

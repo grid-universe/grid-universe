@@ -18,13 +18,13 @@ from grid_universe.components import (
     Portal,
 )
 from grid_universe.systems.push import push_system
-from grid_universe.runtime import StepContext
+from grid_universe.runtime import make_step_context
 from grid_universe.entity import new_entity_id
 from grid_universe.actions import Action
 
 
 def step_push(state: State, agent_id: EntityID, next_pos: Position) -> State:
-    next_state, _ = push_system(state, StepContext(), agent_id, next_pos)
+    next_state, _ = push_system(state, make_step_context(state), agent_id, next_pos)
     return next_state
 
 

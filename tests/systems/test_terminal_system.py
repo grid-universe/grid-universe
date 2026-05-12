@@ -4,6 +4,7 @@ from pyrsistent import pmap, pset, PMap
 from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.movements import BaseMovement
 from grid_universe.systems.terminal import win_system, lose_system
+from grid_universe.runtime import make_step_context
 from grid_universe.components import (
     Agent,
     Requirable,
@@ -78,7 +79,7 @@ def test_win_when_on_exit_and_requirable_collected() -> None:
         all_required_collected=True,
         agent_dead=False,
     )
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert new_state.win
     assert not new_state.lose
 
@@ -89,7 +90,7 @@ def test_no_win_if_required_not_collected() -> None:
         all_required_collected=False,
         agent_dead=False,
     )
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert not new_state.win
 
 
@@ -99,7 +100,7 @@ def test_no_win_if_not_on_exit() -> None:
         all_required_collected=True,
         agent_dead=False,
     )
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert not new_state.win
 
 
@@ -125,7 +126,7 @@ def test_win_when_on_exit_no_required_items() -> None:
     )
     # Remove all required items from state
     state = replace(state, requirable=pmap())
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert new_state.win
 
 
@@ -133,7 +134,7 @@ def test_dead_agent_on_exit_no_win() -> None:
     state, agent_id, exit_id, requirable_ids = make_terminal_state(
         agent_on_exit=True, all_required_collected=True, agent_dead=True
     )
-    win_state = win_system(state, agent_id)
+    win_state = win_system(state, agent_id, make_step_context(state))
     lose_state = lose_system(state, agent_id)
     assert lose_state.lose
     assert not win_state.win
@@ -144,7 +145,7 @@ def test_win_state_is_idempotent() -> None:
         agent_on_exit=True, all_required_collected=True, agent_dead=False
     )
     state = replace(state, win=True)
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert new_state.win
 
 
@@ -162,7 +163,7 @@ def test_no_win_if_agent_position_missing() -> None:
         agent_on_exit=True, all_required_collected=True, agent_dead=False
     )
     state = replace(state, position=state.position.remove(agent_id))
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert not new_state.win
 
 
@@ -171,7 +172,7 @@ def test_no_win_if_no_agent_in_state() -> None:
         agent_on_exit=True, all_required_collected=True, agent_dead=False
     )
     state = replace(state, agent=state.agent.remove(agent_id))
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert not new_state.win
 
 
@@ -184,5 +185,5 @@ def test_win_when_on_any_exit() -> None:
     pos = state.position.set(exit2_id, state.position[agent_id])
     exits = state.exit.set(exit2_id, Exit())
     state = replace(state, exit=exits, position=pos)
-    new_state = win_system(state, agent_id)
+    new_state = win_system(state, agent_id, make_step_context(state))
     assert new_state.win

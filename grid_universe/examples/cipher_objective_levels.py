@@ -17,7 +17,7 @@ TURN_LIMIT = 20
 REDACTED_OBJECTIVE = BaseObjective(
     name="redacted",
     description="Redacted objective for cipher levels",
-    functions=(lambda state, entity_id: False,),
+    functions=(lambda state, entity_id, ctx: False,),
 )
 
 

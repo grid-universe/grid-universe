@@ -1,5 +1,5 @@
 from dataclasses import replace
-from grid_universe.runtime import StepContext
+from grid_universe.runtime import StepContext, make_step_context
 from grid_universe.actions import Action, MOVE_ACTIONS
 from grid_universe.components.properties.position import Position
 from grid_universe.systems.damage import damage_system
@@ -49,18 +49,18 @@ def step(state: State, action: Action, agent_id: EntityID | None = None) -> Stat
     if not is_valid_state(state, agent_id) or is_terminal_state(state, agent_id):
         return state
 
-    ctx: StepContext = StepContext(prev_status=state.status)
+    ctx: StepContext = make_step_context(state)
 
     ctx = position_system(state, ctx)  # before movements
     state, ctx = moving_system(state, ctx)
-    state = pathfinding_system(state)
+    state = pathfinding_system(state, ctx)
 
     if action in MOVE_ACTIONS:
         state, ctx = _step_move(state, ctx, action, agent_id)
     elif action == Action.USE_KEY:
-        state = _step_usekey(state, action, agent_id)
+        state = _step_usekey(state, ctx, action, agent_id)
     elif action == Action.PICK_UP:
-        state = _step_pickup(state, action, agent_id)
+        state = _step_pickup(state, ctx, action, agent_id)
     elif action == Action.WAIT:
         state = _step_wait(state, action, agent_id)
     else:
@@ -121,25 +121,29 @@ def _step_move(
     return state, ctx
 
 
-def _step_usekey(state: State, action: Action, agent_id: EntityID) -> State:
+def _step_usekey(
+    state: State, ctx: StepContext, action: Action, agent_id: EntityID
+) -> State:
     """
     Apply the use-key action.
 
     Invokes `grid_universe.systems.locked.unlock_system` to attempt to
     unlock any locked entities at the agent's position or adjacent positions.
     """
-    state = unlock_system(state, agent_id)
+    state = unlock_system(state, agent_id, ctx)
     return state
 
 
-def _step_pickup(state: State, action: Action, agent_id: EntityID) -> State:
+def _step_pickup(
+    state: State, ctx: StepContext, action: Action, agent_id: EntityID
+) -> State:
     """
     Apply the pick-up action.
 
     Invokes `grid_universe.systems.collectible.collectible_system` to
     collect any collectible entities at the agent's position.
     """
-    state = collectible_system(state, agent_id)
+    state = collectible_system(state, agent_id, ctx)
     return state
 
 
@@ -175,7 +179,7 @@ def _substep(
         State: Updated state after the sub-step.
     """
     state, ctx = push_system(state, ctx, agent_id, next_pos)
-    state = movement_system(state, agent_id, next_pos)
+    state = movement_system(state, agent_id, next_pos, ctx)
     return state, ctx
 
 
@@ -201,9 +205,9 @@ def _after_substep(
     ctx = add_trail_position(ctx, agent_id, state.position[agent_id])
     state = portal_system(state, ctx)
     state, ctx = damage_system(state, ctx)
-    state = tile_reward_system(state, agent_id)
+    state = tile_reward_system(state, agent_id, ctx)
     ctx = position_system(state, ctx)
-    state = win_system(state, agent_id)
+    state = win_system(state, agent_id, ctx)
     state = lose_system(state, agent_id)
     return state, ctx
 
@@ -225,7 +229,7 @@ def _after_step(state: State, ctx: StepContext, agent_id: EntityID) -> State:
     """
     state = status_tick_system(state, ctx)
     state = tile_cost_system(
-        state, agent_id
+        state, agent_id, ctx
     )  # doesn't penalize faster move (move with submoves)
     state = turn_system(state, agent_id)
     state = status_gc_system(state)

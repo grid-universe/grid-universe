@@ -9,7 +9,7 @@ expired or orphaned effects.
 from dataclasses import replace
 from pyrsistent.typing import PMap, PSet
 from grid_universe.components import TimeLimit, UsageLimit, Status
-from grid_universe.runtime import StepContext
+from grid_universe.runtime import StepContext, make_step_context
 from grid_universe.state import State
 from grid_universe.types import EntityID, EffectType
 
@@ -118,6 +118,6 @@ def status_gc_system(state: State) -> State:
 
 def status_system(state: State) -> State:
     """Run tick + GC phases for all statuses (public entry point)."""
-    state = status_tick_system(state, StepContext(prev_status=state.status))
+    state = status_tick_system(state, make_step_context(state))
     state = status_gc_system(state)
     return state

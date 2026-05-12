@@ -20,11 +20,11 @@ from grid_universe.components import (
 )
 from grid_universe.systems.damage import damage_system
 from grid_universe.types import EntityID
-from grid_universe.runtime import StepContext
+from grid_universe.runtime import make_step_context
 
 
-def step_damage(state: State, ctx: StepContext | None = None) -> State:
-    next_state, _ = damage_system(state, ctx or StepContext())
+def step_damage(state: State) -> State:
+    next_state, _ = damage_system(state, make_step_context(state))
     return next_state
 
 

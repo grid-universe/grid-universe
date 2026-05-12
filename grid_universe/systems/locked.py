@@ -8,19 +8,27 @@ are single-use: they are removed from inventory (and key map) upon unlocking.
 
 from dataclasses import replace
 from grid_universe.components import Position
+from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.ecs import entities_with_components_at
 from grid_universe.utils.inventory import has_key_with_id, remove_item
 
 
-def unlock(state: State, entity_id: EntityID, next_pos: Position) -> State:
+def unlock(
+    state: State,
+    entity_id: EntityID,
+    next_pos: Position,
+    ctx: StepContext,
+) -> State:
     """Attempt to unlock all locked entities at ``next_pos``.
 
     Consumes matching key(s) from the entity's inventory; multiple locks in
     the same tile are processed sequentially.
     """
-    locked_ids = entities_with_components_at(state, next_pos, state.locked)
+    locked_ids = entities_with_components_at(
+        state, next_pos, state.locked, position_index=ctx.position_index
+    )
     if not locked_ids:
         return state
 
@@ -60,7 +68,7 @@ def unlock(state: State, entity_id: EntityID, next_pos: Position) -> State:
     )
 
 
-def unlock_system(state: State, entity_id: EntityID) -> State:
+def unlock_system(state: State, entity_id: EntityID, ctx: StepContext) -> State:
     """
     Attempt to unlock all locks adjacent to the specified entity and on its own tile.
 
@@ -75,5 +83,5 @@ def unlock_system(state: State, entity_id: EntityID) -> State:
     if pos is not None:
         for dx, dy in [(0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)]:
             target_pos = Position(pos.x + dx, pos.y + dy)
-            state = unlock(state, entity_id, target_pos)
+            state = unlock(state, entity_id, target_pos, ctx)
     return state

@@ -22,6 +22,7 @@ from grid_universe.components import (
 )
 from grid_universe.types import EntityID
 from grid_universe.step import step
+from grid_universe.runtime import make_step_context
 from tests.test_utils import make_agent_state
 
 
@@ -309,7 +310,7 @@ def test_damage_and_collectible_both_apply() -> None:
         inventory=state.inventory.set(agent_id, Inventory(pset())),
     )
     state2 = step(state, Action.WAIT, agent_id=agent_id)
-    state3 = collectible_system(state2, agent_id)
+    state3 = collectible_system(state2, agent_id, make_step_context(state2))
     assert agent_health(state3, agent_id) == 7
     assert collectible_id in state3.inventory[agent_id].item_ids
 

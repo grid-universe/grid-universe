@@ -12,6 +12,7 @@ from grid_universe.components import Position
 from grid_universe.types import EntityID
 from grid_universe.utils.ecs import entities_with_components_at
 from grid_universe.utils.grid import is_entity_blocked_at, is_in_bounds, wrap_position
+from grid_universe.utils.position import set_position_component
 from grid_universe.utils.trail import add_trail_position
 from grid_universe.runtime import StepContext
 
@@ -61,7 +62,9 @@ def push_system(
         return state, ctx
 
     # Is there a pushable object at next_pos?
-    pushable_ids = entities_with_components_at(state, next_pos, state.pushable)
+    pushable_ids = entities_with_components_at(
+        state, next_pos, state.pushable, position_index=ctx.position_index
+    )
     if not pushable_ids:
         return state, ctx  # Nothing to push
 
@@ -71,12 +74,14 @@ def push_system(
 
     # Destination must be unblocked for the (first) pushable entity.
     # All pushables share the same collision rules.
-    if is_entity_blocked_at(state, pushable_ids[0], push_to):
+    if is_entity_blocked_at(
+        state, pushable_ids[0], push_to, position_index=ctx.position_index
+    ):
         return state, ctx  # Push not possible
 
-    new_position = state.position.set(eid, next_pos)
+    new_position = set_position_component(state.position, ctx, eid, next_pos)
     for pushable_id in pushable_ids:
-        new_position = new_position.set(pushable_id, push_to)
+        new_position = set_position_component(new_position, ctx, pushable_id, push_to)
         ctx = add_trail_position(ctx, pushable_id, push_to)
 
     return replace(state, position=new_position), ctx

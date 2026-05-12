@@ -18,14 +18,20 @@ The system is idempotent for a given state+entity pairing.
 from dataclasses import replace
 from grid_universe.components import Status
 from grid_universe.components.properties.inventory import Inventory
+from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.ecs import entities_with_components_at
 from grid_universe.utils.inventory import add_item
+from grid_universe.utils.position import remove_position_component
 from grid_universe.utils.status import add_status, has_effect, valid_effect
 
 
-def collectible_system(state: State, entity_id: EntityID) -> State:
+def collectible_system(
+    state: State,
+    entity_id: EntityID,
+    ctx: StepContext,
+) -> State:
     """Process collectible pickups for a single entity.
 
     Args:
@@ -40,7 +46,9 @@ def collectible_system(state: State, entity_id: EntityID) -> State:
     if entity_pos is None:
         return state
 
-    collectable_ids = entities_with_components_at(state, entity_pos, state.collectible)
+    collectable_ids = entities_with_components_at(
+        state, entity_pos, state.collectible, position_index=ctx.position_index
+    )
     if not collectable_ids:
         return state
 
@@ -71,8 +79,7 @@ def collectible_system(state: State, entity_id: EntityID) -> State:
     state_position = state.position
     state_collectible = state.collectible
     for collected_id in collected_ids:
-        if collected_id in state_position:
-            state_position = state_position.remove(collected_id)
+        state_position = remove_position_component(state_position, ctx, collected_id)
         if collected_id in state_collectible:
             state_collectible = state_collectible.remove(collected_id)
 

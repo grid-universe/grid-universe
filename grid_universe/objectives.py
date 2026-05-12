@@ -11,6 +11,7 @@ custom objectives by subclassing ``BaseObjective``.
 """
 
 from dataclasses import dataclass
+from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.types import EntityID, ObjectiveFn
 from grid_universe.utils.ecs import entities_with_components_at
@@ -19,27 +20,38 @@ from grid_universe.utils.ecs import entities_with_components_at
 # Built-in Objective Functions
 
 
-def exit_objective_fn(state: State, agent_id: EntityID) -> bool:
+def exit_objective_fn(state: State, agent_id: EntityID, ctx: StepContext) -> bool:
     """Agent stands on any entity possessing an ``Exit`` component."""
     if agent_id not in state.position:
         return False
     return (
-        len(entities_with_components_at(state, state.position[agent_id], state.exit))
+        len(
+            entities_with_components_at(
+                state,
+                state.position[agent_id],
+                state.exit,
+                position_index=ctx.position_index,
+            )
+        )
         > 0
     )
 
 
-def collect_objective_fn(state: State, agent_id: EntityID) -> bool:
+def collect_objective_fn(state: State, agent_id: EntityID, ctx: StepContext) -> bool:
     """All entities marked ``Requirable`` have been collected."""
     return all((eid not in state.collectible) for eid in state.requirable)
 
 
-def all_unlocked_objective_fn(state: State, agent_id: EntityID) -> bool:
+def all_unlocked_objective_fn(
+    state: State, agent_id: EntityID, ctx: StepContext
+) -> bool:
     """No remaining locked entities (doors, etc.)."""
     return len(state.locked) == 0
 
 
-def all_pushable_at_exit_objective_fn(state: State, agent_id: EntityID) -> bool:
+def all_pushable_at_exit_objective_fn(
+    state: State, agent_id: EntityID, ctx: StepContext
+) -> bool:
     """Every Pushable entity currently occupies an exit tile."""
     for pushable_id in state.pushable:
         if pushable_id not in state.position:
@@ -47,7 +59,10 @@ def all_pushable_at_exit_objective_fn(state: State, agent_id: EntityID) -> bool:
         if (
             len(
                 entities_with_components_at(
-                    state, state.position[pushable_id], state.exit
+                    state,
+                    state.position[pushable_id],
+                    state.exit,
+                    position_index=ctx.position_index,
                 )
             )
             == 0
@@ -67,9 +82,9 @@ class BaseObjective:
     description: str
     functions: tuple[ObjectiveFn, ...]
 
-    def __call__(self, state: State, agent_id: EntityID) -> bool:
+    def __call__(self, state: State, agent_id: EntityID, ctx: StepContext) -> bool:
         """Evaluate the objective function."""
-        return all(fn(state, agent_id) for fn in self.functions)
+        return all(fn(state, agent_id, ctx) for fn in self.functions)
 
 
 @dataclass(frozen=True)

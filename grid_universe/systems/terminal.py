@@ -5,12 +5,13 @@ Handles win/lose conditions based on objective functions, agent death, and turn 
 """
 
 from dataclasses import replace
+from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.terminal import is_terminal_state, is_valid_state
 
 
-def win_system(state: State, agent_id: EntityID) -> State:
+def win_system(state: State, agent_id: EntityID, ctx: StepContext) -> State:
     """
     Set ``win`` flag if agent meets objective function (idempotent).
 
@@ -24,7 +25,7 @@ def win_system(state: State, agent_id: EntityID) -> State:
     if not is_valid_state(state, agent_id) or is_terminal_state(state, agent_id):
         return state
 
-    if state.objective(state, agent_id):
+    if state.objective(state, agent_id, ctx):
         return replace(state, win=True)
     return state
 

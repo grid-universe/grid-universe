@@ -16,13 +16,20 @@ from dataclasses import replace
 
 from pyrsistent.typing import PMap
 from grid_universe.components import Position, UsageLimit
+from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.grid import is_entity_blocked_at, is_in_bounds
+from grid_universe.utils.position import set_entity_position
 from grid_universe.utils.status import use_status_effect_if_present
 
 
-def movement_system(state: State, entity_id: EntityID, next_pos: Position) -> State:
+def movement_system(
+    state: State,
+    entity_id: EntityID,
+    next_pos: Position,
+    ctx: StepContext,
+) -> State:
     """Move agent one tile if allowed.
 
     Args:
@@ -51,12 +58,13 @@ def movement_system(state: State, entity_id: EntityID, next_pos: Position) -> St
         if effect_id is not None:
             # Ignore all blocking, just move
             return replace(
-                state,
-                position=state.position.set(entity_id, next_pos),
+                set_entity_position(state, ctx, entity_id, next_pos),
                 usage_limit=usage_limit,
             )
 
-    if is_entity_blocked_at(state, entity_id, next_pos):
+    if is_entity_blocked_at(
+        state, entity_id, next_pos, position_index=ctx.position_index
+    ):
         return state
 
-    return replace(state, position=state.position.set(entity_id, next_pos))
+    return set_entity_position(state, ctx, entity_id, next_pos)

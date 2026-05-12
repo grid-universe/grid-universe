@@ -10,6 +10,7 @@ from dataclasses import replace
 from pyrsistent import pvector
 from pyrsistent.typing import PMap
 from grid_universe.components import PathfindingType, Position, UsageLimit
+from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.grid import is_entity_blocked_at, is_in_bounds
@@ -19,6 +20,7 @@ from grid_universe.utils.math import (
     vector_dot_product,
     vector_subtract,
 )
+from grid_universe.utils.position import set_entity_position
 from grid_universe.utils.status import use_status_effect_if_present
 
 from queue import PriorityQueue
@@ -26,7 +28,10 @@ from itertools import count
 
 
 def get_astar_next_position(
-    state: State, entity_id: EntityID, target_id: EntityID
+    state: State,
+    entity_id: EntityID,
+    target_id: EntityID,
+    ctx: StepContext,
 ) -> Position:
     """Compute next step toward target using A* with Manhattan distance heuristic.
 
@@ -48,7 +53,9 @@ def get_astar_next_position(
         return is_in_bounds(state, pos)
 
     def is_blocked(pos: Position) -> bool:
-        return is_entity_blocked_at(state, entity_id, pos)
+        return is_entity_blocked_at(
+            state, entity_id, pos, position_index=ctx.position_index
+        )
 
     def heuristic(a: Position, b: Position) -> int:
         return abs(a.x - b.x) + abs(a.y - b.y)
@@ -125,7 +132,10 @@ def get_straight_line_next_position(
 
 
 def entity_pathfinding(
-    state: State, usage_limit: PMap[EntityID, UsageLimit], entity_id: EntityID
+    state: State,
+    usage_limit: PMap[EntityID, UsageLimit],
+    entity_id: EntityID,
+    ctx: StepContext,
 ) -> State:
     """Apply pathfinding for a single entity (straight-line or A*)."""
     if entity_id not in state.position or entity_id not in state.pathfinding:
@@ -151,20 +161,20 @@ def entity_pathfinding(
     if pathfinding_type == PathfindingType.STRAIGHT_LINE:
         next_pos = get_straight_line_next_position(state, entity_id, pathfinding_target)
     elif pathfinding_type == PathfindingType.PATH:
-        next_pos = get_astar_next_position(state, entity_id, pathfinding_target)
+        next_pos = get_astar_next_position(state, entity_id, pathfinding_target, ctx)
     else:
         raise NotImplementedError
 
-    if is_entity_blocked_at(state, entity_id, next_pos) or not is_in_bounds(
-        state, next_pos
-    ):
+    if is_entity_blocked_at(
+        state, entity_id, next_pos, position_index=ctx.position_index
+    ) or not is_in_bounds(state, next_pos):
         return state
 
-    return replace(state, position=state.position.set(entity_id, next_pos))
+    return set_entity_position(state, ctx, entity_id, next_pos)
 
 
-def pathfinding_system(state: State) -> State:
+def pathfinding_system(state: State, ctx: StepContext) -> State:
     """Advance all pathfinding-enabled entities by one tile if possible."""
     for entity_id in state.pathfinding:
-        state = entity_pathfinding(state, state.usage_limit, entity_id)
+        state = entity_pathfinding(state, state.usage_limit, entity_id, ctx)
     return state

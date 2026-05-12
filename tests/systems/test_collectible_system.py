@@ -16,6 +16,7 @@ from grid_universe.entity import new_entity_id
 from grid_universe.types import EntityID
 from pyrsistent import pmap, pset
 from grid_universe.state import State
+from grid_universe.runtime import make_step_context
 
 
 def make_collectible_state(
@@ -72,7 +73,7 @@ def make_collectible_state(
 def test_pickup_normal_item() -> None:
     item_id = new_entity_id()
     state, agent_id = make_collectible_state((0, 0), (0, 0), item_id, "item")
-    new_state = collectible_system(state, agent_id)
+    new_state = collectible_system(state, agent_id, make_step_context(state))
     # Item should be in inventory
     assert item_id in new_state.inventory[agent_id].item_ids
     # Collectible should be removed from world
@@ -83,7 +84,7 @@ def test_pickup_normal_item() -> None:
 def test_pickup_rewardable_increases_score() -> None:
     item_id = new_entity_id()
     state, agent_id = make_collectible_state((0, 0), (0, 0), item_id, "rewardable")
-    new_state = collectible_system(state, agent_id)
+    new_state = collectible_system(state, agent_id, make_step_context(state))
     # Score should have increased
     assert new_state.score == 10
     # Item should be in inventory
@@ -135,7 +136,7 @@ def test_pickup_multiple_collectibles_all_types() -> None:
         inventory=inventory,
         appearance=pmap(appearance),
     )
-    new_state = collectible_system(state, agent_id)
+    new_state = collectible_system(state, agent_id, make_step_context(state))
     # All should be out of world maps
     for i in [item_id, rewardable_id, requirable_id]:
         assert i not in new_state.collectible
@@ -168,7 +169,7 @@ def test_pickup_no_inventory_does_nothing() -> None:
         collectible=collectible,
         appearance=pmap(appearance),
     )
-    new_state = collectible_system(state, agent_id)
+    new_state = collectible_system(state, agent_id, make_step_context(state))
     # Collectible should be unchanged
     assert item_id in new_state.collectible
     # No crash, inventory still missing
@@ -193,7 +194,7 @@ def test_pickup_nothing_present_does_nothing() -> None:
         inventory=inventory,
         appearance=pmap(appearance),
     )
-    new_state = collectible_system(state, agent_id)
+    new_state = collectible_system(state, agent_id, make_step_context(state))
     assert new_state == state  # No change
 
 
@@ -224,7 +225,7 @@ def test_pickup_required_collectible() -> None:
         inventory=inventory,
         appearance=pmap(appearance),
     )
-    new_state = collectible_system(state, agent_id)
+    new_state = collectible_system(state, agent_id, make_step_context(state))
     assert req_id not in new_state.collectible
     assert req_id in new_state.inventory[agent_id].item_ids
     assert req_id not in new_state.position
@@ -249,6 +250,6 @@ def test_pickup_after_collectible_already_removed() -> None:
         inventory=inventory,
         appearance=pmap(appearance),
     )
-    new_state = collectible_system(state, agent_id)
+    new_state = collectible_system(state, agent_id, make_step_context(state))
     # Should not crash or change the inventory
     assert new_state.inventory[agent_id].item_ids == pset([item_id])

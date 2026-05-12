@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from grid_universe.state import State
     from grid_universe.actions import Action
     from grid_universe.components import Position
+    from grid_universe.runtime import StepContext
 
 EntityID = int
 """Type alias for entity identifiers."""
@@ -15,7 +16,7 @@ EntityID = int
 MovementFn = Callable[["State", "EntityID", "Action"], Sequence["Position"]]
 """Function type for computing possible moves for an entity."""
 
-ObjectiveFn = Callable[["State", "EntityID"], bool]
+ObjectiveFn = Callable[["State", "EntityID", "StepContext"], bool]
 """Function type for evaluating whether an entity has met an objective."""
 
 

@@ -14,12 +14,14 @@ from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.cache import lru_identity_cache
 
+PositionIndex = dict[Position, list[EntityID]]
+
 
 def build_mutable_position_index(
     position_store: Mapping[EntityID, Position],
-) -> dict[Position, list[EntityID]]:
+) -> PositionIndex:
     """Build a mutable reverse index from position to entity IDs."""
-    index: dict[Position, list[EntityID]] = {}
+    index: PositionIndex = {}
     for eid, pos in position_store.items():
         bucket = index.get(pos)
         if bucket is None:
@@ -30,20 +32,29 @@ def build_mutable_position_index(
 
 
 def update_mutable_position_index(
-    index: dict[Position, list[EntityID]],
+    index: PositionIndex,
     entity_id: EntityID,
     old_pos: Position,
     new_pos: Position,
 ) -> None:
     """Update a mutable reverse index when an entity moves."""
-    if old_pos in index:
-        try:
-            index[old_pos].remove(entity_id)
-        except ValueError:
-            pass
-    if new_pos not in index:
-        index[new_pos] = []
-    index[new_pos].append(entity_id)
+    if old_pos == new_pos:
+        return
+
+    remove_from_mutable_position_index(index, entity_id, old_pos)
+    index.setdefault(new_pos, []).append(entity_id)
+
+
+def remove_from_mutable_position_index(
+    index: PositionIndex,
+    entity_id: EntityID,
+    old_pos: Position,
+) -> None:
+    """Remove an entity from a mutable reverse index."""
+    bucket = index[old_pos]
+    bucket.remove(entity_id)
+    if not bucket:
+        del index[old_pos]
 
 
 @lru_identity_cache(maxsize=4096)
@@ -76,10 +87,13 @@ def entities_at(
 
 
 def entities_with_components_at(
-    state: State, pos: Position, *component_stores: Mapping[EntityID, object]
+    state: State,
+    pos: Position,
+    *component_stores: Mapping[EntityID, object],
+    position_index: Mapping[Position, Iterable[EntityID]] | None = None,
 ) -> list[EntityID]:
     """Return entity IDs at ``pos`` that have all specified components."""
-    ids_at_pos = entities_at(state, pos)
+    ids_at_pos = entities_at(state, pos, position_index=position_index)
     if not ids_at_pos:
         return []
     out: list[EntityID] = []

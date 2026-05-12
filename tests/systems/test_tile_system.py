@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Tuple
 from pyrsistent import pmap, pset, PMap
 from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.movements import BaseMovement
+from grid_universe.runtime import make_step_context
 from grid_universe.state import State
 from grid_universe.components import (
     Agent,
@@ -75,8 +76,8 @@ def make_tile_state(
 
 
 def agent_step_and_score(state: State, agent_id: EntityID) -> int:
-    next_state: State = tile_reward_system(state, agent_id)
-    next_state = tile_cost_system(next_state, agent_id)
+    next_state: State = tile_reward_system(state, agent_id, make_step_context(state))
+    next_state = tile_cost_system(next_state, agent_id, make_step_context(next_state))
     return next_state.score
 
 
