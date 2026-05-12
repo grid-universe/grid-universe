@@ -5,7 +5,7 @@ from pyrsistent.typing import PMap, PSet
 from grid_universe.components import Position
 from grid_universe.components.properties.status import Status
 from grid_universe.types import EntityID
-from grid_universe.utils.ecs import PositionIndex, build_mutable_position_index
+from grid_universe.utils.ecs import PositionIndex
 
 if TYPE_CHECKING:
     from grid_universe.state import State
@@ -36,5 +36,5 @@ def make_step_context(state: "State") -> StepContext:
     """Create the runtime context shared by systems during one step."""
     return StepContext(
         prev_status=state.status,
-        position_index=build_mutable_position_index(state.position),
+        position_index=state._position_index,
     )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
 from pyrsistent import PMap, pmap
 
@@ -36,6 +36,7 @@ from grid_universe.components.properties import (
     Status,
 )
 from grid_universe.types import EntityID
+from grid_universe.utils.ecs import PositionIndex, build_mutable_position_index
 
 if TYPE_CHECKING:
     from grid_universe.objectives import BaseObjective
@@ -138,6 +139,15 @@ class State:
 
     # RNG
     seed: int | None = None
+    _position_index: PositionIndex = field(
+        default_factory=dict, repr=False, compare=False
+    )
+
+    def __post_init__(self) -> None:
+        if self.position and not self._position_index:
+            object.__setattr__(
+                self, "_position_index", build_mutable_position_index(self.position)
+            )
 
     @property
     def description(self) -> PMap[str, Any]:
@@ -149,8 +159,10 @@ class State:
             PMap[str, Any]: Persistent map of state attributes and their values.
         """
         description: PMap[str, Any] = pmap()
-        for field in self.__dataclass_fields__:
-            value = getattr(self, field)
+        for state_field in self.__dataclass_fields__:
+            if state_field.startswith("_"):
+                continue
+            value = getattr(self, state_field)
             # Skip empty persistent maps to keep output concise. We use a duck
             # type check because mypy cannot infer concrete key/value types for
             # every store here; failing len() should just include the value.
@@ -160,5 +172,5 @@ class State:
                         continue
                 except Exception:
                     pass
-            description = description.set(field, value)
+            description = description.set(state_field, value)
         return pmap(description)

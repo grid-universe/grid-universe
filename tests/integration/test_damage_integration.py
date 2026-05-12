@@ -1,4 +1,3 @@
-from dataclasses import replace
 from typing import Any, List, Dict, Tuple
 import pytest
 from pyrsistent import pmap, pset
@@ -23,7 +22,7 @@ from grid_universe.components import (
 from grid_universe.types import EntityID
 from grid_universe.step import step
 from grid_universe.runtime import make_step_context
-from tests.test_utils import make_agent_state
+from tests.test_utils import make_agent_state, replace_state as replace
 
 
 def make_damage_state(

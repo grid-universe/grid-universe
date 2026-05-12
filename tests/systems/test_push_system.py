@@ -21,6 +21,7 @@ from grid_universe.systems.push import push_system
 from grid_universe.runtime import make_step_context
 from grid_universe.entity import new_entity_id
 from grid_universe.actions import Action
+from tests.test_utils import replace_state
 
 
 def step_push(state: State, agent_id: EntityID, next_pos: Position) -> State:
@@ -165,7 +166,7 @@ def test_push_box_onto_collectible() -> None:
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
     collectible_id: EntityID = new_entity_id()
-    state = replace(
+    state = replace_state(
         state,
         collectible=state.collectible.set(collectible_id, Collectible()),
         position=state.position.set(collectible_id, Position(2, 0)),
@@ -186,7 +187,7 @@ def test_push_box_onto_exit() -> None:
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
     exit_id: EntityID = new_entity_id()
-    state = replace(
+    state = replace_state(
         state,
         exit=state.exit.set(exit_id, Exit()),
         position=state.position.set(exit_id, Position(2, 0)),
@@ -208,7 +209,7 @@ def test_push_box_onto_portal() -> None:
     )
     portal_id: EntityID = new_entity_id()
     paired_portal_id: EntityID = new_entity_id()
-    state = replace(
+    state = replace_state(
         state,
         portal=state.portal.set(portal_id, Portal(pair_entity=paired_portal_id)).set(
             paired_portal_id, Portal(pair_entity=portal_id)
@@ -235,7 +236,7 @@ def test_push_box_onto_agent() -> None:
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
     other_agent_id: EntityID = new_entity_id()
-    state = replace(
+    state = replace_state(
         state,
         agent=state.agent.set(other_agent_id, Agent()),
         collidable=state.collidable.set(other_agent_id, Collidable()),
@@ -343,7 +344,7 @@ def test_push_box_onto_multiple_collidables() -> None:
     )
     collectible_id = new_entity_id()
     exit_id = new_entity_id()
-    state = replace(
+    state = replace_state(
         state,
         collectible=state.collectible.set(collectible_id, Collectible()),
         exit=state.exit.set(exit_id, Exit()),
@@ -385,7 +386,7 @@ def test_push_box_missing_position() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
-    state = replace(state, position=state.position.remove(box_ids[0]))
+    state = replace_state(state, position=state.position.remove(box_ids[0]))
     next_state = step_push(state, agent_id, Position(1, 0))
     assert agent_id in next_state.position
     assert box_ids[0] not in next_state.position
@@ -395,7 +396,7 @@ def test_push_missing_agent_position() -> None:
     state, agent_id, box_ids, _ = make_push_state(
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
-    state = replace(state, position=state.position.remove(agent_id))
+    state = replace_state(state, position=state.position.remove(agent_id))
     next_state = step_push(state, agent_id, Position(1, 0))
     assert box_ids[0] in next_state.position
     assert agent_id not in next_state.position
@@ -406,7 +407,7 @@ def test_push_box_at_narrow_grid_edge() -> None:
         agent_pos=(0, 0), box_positions=[(1, 0)]
     )
     state = replace(state, width=1, height=2)
-    state = replace(
+    state = replace_state(
         state,
         position=state.position.set(agent_id, Position(0, 0)).set(
             box_ids[0], Position(0, 1)

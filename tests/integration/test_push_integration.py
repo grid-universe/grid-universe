@@ -1,4 +1,3 @@
-from dataclasses import replace
 from typing import Tuple, List, Dict
 from pyrsistent import pmap, pset
 
@@ -19,6 +18,7 @@ from grid_universe.components import (
 )
 from grid_universe.actions import Action
 from grid_universe.step import step
+from tests.test_utils import replace_state as replace
 
 
 def make_push_state(

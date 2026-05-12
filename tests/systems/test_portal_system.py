@@ -19,6 +19,7 @@ from grid_universe.components import (
 from grid_universe.entity import new_entity_id
 from grid_universe.systems.portal import portal_system
 from grid_universe.runtime import make_step_context
+from tests.test_utils import replace_state
 
 
 def make_entity_on_portal_state(
@@ -123,7 +124,7 @@ def test_entity_teleported_when_entering_portal(
         portal1_pos,
         portal2_pos,
     )
-    moved_state: State = replace(
+    moved_state: State = replace_state(
         state,
         position=state.position.set(entity_id, Position(*portal1_pos)),
     )
@@ -169,7 +170,7 @@ def test_pushable_teleported_when_pushed_onto_portal() -> None:
     state: State = make_entity_on_portal_state(
         entity_id, False, portal1_id, portal2_id, start_pos, portal1_pos, portal2_pos
     )
-    moved_state: State = replace(
+    moved_state: State = replace_state(
         state,
         position=state.position.set(entity_id, Position(*portal1_pos)),
     )

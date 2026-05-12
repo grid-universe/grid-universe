@@ -1,4 +1,3 @@
-from dataclasses import replace
 from typing import Dict, Set, Tuple, Optional
 
 from pyrsistent import pmap, pset
@@ -23,7 +22,7 @@ from grid_universe.components import (
 from grid_universe.entity import EntityID
 from grid_universe.actions import Action
 from grid_universe.step import step
-from ..test_utils import make_agent_state
+from ..test_utils import make_agent_state, replace_state as replace
 
 
 def agent_has_effect(state: State, agent_id: EntityID, effect_id: EntityID) -> bool:

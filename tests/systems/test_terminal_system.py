@@ -1,4 +1,3 @@
-from dataclasses import replace
 from typing import Dict, List, Tuple
 from pyrsistent import pmap, pset, PMap
 from grid_universe.objectives import CollectAndExitObjective
@@ -17,6 +16,7 @@ from grid_universe.components import (
 )
 from grid_universe.state import State
 from grid_universe.types import EntityID
+from tests.test_utils import replace_state as replace
 
 
 def make_terminal_state(

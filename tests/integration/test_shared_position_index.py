@@ -12,7 +12,7 @@ from grid_universe.utils.ecs import PositionIndex
 def test_step_reuses_single_position_index(monkeypatch: Any) -> None:
     state = generate(width=15, height=15, seed=0)
 
-    import grid_universe.runtime as runtime_module
+    import grid_universe.state as state_module
     import grid_universe.utils.ecs as ecs_module
 
     original_build = ecs_module.build_mutable_position_index
@@ -26,8 +26,8 @@ def test_step_reuses_single_position_index(monkeypatch: Any) -> None:
         return original_build(position_store)
 
     monkeypatch.setattr(ecs_module, "build_mutable_position_index", counted_build)
-    monkeypatch.setattr(runtime_module, "build_mutable_position_index", counted_build)
+    monkeypatch.setattr(state_module, "build_mutable_position_index", counted_build)
 
     step(state, Action.WAIT)
 
-    assert call_count == 1
+    assert call_count == 0

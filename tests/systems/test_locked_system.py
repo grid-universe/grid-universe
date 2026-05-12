@@ -1,4 +1,3 @@
-from dataclasses import replace
 from pyrsistent import pmap, pset
 from pyrsistent.typing import PSet
 from grid_universe.objectives import CollectAndExitObjective
@@ -18,6 +17,7 @@ from grid_universe.components import (
     Appearance,
 )
 from grid_universe.entity import new_entity_id
+from tests.test_utils import replace_state as replace
 
 
 def add_key_to_inventory(state: State, agent_id: EntityID, key_id: EntityID) -> State:

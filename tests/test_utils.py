@@ -1,4 +1,5 @@
-from typing import Dict, Tuple, List, Optional, Type, TypeVar, TypedDict
+from dataclasses import replace
+from typing import Any, Dict, Tuple, List, Optional, Type, TypeVar, TypedDict
 from pyrsistent import pmap, pset
 from pyrsistent.typing import PMap
 from grid_universe.movements import CardinalMovement, BaseMovement
@@ -34,12 +35,24 @@ from grid_universe.components import (
 )
 from grid_universe.entity import new_entity_id
 from grid_universe.types import EntityID
+from grid_universe.utils.ecs import build_mutable_position_index
+
+POSITION_FIELD = "position"
+POSITION_INDEX_FIELD = "_position_index"
 
 
 class MinimalEntities(TypedDict):
     agent_id: EntityID
     key_id: EntityID
     door_id: EntityID
+
+
+def replace_state(state: State, **changes: Any) -> State:
+    if POSITION_FIELD in changes and POSITION_INDEX_FIELD not in changes:
+        changes[POSITION_INDEX_FIELD] = build_mutable_position_index(
+            changes[POSITION_FIELD]
+        )
+    return replace(state, **changes)
 
 
 def make_minimal_key_door_state() -> Tuple[State, MinimalEntities]:

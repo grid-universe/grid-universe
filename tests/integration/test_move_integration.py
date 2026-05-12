@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 import pytest
 
 from grid_universe.components import (
@@ -25,6 +23,7 @@ from tests.test_utils import (
     make_agent_box_wall_state,
     make_exit_entity,
     assert_entity_positions,
+    replace_state as replace,
 )
 
 

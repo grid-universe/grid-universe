@@ -1,4 +1,3 @@
-from dataclasses import replace
 from pyrsistent import pset, PSet
 
 from grid_universe.state import State
@@ -14,7 +13,7 @@ from grid_universe.components import (
     Collectible,
 )
 from grid_universe.actions import Action
-from tests.test_utils import make_minimal_key_door_state
+from tests.test_utils import make_minimal_key_door_state, replace_state as replace
 
 
 def add_key_to_inventory(state: State, agent_id: EntityID, key_id: EntityID) -> State:

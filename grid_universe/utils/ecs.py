@@ -7,12 +7,17 @@ Functions here leverage caching to optimize repeated queries within
 a single state instance.
 """
 
+from __future__ import annotations
+
 from collections.abc import Iterable, Mapping
+from typing import TYPE_CHECKING
 
 from grid_universe.components import Position
-from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.utils.cache import lru_identity_cache
+
+if TYPE_CHECKING:
+    from grid_universe.state import State
 
 PositionIndex = dict[Position, list[EntityID]]
 
