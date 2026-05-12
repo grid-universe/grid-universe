@@ -58,6 +58,7 @@ class GridState:
     # Optional meta (carried through conversion)
     turn: int = 0
     score: int = 0
+    step_cost: int = 0
     win: bool = False
     lose: bool = False
     message: str | None = None

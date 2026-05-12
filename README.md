@@ -87,7 +87,7 @@ state = step(state, Action.UP)
 **Manual Level**
 ```python
 from grid_universe.grid.gridstate import GridState
-from grid_universe.grid.factories import create_floor, create_agent, create_exit
+from grid_universe.grid.factories import create_agent, create_exit
 from grid_universe.grid.convert import to_state
 from grid_universe.movements import CardinalMovement
 from grid_universe.objectives import ExitObjective
@@ -98,10 +98,8 @@ gridstate = GridState(
   movement=CardinalMovement(),
   objective=ExitObjective(),
   seed=123,
+  step_cost=1,
 )
-for y in range(gridstate.height):
-  for x in range(gridstate.width):
-    gridstate.add((x, y), create_floor())
 gridstate.add((1, 1), create_agent())
 gridstate.add((3, 3), create_exit())
 state = to_state(gridstate)

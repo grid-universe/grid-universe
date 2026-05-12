@@ -1,7 +1,7 @@
 """Convenience factory functions for building ``Entity`` objects.
 
 Each helper returns a preconfigured `Entity` with a common pattern
-(agent, floor, wall, coin, key, door, portal, hazards, effects, etc.). These
+(agent, wall, coin, key, door, portal, hazards, effects, etc.). These
 are mutable blueprints that can be converted into an immutable ECS
 `grid_universe.state.State` via `grid_universe.grid.convert.to_state`.
 """
@@ -16,7 +16,6 @@ from grid_universe.components.properties import (
     Blocking,
     Collectible,
     Collidable,
-    Cost,
     Damage,
     Exit,
     Health,
@@ -53,14 +52,6 @@ def create_agent(health: int = 5) -> Entity:
         collidable=Collidable(),
         inventory=Inventory(pset()),
         status=Status(pset()),
-    )
-
-
-def create_floor(cost_amount: int = 1) -> Entity:
-    """Background floor tile with movement cost."""
-    return Entity(
-        appearance=Appearance(name="floor", background=True, priority=10),
-        cost=Cost(amount=cost_amount),
     )
 
 

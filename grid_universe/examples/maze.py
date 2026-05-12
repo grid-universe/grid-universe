@@ -63,7 +63,6 @@ from grid_universe.grid.convert import to_state
 from grid_universe.grid.entity import Entity
 from grid_universe.grid.factories import (
     create_agent,
-    create_floor,
     create_wall,
     create_exit,
     create_coin,
@@ -201,7 +200,7 @@ def generate(
         num_portals (int): Number of portal pairs to place (each pair consumes two open cells).
         num_doors (int): Number of door/key pairs; each door is locked by its matching key.
         health (int): Initial agent health points.
-        movement_cost (int): Per-tile movement cost encoded in floor components.
+        movement_cost (int): Base score cost applied once per action step.
         required_item_reward (int): Reward granted for collecting each required item.
         rewardable_item_reward (int): Reward granted for each optional reward item (coin).
         boxes (List[BoxSpec]): List defining ``(pushable?, speed)`` for box entities; speed > 0 creates moving boxes.
@@ -230,6 +229,7 @@ def generate(
         objective=objective,
         seed=seed,
         turn_limit=turn_limit,
+        step_cost=movement_cost,
     )
 
     # 3) Collect positions
@@ -241,11 +241,7 @@ def generate(
     ]
     rng.shuffle(open_positions)  # randomize for placement variety
 
-    # 4) Floors on all open cells
-    for pos in open_positions:
-        gridstate.add(pos, create_floor(cost_amount=movement_cost))
-
-    # 5) Agent and exit
+    # 4) Agent and exit
     start_pos: Position = _pop_or_fallback(open_positions, (0, 0))
     agent = create_agent(health=health)
     gridstate.add(start_pos, agent)
@@ -253,7 +249,7 @@ def generate(
     goal_pos: Position = _pop_or_fallback(open_positions, (width - 1, height - 1))
     gridstate.add(goal_pos, create_exit())
 
-    # 6) Required cores
+    # 5) Required cores
     required_positions: list[Position] = []
     for _ in range(num_required_items):
         if not open_positions:
@@ -267,13 +263,13 @@ def generate(
         maze_grid, start_pos, required_positions, goal_pos
     )
 
-    # 7) Rewardable coins
+    # 6) Rewardable coins
     for _ in range(num_rewardable_items):
         if not open_positions:
             break
         gridstate.add(open_positions.pop(), create_coin(reward=rewardable_item_reward))
 
-    # 8) Portals (explicit pairing by reference)
+    # 7) Portals (explicit pairing by reference)
     for _ in range(num_portals):
         if len(open_positions) < 2:
             break
@@ -282,7 +278,7 @@ def generate(
         gridstate.add(open_positions.pop(), p1)
         gridstate.add(open_positions.pop(), p2)
 
-    # 9) Doors/keys
+    # 8) Doors/keys
     for i in range(num_doors):
         if len(open_positions) < 2:
             break
@@ -292,7 +288,7 @@ def generate(
         gridstate.add(key_pos, create_key(key_id=key_id_str))
         gridstate.add(door_pos, create_door(key_id=key_id_str))
 
-    # 10) Powerups (as pickups)
+    # 9) Powerups (as pickups)
     create_effect_fn_map: dict[EffectType, Callable[..., Entity]] = {
         EffectType.SPEED: create_speed_effect,
         EffectType.IMMUNITY: create_immunity_effect,
@@ -309,13 +305,13 @@ def generate(
         }
         gridstate.add(pos, create_effect_fn(**extra, **kwargs))
 
-    # 11) Non-essential positions (for enemies, hazards, moving boxes)
+    # 10) Non-essential positions (for enemies, hazards, moving boxes)
     open_non_essential: list[Position] = [
         p for p in open_positions if p not in essential_path
     ]
     rng.shuffle(open_non_essential)
 
-    # 12) Boxes
+    # 11) Boxes
     for pushable, speed in boxes:
         if not open_non_essential:
             break
@@ -328,7 +324,7 @@ def generate(
         )
         gridstate.add(pos, box)
 
-    # 13) Enemies (wire pathfinding to agent by reference if requested)
+    # 12) Enemies (wire pathfinding to agent by reference if requested)
     for dmg, lethal, mtype, mspeed in enemies:
         if not open_non_essential:
             break
@@ -357,7 +353,7 @@ def generate(
 
         gridstate.add(pos, enemy)
 
-    # 14) Hazards
+    # 13) Hazards
     for app_name, dmg, lethal in hazards:
         if not open_non_essential:
             break
@@ -366,7 +362,7 @@ def generate(
             create_hazard(app_name, damage=dmg, lethal=lethal, priority=7),
         )
 
-    # 15) Walls
+    # 14) Walls
     for pos in wall_positions:
         gridstate.add(pos, create_wall())
 

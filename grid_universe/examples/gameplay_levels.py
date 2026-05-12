@@ -6,7 +6,6 @@ from grid_universe.movements import CardinalMovement
 from grid_universe.objectives import CollectAndExitObjective, ExitObjective
 from grid_universe.state import State
 from grid_universe.grid.factories import (
-    create_floor,
     create_wall,
     create_agent,
     create_exit,
@@ -53,17 +52,6 @@ SHIELD_USAGE = 5
 # -------------------------
 TURN_LIMIT = 50
 
-# -------------------------
-# Helpers
-# -------------------------
-
-
-def _floors(gridstate: GridState, cost: int = TILE_COST) -> None:
-    """Fill the grid with floor tiles carrying uniform Cost=cost per step."""
-    for y in range(gridstate.height):
-        for x in range(gridstate.width):
-            gridstate.add((x, y), create_floor(cost_amount=cost))
-
 
 def _border(gridstate: GridState) -> None:
     """Draw wall border (background walls)."""
@@ -97,8 +85,8 @@ def build_level_basic_movement(seed: int = 100) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     gridstate.add((1, h // 2), create_agent(health=5))
     gridstate.add((w - 2, h // 2), create_exit())
     # corridor wall
@@ -125,8 +113,8 @@ def build_level_maze_turns(seed: int = 101) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     _border(gridstate)
     for x in range(2, w - 2):
         gridstate.add((x, 2), create_wall())
@@ -157,8 +145,8 @@ def build_level_optional_coin(seed: int = 102) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     _border(gridstate)
     gridstate.add((1, 2), create_wall())
     gridstate.add((3, 3), create_wall())
@@ -191,8 +179,8 @@ def build_level_required_one(seed: int = 103) -> State:
         objective=CollectAndExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     _border(gridstate)
     for y in range(1, h - 1):
         if y != h // 2:
@@ -221,8 +209,8 @@ def build_level_required_two(seed: int = 104) -> State:
         objective=CollectAndExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     _border(gridstate)
     midx, midy = w // 2, h // 2
     for x in range(1, w - 1):
@@ -255,8 +243,8 @@ def build_level_key_door(seed: int = 105) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     for y in range(h):
         if y != h // 2:
             gridstate.add((w // 2, y), create_wall())
@@ -286,8 +274,8 @@ def build_level_hazard_detour(seed: int = 106) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     gridstate.add((1, h // 2), create_agent(health=6))
     gridstate.add((w - 2, h // 2), create_exit())
     # Central hazard (2 dmg); side wall encourages detour, but cost remains uniform except coin tiles
@@ -318,8 +306,8 @@ def build_level_portal_shortcut(seed: int = 107) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     gridstate.add((1, h // 2), create_agent(health=5))
     gridstate.add((w - 2, h // 2), create_exit())
     p1 = create_portal()
@@ -348,8 +336,8 @@ def build_level_pushable_box(seed: int = 108) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     for y in range(h):
         if y != h // 2:
             gridstate.add((w // 2, y), create_wall())
@@ -376,8 +364,8 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     gridstate.add((2, h // 2), create_agent(health=1))
     gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
@@ -428,8 +416,8 @@ def build_level_power_shield(seed: int = 110) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     gridstate.add((1, h // 2), create_agent(health=2))
     gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
@@ -462,8 +450,8 @@ def build_level_power_ghost(seed: int = 111) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     gridstate.add((1, h // 2), create_agent(health=5))
     gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
@@ -493,8 +481,8 @@ def build_level_power_boots(seed: int = 112) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-    _floors(gridstate)
     gridstate.add((1, h // 2), create_agent(health=1))
     gridstate.add((w - 2, h // 2), create_exit())
     for y in range(h):
@@ -545,9 +533,8 @@ def build_level_capstone(seed: int = 113) -> State:
         objective=ExitObjective(),
         seed=seed,
         turn_limit=TURN_LIMIT,
+        step_cost=TILE_COST,
     )
-
-    _floors(gridstate)
 
     gridstate.add((0, 0), create_agent(health=5))
     gridstate.add((3, 0), create_wall())

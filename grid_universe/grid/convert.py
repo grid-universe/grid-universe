@@ -128,6 +128,7 @@ def _build_state(gridstate: GridState, stores: dict[str, dict[EntityID, Any]]) -
         rewardable=pmap(stores["rewardable"]),
         status=pmap(stores["status"]),
         # meta
+        step_cost=gridstate.step_cost,
         turn=gridstate.turn,
         score=gridstate.score,
         win=gridstate.win,
@@ -300,6 +301,7 @@ def from_state(state: State) -> GridState:
         movement=state.movement,
         objective=state.objective,
         seed=state.seed,
+        step_cost=state.step_cost,
         turn=state.turn,
         score=state.score,
         turn_limit=state.turn_limit,

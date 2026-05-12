@@ -53,8 +53,10 @@ def tile_cost_system(state: State, eid: EntityID, ctx: StepContext) -> State:
         return state
 
     cost_ids = get_noncollectible_entities(state, pos, state.cost, ctx)
-    if not cost_ids:
+    if state.step_cost == 0 and not cost_ids:
         return state
 
-    score = state.score - sum(state.cost[cid].amount for cid in cost_ids)
+    score = (
+        state.score - state.step_cost - sum(state.cost[cid].amount for cid in cost_ids)
+    )
     return replace(state, score=score)

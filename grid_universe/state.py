@@ -78,6 +78,7 @@ class State:
         requirable (PMap[EntityID, Requirable]): Entities that must be collected to win if objective requires it.
         rewardable (PMap[EntityID, Rewardable]): Entities that grant rewards when collected.
         status (PMap[EntityID, Status]): Entity status effect component map.
+        step_cost (int): Base score cost applied once per action step.
         turn (int): Current turn number.
         score (int): Cumulative score.
         turn_limit (int | None): Optional maximum number of turns allowed. When
@@ -127,6 +128,7 @@ class State:
     status: PMap[EntityID, Status] = pmap()
 
     # Status
+    step_cost: int = 0
     turn: int = 0
     score: int = 0
     win: bool = False

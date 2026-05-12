@@ -7,7 +7,8 @@ recoloring and motion glyph overlays.
 Rendering Model
 ---------------
 1. Entities occupying the same cell are grouped into categories:
-     * Background(s): ``appearance.background=True`` (e.g., floor, wall)
+     * Base floor: rendered under every cell.
+     * Background(s): ``appearance.background=True`` (e.g., wall)
      * Main: highest-priority non-background entity
      * Corner Icons: up to four icon entities (``appearance.icon=True``) placed
          in tile corners (NW, NE, SW, SE)
@@ -92,6 +93,13 @@ ObjectPropertiesImageMap = dict[ObjectName, dict[tuple[ObjectProperty, ...], str
 
 TexLookupFn = Callable[[ObjectRendering, int], Image.Image | None]
 ImageMap = HashableDict[ObjectAsset, str]
+TexCacheKey = tuple[str, int, str | None, tuple[int, int] | None, int]
+BaseCacheKey = tuple[int, int, int, str | None, int]
+
+FLOOR_RENDERING = ObjectRendering(
+    appearance=Appearance(name="floor", background=True, priority=10),
+    properties=tuple(),
+)
 
 
 # --- Built-in Image Maps ---
@@ -354,13 +362,8 @@ def get_object_renderings(
 
 def choose_background(object_renderings: list[ObjectRendering]) -> ObjectRendering:
     """
-    Return the lowest-priority background object.
+    Return the lowest-priority background object, or the implicit floor.
     Higher priority values indicate lower importance.
-
-    Raises
-    ------
-    ValueError
-        If no candidate background exists in the cell.
     """
     items = [
         object_rendering
@@ -368,7 +371,7 @@ def choose_background(object_renderings: list[ObjectRendering]) -> ObjectRenderi
         if object_rendering.appearance.background
     ]
     if len(items) == 0:
-        raise ValueError(f"No matching background: {object_renderings}")
+        return FLOOR_RENDERING
     return max(items, key=lambda x: x.appearance.priority)  # take the lowest priority
 
 
@@ -490,6 +493,38 @@ def render_cell(
     return cell_img
 
 
+def get_floor_base_image(
+    state: State,
+    *,
+    render_width: int,
+    render_height: int,
+    cell_size: int,
+    floor_asset_path: str | None,
+    tex_lookup: TexLookupFn,
+    tex_lookup_id: int,
+    base_cache: dict[BaseCacheKey, Image.Image],
+) -> Image.Image:
+    base_key = (
+        render_width,
+        render_height,
+        cell_size,
+        floor_asset_path,
+        tex_lookup_id,
+    )
+    base_img = base_cache.get(base_key)
+    if base_img is None:
+        base_img = Image.new(
+            "RGBA", (render_width, render_height), (128, 128, 128, 255)
+        )
+        floor_tex = tex_lookup(FLOOR_RENDERING, cell_size)
+        if floor_tex:
+            for y in range(state.height):
+                for x in range(state.width):
+                    base_img.paste(floor_tex, (x * cell_size, y * cell_size))
+        base_cache[base_key] = base_img
+    return base_img.copy()
+
+
 @lru_cache(maxsize=128)
 def get_files_in_directory(dir: str) -> list[str]:
     """List image files in a directory."""
@@ -531,6 +566,7 @@ def validate_appearance_names(state: State, image_map: ImageMap) -> None:
     appearance_names_in_state = set(
         appearance.name for appearance in state.appearance.values()
     )
+    appearance_names_in_state.add(FLOOR_RENDERING.appearance.name)
     appearance_names_in_image_map = set(name for (name, _) in image_map.keys())
     missing_names = appearance_names_in_state - appearance_names_in_image_map
     if missing_names:
@@ -557,12 +593,9 @@ def render(
     image_map: ImageMap | None = None,
     asset_root: str = DEFAULT_ASSET_ROOT,
     tex_lookup_fn: TexLookupFn | None = None,
-    cache: dict[
-        tuple[str, int, str | None, tuple[int, int] | None, int],
-        Image.Image | None,
-    ]
-    | None = None,
+    cache: dict[TexCacheKey, Image.Image | None] | None = None,
     cell_cache: dict[tuple[Any, ...], Image.Image] | None = None,
+    base_cache: dict[BaseCacheKey, Image.Image] | None = None,
 ) -> Image.Image:
     """Render a ``State`` into a PIL Image.
 
@@ -575,6 +608,7 @@ def render(
         tex_lookup_fn (TexLookupFn | None): Override for image loading/recoloring/overlay logic.
         cache (dict | None): Mutable memoization dict keyed by ``(path, size, group, move_dir, speed)``.
         cell_cache (dict | None): Optional per-cell composition cache (default lookup only).
+        base_cache (dict | None): Optional memoization for the floor-filled base image.
 
     Returns:
         Image.Image: Composited RGBA image of the entire grid.
@@ -596,12 +630,12 @@ def render(
         cache = {}
     if cell_cache is None:
         cell_cache = {}
+    if base_cache is None:
+        base_cache = {}
 
     image_hmap: ObjectPropertiesImageMap = defaultdict(dict)
     for (obj_name, obj_properties), value in image_map.items():
         image_hmap[obj_name][tuple(obj_properties)] = value
-
-    img = Image.new("RGBA", (render_width, render_height), (128, 128, 128, 255))
 
     state_rng = random.Random(state.seed)
     object_seeds = [state_rng.randint(0, 2**31) for _ in range(len(image_map))]
@@ -659,6 +693,17 @@ def render(
         return image
 
     tex_lookup = tex_lookup_fn or default_get_tex
+
+    img = get_floor_base_image(
+        state,
+        render_width=render_width,
+        render_height=render_height,
+        cell_size=cell_size,
+        floor_asset_path=resolve_asset_path(FLOOR_RENDERING),
+        tex_lookup=tex_lookup,
+        tex_lookup_id=0 if tex_lookup_fn is None else id(tex_lookup_fn),
+        base_cache=base_cache,
+    )
 
     grid_entities: dict[tuple[int, int], list[EntityID]] = {}
     for eid, pos in state.position.items():
@@ -735,11 +780,9 @@ class ImageRenderer:
     image_map: ImageMap
     asset_root: str
     tex_lookup_fn: TexLookupFn | None
-    _tex_cache: dict[
-        tuple[str, int, str | None, tuple[int, int] | None, int],
-        Image.Image | None,
-    ]
+    _tex_cache: dict[TexCacheKey, Image.Image | None]
     _cell_cache: dict[tuple[Any, ...], Image.Image]
+    _base_cache: dict[BaseCacheKey, Image.Image]
 
     def __init__(
         self,
@@ -756,6 +799,7 @@ class ImageRenderer:
         self.tex_lookup_fn = tex_lookup_fn
         self._tex_cache = {}
         self._cell_cache = {}
+        self._base_cache = {}
 
     def render(self, state: State) -> Image.Image:
         """Render convenience wrapper using stored configuration."""
@@ -768,4 +812,5 @@ class ImageRenderer:
             tex_lookup_fn=self.tex_lookup_fn,
             cache=self._tex_cache,
             cell_cache=self._cell_cache,
+            base_cache=self._base_cache,
         )

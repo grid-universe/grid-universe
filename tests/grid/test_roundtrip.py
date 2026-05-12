@@ -18,7 +18,6 @@ from grid_universe.grid.factories import (
     create_portal,
     create_monster,
     create_wall,
-    create_floor,
     create_speed_effect,
 )
 from grid_universe.components.properties import PathfindingType
@@ -246,7 +245,7 @@ def build_sample_grid_state() -> GridState:
     - items/effects in inventory_list/status_list
     - portals paired by reference
     - monster pathfinding to agent by reference
-    - some walls/floors
+    - some walls
     """
     lvl = GridState(
         width=7,
@@ -258,12 +257,8 @@ def build_sample_grid_state() -> GridState:
             name="test", description="Test", functions=(lambda s, a, ctx: False,)
         ),
         seed=123,
+        step_cost=7,
     )
-
-    # Background floors
-    for x in range(lvl.width):
-        for y in range(lvl.height):
-            lvl.add((x, y), create_floor(1))
 
     # Agent at (1,1) with explicit Inventory/Status components and empty nested lists
     agent = create_agent(health=10)
@@ -311,6 +306,8 @@ def test_level_roundtrip_lossless() -> None:
     grid_state2 = from_state(state)
 
     # Canonical compare
+    assert state.step_cost == grid_state1.step_cost
+    assert grid_state2.step_cost == grid_state1.step_cost
     can1 = canonicalize_grid_state(grid_state1)
     can2 = canonicalize_grid_state(grid_state2)
     assert can1 == can2, (

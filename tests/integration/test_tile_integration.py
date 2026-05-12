@@ -24,6 +24,7 @@ def make_agent_tile_state(
     rewardable: Optional[Dict[EntityID, int]] = None,
     cost: Optional[Dict[EntityID, int]] = None,
     collectible_ids: Optional[List[EntityID]] = None,
+    step_cost: int = 0,
     agent_dead: bool = False,
     agent_in_state: bool = True,
 ) -> Tuple[State, EntityID]:
@@ -62,6 +63,7 @@ def make_agent_tile_state(
         cost=pmap(cost_map),
         inventory=pmap(inventory),
         dead=pmap({agent_id: Dead()}) if agent_dead else pmap(),
+        step_cost=step_cost,
     )
     return state, agent_id
 
@@ -79,6 +81,16 @@ def test_rewardable_tile_grants_score() -> None:
 def test_cost_tile_removes_score() -> None:
     state, agent_id = make_agent_tile_state(agent_pos=(0, 0), cost={3: 4})
     assert agent_step_and_score(state, agent_id) == -4
+
+
+def test_step_cost_removes_score() -> None:
+    state, agent_id = make_agent_tile_state(agent_pos=(0, 0), step_cost=3)
+    assert agent_step_and_score(state, agent_id) == -3
+
+
+def test_step_cost_combines_with_cost_components() -> None:
+    state, agent_id = make_agent_tile_state(agent_pos=(0, 0), cost={3: 4}, step_cost=3)
+    assert agent_step_and_score(state, agent_id) == -7
 
 
 def test_rewardable_ignored_if_collectible() -> None:
