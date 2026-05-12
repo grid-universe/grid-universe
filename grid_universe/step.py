@@ -4,7 +4,7 @@ from grid_universe.actions import Action, MOVE_ACTIONS
 from grid_universe.components.properties.position import Position
 from grid_universe.systems.damage import damage_system
 from grid_universe.systems.pathfinding import pathfinding_system
-from grid_universe.systems.status import status_gc_system, status_tick_system
+from grid_universe.systems.status import status_cleanup_system, status_tick_system
 from grid_universe.state import State
 from grid_universe.systems.movement import movement_system
 from grid_universe.systems.moving import moving_system
@@ -16,7 +16,7 @@ from grid_universe.systems.locked import unlock_system
 from grid_universe.systems.terminal import turn_system, win_system, lose_system
 from grid_universe.systems.tile import tile_reward_system, tile_cost_system
 from grid_universe.types import EntityID
-from grid_universe.utils.gc import run_garbage_collector
+from grid_universe.utils.lifetime import remove_entities
 from grid_universe.utils.status import use_status_effect_if_present
 from grid_universe.utils.terminal import is_terminal_state, is_valid_state
 from grid_universe.utils.trail import add_trail_position
@@ -216,8 +216,8 @@ def _after_step(state: State, ctx: StepContext, agent_id: EntityID) -> State:
     """
     Finalize the full action step.
 
-    Applies tile cost penalties, turn advancement, status effect garbage
-    collection, and overall garbage collection.
+    Applies tile cost penalties, turn advancement, status effect cleanup,
+    and component cleanup for entities removed during the step.
 
     Args:
         state (State): State after all sub-steps of the action.
@@ -232,6 +232,6 @@ def _after_step(state: State, ctx: StepContext, agent_id: EntityID) -> State:
         state, agent_id, ctx
     )  # doesn't penalize faster move (move with submoves)
     state = turn_system(state, agent_id)
-    state = status_gc_system(state)
-    state = run_garbage_collector(state)
+    state = status_cleanup_system(state, ctx)
+    state = remove_entities(state, ctx, ctx.removed_entity_ids)
     return state

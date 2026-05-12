@@ -55,6 +55,7 @@ def unlock(
             state_key = (
                 state_key.remove(key_found) if key_found in state_key else state_key
             )
+            ctx.removed_entity_ids.add(key_found)
 
     # Update inventory
     state_inventory = state.inventory.set(entity_id, entity_inventory)

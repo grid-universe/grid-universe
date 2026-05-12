@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 from pyrsistent import pmap, pset
 from pyrsistent.typing import PMap, PSet
@@ -21,6 +21,7 @@ class StepContext:
         trail (PMap[Position, PSet[EntityID]]): Mapping of positions to entities that have occupied them (for trail effects).
         damage_hits (PSet[tuple[EntityID, EntityID, int]]): Set of damage events this turn (target, damager, turn).
         position_index: Mutable per-step reverse index from position to entity IDs.
+        removed_entity_ids: Entity IDs to delete from component stores at step end.
     """
 
     position_index: PositionIndex
@@ -28,6 +29,7 @@ class StepContext:
     prev_status: PMap[EntityID, Status] = pmap()
     trail: PMap[Position, PSet[EntityID]] = pmap()
     damage_hits: PSet[tuple[EntityID, EntityID, int]] = pset()
+    removed_entity_ids: set[EntityID] = field(default_factory=set)
 
 
 def make_step_context(state: "State") -> StepContext:

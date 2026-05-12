@@ -56,6 +56,7 @@ def collectible_system(
     entity_status: Status | None = state.status.get(entity_id)
     state_score = state.score
     collected_ids: set[EntityID] = set()
+    retained_ids: set[EntityID] = set()
 
     for collectable_id in collectable_ids:
         # Collectible is a powerup/effect
@@ -66,10 +67,12 @@ def collectible_system(
         ):
             entity_status = add_status(entity_status, collectable_id)
             collected_ids.add(collectable_id)
+            retained_ids.add(collectable_id)
         # Collectible is a normal item (e.g., key, coin, core)
         elif entity_inventory is not None and not has_effect(state, collectable_id):
             entity_inventory = add_item(entity_inventory, collectable_id)
             collected_ids.add(collectable_id)
+            retained_ids.add(collectable_id)
         # Collectible is rewardable
         if collectable_id in state.rewardable:
             state_score += state.rewardable[collectable_id].amount
@@ -82,6 +85,7 @@ def collectible_system(
         state_position = remove_position_component(state_position, ctx, collected_id)
         if collected_id in state_collectible:
             state_collectible = state_collectible.remove(collected_id)
+    ctx.removed_entity_ids.update(collected_ids - retained_ids)
 
     # Patch inventory/status in state
     state_inventory = state.inventory

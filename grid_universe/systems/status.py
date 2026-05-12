@@ -2,7 +2,7 @@
 Status effect management system.
 
 This system manages the lifecycle of status effects applied to entities,
-including ticking down time limits, checking usage limits, and garbage collecting
+including ticking down time limits, checking usage limits, and cleaning up
 expired or orphaned effects.
 """
 
@@ -12,6 +12,7 @@ from grid_universe.components import TimeLimit, UsageLimit, Status
 from grid_universe.runtime import StepContext, make_step_context
 from grid_universe.state import State
 from grid_universe.types import EntityID, EffectType
+from grid_universe.utils.lifetime import remove_entities
 
 
 def tick_time_limit(
@@ -50,14 +51,15 @@ def is_effect_expired(
     return False
 
 
-def garbage_collect(
+def cleanup_status_effects(
     state: State,
     time_limit: PMap[EntityID, TimeLimit],
     usage_limit: PMap[EntityID, UsageLimit],
     status: Status,
-) -> Status:
+) -> tuple[Status, set[EntityID]]:
     """Remove orphaned or expired effects from status and entity maps."""
     effect_ids: PSet[EntityID] = status.effect_ids
+    removed_effect_ids: set[EntityID] = set()
 
     # Remove invalid effect_ids by checking all effect component maps using EffectType
     for effect_id in list(effect_ids):
@@ -66,13 +68,15 @@ def garbage_collect(
             for effect_type in EffectType
         ):
             effect_ids = cleanup_effect(effect_id, effect_ids)
+            removed_effect_ids.add(effect_id)
 
     # Remove expired effect_ids
     for effect_id in list(effect_ids):
         if is_effect_expired(effect_id, time_limit, usage_limit):
             effect_ids = cleanup_effect(effect_id, effect_ids)
+            removed_effect_ids.add(effect_id)
 
-    return replace(status, effect_ids=effect_ids)
+    return replace(status, effect_ids=effect_ids), removed_effect_ids
 
 
 def status_tick_system(state: State, ctx: StepContext) -> State:
@@ -96,16 +100,17 @@ def status_tick_system(state: State, ctx: StepContext) -> State:
     )
 
 
-def status_gc_system(state: State) -> State:
+def status_cleanup_system(state: State, ctx: StepContext) -> State:
     """Phase 2: prune orphaned / expired effects from statuses and entities."""
     state_status = state.status
     state_time_limit = state.time_limit
     state_usage_limit = state.usage_limit
 
     for entity_id, entity_status in state_status.items():
-        entity_status = garbage_collect(
+        entity_status, removed_effect_ids = cleanup_status_effects(
             state, state_time_limit, state_usage_limit, entity_status
         )
+        ctx.removed_entity_ids.update(removed_effect_ids)
         state_status = state_status.set(entity_id, entity_status)
 
     return replace(
@@ -117,7 +122,9 @@ def status_gc_system(state: State) -> State:
 
 
 def status_system(state: State) -> State:
-    """Run tick + GC phases for all statuses (public entry point)."""
-    state = status_tick_system(state, make_step_context(state))
-    state = status_gc_system(state)
+    """Run tick and cleanup phases for all statuses."""
+    ctx = make_step_context(state)
+    state = status_tick_system(state, ctx)
+    state = status_cleanup_system(state, ctx)
+    state = remove_entities(state, ctx, ctx.removed_entity_ids)
     return state
