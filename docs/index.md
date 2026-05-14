@@ -12,7 +12,7 @@ It’s designed for:
 
 ## Installation 
 
-Grid Universe depends on Python 3.11+.
+Grid Universe depends on Python 3.13+.
 
 ```bash
 pip install -e .

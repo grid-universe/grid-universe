@@ -16,7 +16,7 @@ Entity–Component–System engine with ordered systems, procedural generators, 
 </p>
 
 <p align="center">
-    <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-blue" />
+    <img alt="Python 3.13+" src="https://img.shields.io/badge/python-3.13%2B-blue" />
     <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" />
     <img alt="Type Checked" src="https://img.shields.io/badge/types-mypy_strict-informational" />
     <img alt="Lint: Ruff" src="https://img.shields.io/badge/lint-ruff-ff69b4" />
@@ -62,7 +62,7 @@ More examples below. Full API documentation is available at https://grid-univers
 
 ## Installation
 
-**Requires Python 3.11+**
+**Requires Python 3.13+**
 
 ```bash
 pip install -e .              # base

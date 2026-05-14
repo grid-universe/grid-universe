@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A modular, extensible, entity-component-system (ECS) gridworld environment"
 authors = [{ name = "Muhammad Rizki Maulana", email = "rizki@rizkiarm.com" }]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = { file = "LICENSE" }
 
 dependencies = [
@@ -46,10 +46,10 @@ skip_covered = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py313"
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.13"
 files = "grid_universe"
 strict = true
 pretty = true
