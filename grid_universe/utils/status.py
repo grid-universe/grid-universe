@@ -10,8 +10,6 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import cast
 
-from pyrsistent.typing import PMap, PSet
-from grid_universe.components import Status
 from grid_universe.state import State
 from grid_universe.types import EntityID
 from grid_universe.components.effects import (
@@ -23,7 +21,7 @@ from grid_universe.components.effects import (
 )
 
 
-EffectMap = PMap[EntityID, Immunity] | PMap[EntityID, Phasing] | PMap[EntityID, Speed]
+EffectMap = dict[EntityID, Immunity] | dict[EntityID, Phasing] | dict[EntityID, Speed]
 
 
 def _normalize_effects(
@@ -55,21 +53,11 @@ def valid_effect(state: State, effect_id: EntityID) -> bool:
     return True
 
 
-def add_status(status: Status, effect_id: EntityID) -> Status:
-    """Return new ``Status`` with effect ID added."""
-    return Status(effect_ids=status.effect_ids.add(effect_id))
-
-
-def remove_status(status: Status, effect_id: EntityID) -> Status:
-    """Return new ``Status`` with effect ID removed."""
-    return Status(effect_ids=status.effect_ids.remove(effect_id))
-
-
 def get_status_effect(
-    effect_ids: PSet[EntityID],
+    effect_ids: set[EntityID],
     effects: EffectMap | Sequence[EffectMap],
-    time_limit: PMap[EntityID, TimeLimit],
-    usage_limit: PMap[EntityID, UsageLimit],
+    time_limit: dict[EntityID, TimeLimit],
+    usage_limit: dict[EntityID, UsageLimit],
 ) -> EntityID | None:
     """Select a valid effect from ``effect_ids`` matching any provided store.
 
@@ -114,27 +102,25 @@ def get_status_effect(
 
 
 def use_status_effect(
-    effect_id: EntityID, usage_limit: PMap[EntityID, UsageLimit]
-) -> PMap[EntityID, UsageLimit]:
+    effect_id: EntityID, usage_limit: dict[EntityID, UsageLimit]
+) -> None:
     """Consume one use from a usage-limited effect if present."""
     if effect_id not in usage_limit:
-        return usage_limit
-    usage_limit = usage_limit.set(
-        effect_id,
-        replace(usage_limit[effect_id], amount=usage_limit[effect_id].amount - 1),
+        return
+    usage_limit[effect_id] = replace(
+        usage_limit[effect_id], amount=usage_limit[effect_id].amount - 1
     )
-    return usage_limit
 
 
 def use_status_effect_if_present(
-    effect_ids: PSet[EntityID],
+    effect_ids: set[EntityID],
     effects: EffectMap | Sequence[EffectMap],
-    time_limit: PMap[EntityID, TimeLimit],
-    usage_limit: PMap[EntityID, UsageLimit],
-) -> tuple[PMap[EntityID, UsageLimit], EntityID | None]:
-    """Select and consume an effect (if any) returning updated usage map."""
+    time_limit: dict[EntityID, TimeLimit],
+    usage_limit: dict[EntityID, UsageLimit],
+) -> EntityID | None:
+    """Select and consume an effect if one is present."""
     effect_maps: list[EffectMap] = _normalize_effects(effects)
     effect_id = get_status_effect(effect_ids, effect_maps, time_limit, usage_limit)
     if effect_id is not None:
-        usage_limit = use_status_effect(effect_id, usage_limit)
-    return usage_limit, effect_id
+        use_status_effect(effect_id, usage_limit)
+    return effect_id

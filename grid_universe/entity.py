@@ -19,8 +19,3 @@ _entity_id_gen = entity_id_generator()
 def new_entity_id() -> EntityID:
     """Return a newly allocated unique entity ID."""
     return next(_entity_id_gen)
-
-
-def new_entity_ids(n: int) -> list[EntityID]:
-    """Return ``n`` fresh entity IDs as a list."""
-    return [new_entity_id() for _ in range(n)]

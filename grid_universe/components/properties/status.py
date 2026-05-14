@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from pyrsistent import PSet
+
 from grid_universe.types import EntityID
 
 
@@ -12,4 +12,4 @@ class Status:
         effect_ids: Set of EntityIDs representing status effects applied to the entity.
     """
 
-    effect_ids: PSet[EntityID]
+    effect_ids: set[EntityID]

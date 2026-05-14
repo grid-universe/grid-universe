@@ -1,9 +1,6 @@
 from dataclasses import replace
 from typing import Tuple, List
-
 import pytest
-from pyrsistent import pmap
-
 from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.movements import BaseMovement
 from grid_universe.state import State
@@ -19,7 +16,6 @@ from grid_universe.components import (
 from grid_universe.entity import new_entity_id
 from grid_universe.systems.portal import portal_system
 from grid_universe.runtime import make_step_context
-from tests.test_utils import replace_state
 
 
 def make_entity_on_portal_state(
@@ -42,13 +38,12 @@ def make_entity_on_portal_state(
     }
     collidable = {entity_id: Collidable()}
     appearance = {
-        entity_id: Appearance(name=("human" if is_agent else "box")),
+        entity_id: Appearance(name="human" if is_agent else "box"),
         portal1_id: Appearance(name="portal"),
         portal2_id: Appearance(name="portal"),
     }
     agent = {entity_id: Agent()} if is_agent else {}
     pushable = {entity_id: Pushable()} if not is_agent else {}
-
     return State(
         width=10,
         height=10,
@@ -56,12 +51,12 @@ def make_entity_on_portal_state(
             name="test", description="Test", function=lambda s, eid, d: []
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(position),
-        agent=pmap(agent),
-        pushable=pmap(pushable),
-        portal=pmap(portal),
-        appearance=pmap(appearance),
-        collidable=pmap(collidable),
+        position=dict(position),
+        agent=dict(agent),
+        pushable=dict(pushable),
+        portal=dict(portal),
+        appearance=dict(appearance),
+        collidable=dict(collidable),
         turn=0,
         score=0,
         win=False,
@@ -70,16 +65,12 @@ def make_entity_on_portal_state(
     )
 
 
-ENTITY_TYPES: List[Tuple[str, bool]] = [
-    ("agent", True),
-    ("pushable", False),
-]
+ENTITY_TYPES: List[Tuple[str, bool]] = [("agent", True), ("pushable", False)]
 
 
 @pytest.mark.parametrize("entity_label,is_agent", ENTITY_TYPES)
 def test_entity_standing_on_portal_does_not_teleport(
-    entity_label: str,
-    is_agent: bool,
+    entity_label: str, is_agent: bool
 ) -> None:
     entity_id: EntityID = new_entity_id()
     portal1_id: EntityID = new_entity_id()
@@ -87,7 +78,6 @@ def test_entity_standing_on_portal_does_not_teleport(
     entity_pos: Tuple[int, int] = (4, 4)
     portal1_pos: Tuple[int, int] = (4, 4)
     portal2_pos: Tuple[int, int] = (7, 7)
-
     state: State = make_entity_on_portal_state(
         entity_id,
         is_agent,
@@ -97,16 +87,15 @@ def test_entity_standing_on_portal_does_not_teleport(
         portal1_pos,
         portal2_pos,
     )
-
     ctx = replace(make_step_context(state), prev_position=state.position)
-    new_state: State = portal_system(state, ctx)
+    portal_system(state, ctx)
+    new_state = state
     assert new_state.position[entity_id] == Position(*portal1_pos)
 
 
 @pytest.mark.parametrize("entity_label, is_agent", ENTITY_TYPES)
 def test_entity_teleported_when_entering_portal(
-    entity_label: str,
-    is_agent: bool,
+    entity_label: str, is_agent: bool
 ) -> None:
     entity_id: EntityID = new_entity_id()
     portal1_id: EntityID = new_entity_id()
@@ -114,29 +103,21 @@ def test_entity_teleported_when_entering_portal(
     start_pos: Tuple[int, int] = (1, 1)
     portal1_pos: Tuple[int, int] = (4, 4)
     portal2_pos: Tuple[int, int] = (7, 7)
-
     state: State = make_entity_on_portal_state(
-        entity_id,
-        is_agent,
-        portal1_id,
-        portal2_id,
-        start_pos,
-        portal1_pos,
-        portal2_pos,
+        entity_id, is_agent, portal1_id, portal2_id, start_pos, portal1_pos, portal2_pos
     )
-    moved_state: State = replace_state(
-        state,
-        position=state.position.set(entity_id, Position(*portal1_pos)),
+    moved_state: State = replace(
+        state, position={**state.position, entity_id: Position(*portal1_pos)}
     )
     ctx = replace(make_step_context(moved_state), prev_position=state.position)
-    new_state: State = portal_system(moved_state, ctx)
+    portal_system(moved_state, ctx)
+    new_state = moved_state
     assert new_state.position[entity_id] == Position(*portal2_pos)
 
 
 @pytest.mark.parametrize("entity_label, is_agent", ENTITY_TYPES)
 def test_entity_not_teleported_if_not_on_portal(
-    entity_label: str,
-    is_agent: bool,
+    entity_label: str, is_agent: bool
 ) -> None:
     entity_id: EntityID = new_entity_id()
     portal1_id: EntityID = new_entity_id()
@@ -144,7 +125,6 @@ def test_entity_not_teleported_if_not_on_portal(
     entity_pos: Tuple[int, int] = (1, 2)
     portal1_pos: Tuple[int, int] = (3, 5)
     portal2_pos: Tuple[int, int] = (7, 7)
-
     state: State = make_entity_on_portal_state(
         entity_id,
         is_agent,
@@ -154,9 +134,9 @@ def test_entity_not_teleported_if_not_on_portal(
         portal1_pos,
         portal2_pos,
     )
-
     ctx = replace(make_step_context(state), prev_position=state.position)
-    new_state: State = portal_system(state, ctx)
+    portal_system(state, ctx)
+    new_state = state
     assert new_state.position[entity_id] == Position(*entity_pos)
 
 
@@ -170,12 +150,12 @@ def test_pushable_teleported_when_pushed_onto_portal() -> None:
     state: State = make_entity_on_portal_state(
         entity_id, False, portal1_id, portal2_id, start_pos, portal1_pos, portal2_pos
     )
-    moved_state: State = replace_state(
-        state,
-        position=state.position.set(entity_id, Position(*portal1_pos)),
+    moved_state: State = replace(
+        state, position={**state.position, entity_id: Position(*portal1_pos)}
     )
     ctx = replace(make_step_context(moved_state), prev_position=state.position)
-    new_state: State = portal_system(moved_state, ctx)
+    portal_system(moved_state, ctx)
+    new_state = moved_state
     assert new_state.position[entity_id] == Position(*portal2_pos)
 
 
@@ -184,10 +164,7 @@ def test_portal_pair_missing_does_not_crash() -> None:
     portal1_id: EntityID = new_entity_id()
     agent_pos: Tuple[int, int] = (2, 2)
     portal1_pos: Tuple[int, int] = (2, 2)
-    position = {
-        agent_id: Position(*agent_pos),
-        portal1_id: Position(*portal1_pos),
-    }
+    position = {agent_id: Position(*agent_pos), portal1_id: Position(*portal1_pos)}
     portal = {portal1_id: Portal(pair_entity=999)}
     collidable = {agent_id: Collidable()}
     appearance = {
@@ -201,14 +178,15 @@ def test_portal_pair_missing_does_not_crash() -> None:
             name="test", description="Test", function=lambda s, eid, d: []
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(position),
-        agent=pmap({agent_id: Agent()}),
-        portal=pmap(portal),
-        appearance=pmap(appearance),
-        collidable=pmap(collidable),
+        position=dict(position),
+        agent=dict({agent_id: Agent()}),
+        portal=dict(portal),
+        appearance=dict(appearance),
+        collidable=dict(collidable),
     )
     ctx = replace(make_step_context(state), prev_position=state.position)
-    new_state: State = portal_system(state, ctx)
+    portal_system(state, ctx)
+    new_state = state
     assert new_state.position[agent_id] == Position(*agent_pos)
 
 
@@ -251,26 +229,22 @@ def test_multiple_entities_on_portal_all_blocked() -> None:
             name="test", description="Test", function=lambda s, eid, d: []
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(position),
-        agent=pmap({agent_id: Agent()}),
-        pushable=pmap({pushable_id: Pushable()}),
-        portal=pmap(portal),
-        appearance=pmap(appearance),
-        collidable=pmap(collidable),
+        position=dict(position),
+        agent=dict({agent_id: Agent()}),
+        pushable=dict({pushable_id: Pushable()}),
+        portal=dict(portal),
+        appearance=dict(appearance),
+        collidable=dict(collidable),
     )
-    ctx = replace(make_step_context(state), prev_position=pmap(prev_position))
-    new_state: State = portal_system(state, ctx)
+    ctx = replace(make_step_context(state), prev_position=dict(prev_position))
+    portal_system(state, ctx)
+    new_state = state
     assert new_state.position[agent_id] == Position(*portal1_pos)
     assert new_state.position[pushable_id] == Position(*portal2_pos)
 
 
 def test_entity_chained_portals_no_infinite_teleport() -> None:
-    from grid_universe.components import (
-        Collidable,
-        Portal,
-        Appearance,
-        Agent,
-    )
+    from grid_universe.components import Collidable, Portal, Appearance, Agent
 
     agent_id: EntityID = new_entity_id()
     portal_a: EntityID = new_entity_id()
@@ -279,8 +253,7 @@ def test_entity_chained_portals_no_infinite_teleport() -> None:
     pos_a: Tuple[int, int] = (2, 2)
     pos_b: Tuple[int, int] = (4, 4)
     pos_c: Tuple[int, int] = (6, 6)
-    prev_agent_pos: Tuple[int, int] = (1, 2)  # Simulate moving onto portal A
-
+    prev_agent_pos: Tuple[int, int] = (1, 2)
     position = {
         agent_id: Position(*pos_a),
         portal_a: Position(*pos_a),
@@ -312,13 +285,13 @@ def test_entity_chained_portals_no_infinite_teleport() -> None:
             name="test", description="Test", function=lambda s, eid, d: []
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(position),
-        agent=pmap({agent_id: Agent()}),
-        portal=pmap(portal),
-        appearance=pmap(appearance),
-        collidable=pmap(collidable),
+        position=dict(position),
+        agent=dict({agent_id: Agent()}),
+        portal=dict(portal),
+        appearance=dict(appearance),
+        collidable=dict(collidable),
     )
-    ctx = replace(make_step_context(state), prev_position=pmap(prev_position))
-    new_state: State = portal_system(state, ctx)
-    # Only one teleport: A→B (not B→C or C→A)
+    ctx = replace(make_step_context(state), prev_position=dict(prev_position))
+    portal_system(state, ctx)
+    new_state = state
     assert new_state.position[agent_id] == Position(*pos_b)

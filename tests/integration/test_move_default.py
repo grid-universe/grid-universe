@@ -1,7 +1,5 @@
 from typing import Tuple
 import pytest
-
-from pyrsistent import pset
 from grid_universe.actions import Action
 from grid_universe.components import (
     Exit,
@@ -26,11 +24,7 @@ def test_agent_moves_right() -> None:
     state, _ = make_agent_state(
         agent_id=agent_id, agent_pos=(1, 1), movement=CardinalMovement()
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (2, 1)
 
 
@@ -83,21 +77,14 @@ def test_agent_blocked_by_wall() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (1, 1)
 
 
 def test_agent_pushes_single_box() -> None:
     agent_id: EntityID = 1
     box_id: EntityID = 2
-    extra = {
-        "position": {box_id: Position(2, 1)},
-        "pushable": {box_id: Pushable()},
-    }
+    extra = {"position": {box_id: Position(2, 1)}, "pushable": {box_id: Pushable()}}
     state, _ = make_agent_state(
         agent_id=agent_id,
         agent_pos=(1, 1),
@@ -105,11 +92,7 @@ def test_agent_pushes_single_box() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (2, 1)
     assert (state2.position[box_id].x, state2.position[box_id].y) == (3, 1)
 
@@ -129,11 +112,7 @@ def test_agent_blocked_by_chain_of_boxes() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (1, 1)
     assert (state2.position[box1].x, state2.position[box1].y) == (2, 1)
     assert (state2.position[box2].x, state2.position[box2].y) == (3, 1)
@@ -146,7 +125,7 @@ def test_agent_with_ghost_moves_through_wall() -> None:
     extra = {
         "position": {wall_id: Position(2, 1)},
         "blocking": {wall_id: Blocking()},
-        "status": {agent_id: Status(effect_ids=pset([effect_id]))},
+        "status": {agent_id: Status(effect_ids=set([effect_id]))},
         "phasing": {effect_id: Phasing()},
     }
     state, _ = make_agent_state(
@@ -156,11 +135,7 @@ def test_agent_with_ghost_moves_through_wall() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (2, 1)
 
 
@@ -168,7 +143,7 @@ def test_agent_with_double_speed_moves_two_steps() -> None:
     agent_id: EntityID = 1
     effect_id: EntityID = 201
     extra = {
-        "status": {agent_id: Status(effect_ids=pset([effect_id]))},
+        "status": {agent_id: Status(effect_ids=set([effect_id]))},
         "speed": {effect_id: Speed(multiplier=2)},
     }
     state, _ = make_agent_state(
@@ -178,21 +153,14 @@ def test_agent_with_double_speed_moves_two_steps() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (3, 1)
 
 
 def test_agent_wins_on_exit() -> None:
     agent_id: EntityID = 1
     exit_id: EntityID = 5
-    extra = {
-        "position": {exit_id: Position(2, 1)},
-        "exit": {exit_id: Exit()},
-    }
+    extra = {"position": {exit_id: Position(2, 1)}, "exit": {exit_id: Exit()}}
     state, _ = make_agent_state(
         agent_id=agent_id,
         agent_pos=(1, 1),
@@ -200,11 +168,7 @@ def test_agent_wins_on_exit() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (2, 1)
     assert state2.win
 
@@ -224,11 +188,7 @@ def test_agent_loses_on_hazard() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (2, 1)
     assert agent_id in state2.dead
 
@@ -243,9 +203,5 @@ def test_agent_move_fn_returns_empty_list() -> None:
     state, _ = make_agent_state(
         agent_id=agent_id, agent_pos=(1, 1), movement=empty_movement
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     assert (state2.position[agent_id].x, state2.position[agent_id].y) == (1, 1)

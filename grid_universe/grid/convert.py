@@ -2,13 +2,13 @@
 
 GridState and State are complementary representations of game state:
 
-- **GridState**: Mutable, grid-centric, ideal for authoring and editing
-- **State**: Immutable, ECS-based, optimized for simulation and stepping
+- **GridState**: Grid-centric, ideal for authoring and editing
+- **State**: ECS representation optimized for simulation and stepping
 
 Two primary operations:
 
-* ``to_state``: Build immutable ECS State from a GridState with grid-based entities.
-* ``from_state``: Build mutable GridState from an ECS State for editing/inspection.
+* ``to_state``: Build ECS State from a GridState with grid-based entities.
+* ``from_state``: Build GridState from an ECS State for editing/inspection.
 
 Handles wiring of portals, pathfinding targets, inventory & status effect
 embedding (nested lists -> separate entities), and assigns deterministic
@@ -18,10 +18,7 @@ EntityIDs.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import replace
 from typing import Any
-
-from pyrsistent import pmap, pset
 
 from grid_universe.state import State
 from grid_universe.types import EntityID
@@ -38,7 +35,7 @@ from grid_universe.grid.entity import BaseEntity, Entity, FIELD_TO_COMPONENT
 
 
 def _init_store_maps() -> dict[str, dict[EntityID, Any]]:
-    """Initialize mutable component-store maps mirroring State; converted to pmaps later."""
+    """Initialize component-store maps mirroring State."""
     return {
         # effects
         "immunity": {},
@@ -92,41 +89,41 @@ def _alloc_from_obj(
 
 
 def _build_state(gridstate: GridState, stores: dict[str, dict[EntityID, Any]]) -> State:
-    """Convert mutable dict stores to pyrsistent maps and construct immutable State."""
+    """Construct State from component stores."""
     return State(
         width=gridstate.width,
         height=gridstate.height,
         movement=gridstate.movement,
         objective=gridstate.objective,
         # effects
-        immunity=pmap(stores["immunity"]),
-        phasing=pmap(stores["phasing"]),
-        speed=pmap(stores["speed"]),
-        time_limit=pmap(stores["time_limit"]),
-        usage_limit=pmap(stores["usage_limit"]),
+        immunity=stores["immunity"],
+        phasing=stores["phasing"],
+        speed=stores["speed"],
+        time_limit=stores["time_limit"],
+        usage_limit=stores["usage_limit"],
         # properties
-        agent=pmap(stores["agent"]),
-        appearance=pmap(stores["appearance"]),
-        blocking=pmap(stores["blocking"]),
-        collectible=pmap(stores["collectible"]),
-        collidable=pmap(stores["collidable"]),
-        cost=pmap(stores["cost"]),
-        damage=pmap(stores["damage"]),
-        dead=pmap(stores["dead"]),
-        exit=pmap(stores["exit"]),
-        health=pmap(stores["health"]),
-        inventory=pmap(stores["inventory"]),
-        key=pmap(stores["key"]),
-        lethal_damage=pmap(stores["lethal_damage"]),
-        locked=pmap(stores["locked"]),
-        moving=pmap(stores["moving"]),
-        pathfinding=pmap(stores["pathfinding"]),
-        portal=pmap(stores["portal"]),
-        position=pmap(stores["position"]),
-        pushable=pmap(stores["pushable"]),
-        requirable=pmap(stores["requirable"]),
-        rewardable=pmap(stores["rewardable"]),
-        status=pmap(stores["status"]),
+        agent=stores["agent"],
+        appearance=stores["appearance"],
+        blocking=stores["blocking"],
+        collectible=stores["collectible"],
+        collidable=stores["collidable"],
+        cost=stores["cost"],
+        damage=stores["damage"],
+        dead=stores["dead"],
+        exit=stores["exit"],
+        health=stores["health"],
+        inventory=stores["inventory"],
+        key=stores["key"],
+        lethal_damage=stores["lethal_damage"],
+        locked=stores["locked"],
+        moving=stores["moving"],
+        pathfinding=stores["pathfinding"],
+        portal=stores["portal"],
+        position=stores["position"],
+        pushable=stores["pushable"],
+        requirable=stores["requirable"],
+        rewardable=stores["rewardable"],
+        status=stores["status"],
         # meta
         step_cost=gridstate.step_cost,
         turn=gridstate.turn,
@@ -140,7 +137,7 @@ def _build_state(gridstate: GridState, stores: dict[str, dict[EntityID, Any]]) -
 
 
 def to_state(gridstate: GridState) -> State:
-    """Convert a GridState (grid of BaseEntity objects) into an immutable State."""
+    """Convert a GridState (grid of BaseEntity objects) into a State."""
     stores: dict[str, dict[EntityID, Any]] = _init_store_maps()
 
     # source object -> eid for on-grid objects
@@ -164,32 +161,29 @@ def to_state(gridstate: GridState) -> State:
 
                 # Inventory nested items
                 if "inventory_list" in nested_lists:
-                    base_inv = stores["inventory"].get(eid, Inventory(pset()))
+                    base_inv = stores["inventory"].get(eid, Inventory(set()))
                     item_ids: list[EntityID] = [
                         _alloc_from_obj(item, stores, place_pos=None)
                         for item in nested_lists["inventory_list"]
                     ]
                     stores["inventory"][eid] = Inventory(
-                        item_ids=base_inv.item_ids.update(item_ids)
+                        item_ids=base_inv.item_ids | set(item_ids)
                     )
 
                 # Status nested effects
                 if "status_list" in nested_lists:
-                    base_status = stores["status"].get(eid, Status(pset()))
+                    base_status = stores["status"].get(eid, Status(set()))
                     eff_ids: list[EntityID] = [
                         _alloc_from_obj(eff, stores, place_pos=None)
                         for eff in nested_lists["status_list"]
                     ]
                     stores["status"][eid] = Status(
-                        effect_ids=base_status.effect_ids.update(eff_ids)
+                        effect_ids=base_status.effect_ids | set(eff_ids)
                     )
 
-    # Build immutable State before wiring
+    # Build State before wiring
     state: State = _build_state(gridstate, stores)
 
-    # Wiring: pathfinding target references
-    sp = state.pathfinding
-    pf_changed = False
     for obj, eid in placed:
         tgt_obj = getattr(obj, "pathfind_target_ref", None)
         if tgt_obj is None:
@@ -200,19 +194,12 @@ def to_state(gridstate: GridState) -> State:
         desired_type: PathfindingType = (
             getattr(obj, "pathfinding_type", None) or PathfindingType.PATH
         )
-        current = sp.get(eid)
+        current = state.pathfinding.get(eid)
         if current is None:
-            sp = sp.set(eid, Pathfinding(target=tgt_eid, type=desired_type))
-            pf_changed = True
+            state.pathfinding[eid] = Pathfinding(target=tgt_eid, type=desired_type)
         elif current.target is None:
-            sp = sp.set(eid, Pathfinding(target=tgt_eid, type=current.type))
-            pf_changed = True
-    if pf_changed:
-        state = replace(state, pathfinding=sp)
+            state.pathfinding[eid] = Pathfinding(target=tgt_eid, type=current.type)
 
-    # Wiring: portal pair references (bidirectional)
-    spr = state.portal
-    portal_changed = False
     for obj, eid in placed:
         mate_obj = getattr(obj, "portal_pair_ref", None)
         if mate_obj is None:
@@ -220,17 +207,14 @@ def to_state(gridstate: GridState) -> State:
         mate_eid = obj_to_eid.get(id(mate_obj))
         if mate_eid is None:
             continue
-        spr = spr.set(eid, Portal(pair_entity=mate_eid))
-        spr = spr.set(mate_eid, Portal(pair_entity=eid))
-        portal_changed = True
-    if portal_changed:
-        state = replace(state, portal=spr)
+        state.portal[eid] = Portal(pair_entity=mate_eid)
+        state.portal[mate_eid] = Portal(pair_entity=eid)
 
     return state
 
 
 def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
-    """Reconstruct a generic mutable grid state Entity from a State entity id."""
+    """Reconstruct a generic grid state Entity from a State entity id."""
     kwargs: dict[str, Any] = {}
     for store_name, _ in FIELD_TO_COMPONENT.items():
         store = getattr(state, store_name, None)
@@ -247,7 +231,7 @@ def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
             for item_eid in state.inventory[eid].item_ids
         ]
         kwargs["inventory_list"] = inventory_list
-        kwargs["inventory"] = Inventory(pset())
+        kwargs["inventory"] = Inventory(set())
     else:
         kwargs["inventory_list"] = []
 
@@ -260,7 +244,7 @@ def _entity_object_from_state(state: State, eid: EntityID) -> Entity:
             for eff_eid in state.status[eid].effect_ids
         ]
         kwargs["status_list"] = status_list
-        kwargs["status"] = Status(pset())
+        kwargs["status"] = Status(set())
     else:
         kwargs["status_list"] = []
 
@@ -294,7 +278,7 @@ def _restore_entity_references(
 
 
 def from_state(state: State) -> GridState:
-    """Convert an immutable State back into a mutable GridState (grid of generic Entity objects)."""
+    """Convert a State back into a GridState (grid of generic Entity objects)."""
     gridstate = GridState(
         width=state.width,
         height=state.height,

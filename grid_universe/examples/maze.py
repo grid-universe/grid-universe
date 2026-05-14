@@ -1,8 +1,8 @@
 """Procedural maze level generator example.
 
 This module demonstrates building a parameterized maze-based level using the
-``GridState`` editing API and factory helpers, then converting to an immutable
-``State`` suitable for simulation or Gym-style environments.
+``GridState`` editing API and factory helpers, then converting to a ``State``
+suitable for simulation or Gym-style environments.
 
 Design Goals
 ------------
@@ -189,8 +189,7 @@ def generate(
     """Generate a randomized maze game state.
 
     This function orchestrates maze carving, tile classification, entity
-    placement and reference wiring before producing the
-    immutable simulation ``State``.
+    placement and reference wiring before producing the simulation ``State``.
 
     Args:
         width (int): Width of the maze grid.
@@ -213,7 +212,7 @@ def generate(
         seed (int | None): RNG seed for deterministic generation.
 
     Returns:
-        State: Fully wired immutable state ready for simulation.
+        State: Fully wired state ready for simulation.
     """
     rng = random.Random(seed)
 
@@ -366,5 +365,5 @@ def generate(
     for pos in wall_positions:
         gridstate.add(pos, create_wall())
 
-    # Convert to immutable State (wiring is resolved inside to_state)
+    # Convert to State (wiring is resolved inside to_state)
     return to_state(gridstate)

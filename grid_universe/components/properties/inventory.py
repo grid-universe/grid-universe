@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from pyrsistent import PSet
+
 from grid_universe.types import EntityID
 
 
@@ -12,4 +12,4 @@ class Inventory:
         item_ids: Set of EntityIDs representing items in the inventory.
     """
 
-    item_ids: PSet[EntityID]
+    item_ids: set[EntityID]

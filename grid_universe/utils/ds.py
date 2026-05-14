@@ -6,7 +6,7 @@ V = TypeVar("V", bound=Hashable)
 
 
 class HashableDict(dict[K, V]):
-    """A hashable dictionary implementation (dangerous if mutated after hashing)."""
+    """A dictionary wrapper that must not change after hashing."""
 
     def __hash__(self) -> int:  # type: ignore[override]
         return hash(frozenset(self.items()))

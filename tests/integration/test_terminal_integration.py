@@ -1,5 +1,5 @@
+from dataclasses import replace
 from typing import Dict, List, Tuple
-from pyrsistent import pmap, pset, PMap
 from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.movements import BaseMovement
 from grid_universe.state import State
@@ -15,7 +15,6 @@ from grid_universe.components import (
 )
 from grid_universe.actions import Action
 from grid_universe.step import step
-from tests.test_utils import replace_state as replace
 
 
 def make_terminal_state(
@@ -30,7 +29,7 @@ def make_terminal_state(
     agent: Dict[EntityID, Agent] = {agent_id: Agent()}
     pos: Dict[EntityID, Position] = {}
     inventory: Dict[EntityID, Inventory] = {
-        agent_id: Inventory(pset(collected_requirable_ids))
+        agent_id: Inventory(set(collected_requirable_ids))
     }
     requirable: Dict[EntityID, Requirable] = {}
     collectible: Dict[EntityID, Collectible] = {}
@@ -41,7 +40,7 @@ def make_terminal_state(
         if rid not in collected_requirable_ids:
             collectible[rid] = Collectible()
             pos[rid] = Position(5 + rid, 5)
-    dead: PMap[EntityID, Dead] = pmap({agent_id: Dead()}) if agent_dead else pmap()
+    dead: dict[EntityID, Dead] = dict({agent_id: Dead()}) if agent_dead else dict()
     state: State = State(
         width=10,
         height=10,
@@ -49,15 +48,15 @@ def make_terminal_state(
             name="test", description="Test", function=lambda s, eid, d: []
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(pos),
-        agent=pmap(agent),
-        exit=pmap({exit_id: Exit()}),
-        collectible=pmap(collectible),
-        requirable=pmap(requirable),
-        inventory=pmap(inventory),
+        position=dict(pos),
+        agent=dict(agent),
+        exit=dict({exit_id: Exit()}),
+        collectible=dict(collectible),
+        requirable=dict(requirable),
+        inventory=dict(inventory),
         dead=dead,
     )
-    return state, agent_id, requirable_ids, exit_id
+    return (state, agent_id, requirable_ids, exit_id)
 
 
 def test_win_when_on_exit_and_all_required_collected() -> None:
@@ -123,8 +122,7 @@ def test_win_when_on_exit_no_required_items() -> None:
         collected_requirable_ids=[],
         agent_dead=False,
     )
-    # Remove all requirable items from state
-    state = replace(state, requirable=pmap())
+    state = replace(state, requirable=dict())
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert new_state.win
 
@@ -173,7 +171,12 @@ def test_no_win_if_agent_position_missing() -> None:
         collected_requirable_ids=[3],
         agent_dead=False,
     )
-    state = replace(state, position=state.position.remove(agent_id))
+    state = replace(
+        state,
+        position={
+            key: value for key, value in state.position.items() if key != agent_id
+        },
+    )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert not new_state.win
 
@@ -185,7 +188,10 @@ def test_no_win_if_no_agent_in_state() -> None:
         collected_requirable_ids=[3],
         agent_dead=False,
     )
-    state = replace(state, agent=state.agent.remove(agent_id))
+    state = replace(
+        state,
+        agent={key: value for key, value in state.agent.items() if key != agent_id},
+    )
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert not new_state.win
 
@@ -197,10 +203,9 @@ def test_win_when_on_any_exit() -> None:
         collected_requirable_ids=[3],
         agent_dead=False,
     )
-    # Add another exit at agent's position
     exit2_id = 77
-    pos = state.position.set(exit2_id, state.position[agent_id])
-    exits = state.exit.set(exit2_id, Exit())
+    pos = {**state.position, exit2_id: state.position[agent_id]}
+    exits = {**state.exit, exit2_id: Exit()}
     state = replace(state, exit=exits, position=pos)
     new_state: State = step(state, Action.UP, agent_id=agent_id)
     assert new_state.win

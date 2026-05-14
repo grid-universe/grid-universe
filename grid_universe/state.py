@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any, TYPE_CHECKING
-from pyrsistent import PMap, pmap
 
 from grid_universe.components.effects import (
     Immunity,
@@ -36,49 +35,49 @@ from grid_universe.components.properties import (
     Status,
 )
 from grid_universe.types import EntityID
-from grid_universe.utils.ecs import PositionIndex, build_mutable_position_index
+from grid_universe.utils.ecs import PositionIndex, build_position_index
 
 if TYPE_CHECKING:
     from grid_universe.objectives import BaseObjective
     from grid_universe.movements import BaseMovement
 
 
-@dataclass(frozen=True)
+@dataclass
 class State:
-    """Immutable ECS world state.
+    """ECS world state.
 
     Attributes:
         width (int): Grid width in tiles.
         height (int): Grid height in tiles.
         movement (BaseMovement): Movement function configuration.
         objective (BaseObjective): Objective configuration.
-        immunity (PMap[EntityID, Immunity]): Effect component map.
-        phasing (PMap[EntityID, Phasing]): Effect component map.
-        speed (PMap[EntityID, Speed]): Effect component map.
-        time_limit (PMap[EntityID, TimeLimit]): Effect limiter map (remaining steps).
-        usage_limit (PMap[EntityID, UsageLimit]): Effect limiter map (remaining uses).
-        agent (PMap[EntityID, Agent]): Agent component map.
-        appearance (PMap[EntityID, Appearance]): Visual appearance component map.
-        blocking (PMap[EntityID, Blocking]): Obstacles that block movement.
-        collectible (PMap[EntityID, Collectible]): Entities that can be collected.
-        collidable (PMap[EntityID, Collidable]): Entities that can collide (triggering damage, cost, etc.).
-        cost (PMap[EntityID, Cost]): Entities that inflict movement cost.
-        damage (PMap[EntityID, Damage]): Entities that inflict damage on contact.
-        dead (PMap[EntityID, Dead]): Entities that are dead/incapacitated.
-        exit (PMap[EntityID, Exit]): Exit tiles/components.
-        health (PMap[EntityID, Health]): Entity health component map.
-        inventory (PMap[EntityID, Inventory]): Agent inventory component map.
-        key (PMap[EntityID, Key]): Keys that can unlock ``Locked`` components.
-        lethal_damage (PMap[EntityID, LethalDamage]): Entities that inflict instant death on contact.
-        locked (PMap[EntityID, Locked]): Locked entities (doors, etc.).
-        moving (PMap[EntityID, Moving]): Entities with autonomous movement behavior.
-        pathfinding (PMap[EntityID, Pathfinding]): Entities with pathfinding behavior.
-        portal (PMap[EntityID, Portal]): Teleportation portal components.
-        position (PMap[EntityID, Position]): Entity position component map.
-        pushable (PMap[EntityID, Pushable]): Entities that can be pushed.
-        requirable (PMap[EntityID, Requirable]): Entities that must be collected to win if objective requires it.
-        rewardable (PMap[EntityID, Rewardable]): Entities that grant rewards when collected.
-        status (PMap[EntityID, Status]): Entity status effect component map.
+        immunity: Effect component store.
+        phasing: Effect component store.
+        speed: Effect component store.
+        time_limit: Effect limiter store (remaining steps).
+        usage_limit: Effect limiter store (remaining uses).
+        agent: Agent component store.
+        appearance: Visual appearance component store.
+        blocking: Obstacles that block movement.
+        collectible: Entities that can be collected.
+        collidable: Entities that can collide.
+        cost: Entities that inflict movement cost.
+        damage: Entities that inflict damage on contact.
+        dead: Entities that are dead/incapacitated.
+        exit: Exit components.
+        health: Entity health component store.
+        inventory: Agent inventory component store.
+        key: Keys that can unlock ``Locked`` components.
+        lethal_damage: Entities that inflict instant death on contact.
+        locked: Locked entities.
+        moving: Entities with autonomous movement behavior.
+        pathfinding: Entities with pathfinding behavior.
+        portal: Teleportation portal components.
+        position: Entity position component store.
+        pushable: Entities that can be pushed.
+        requirable: Entities that must be collected to win if objective requires it.
+        rewardable: Entities that grant rewards when collected.
+        status: Entity status effect component store.
         step_cost (int): Base score cost applied once per action step.
         turn (int): Current turn number.
         score (int): Cumulative score.
@@ -99,34 +98,34 @@ class State:
 
     # Components
     ## Effects
-    immunity: PMap[EntityID, Immunity] = pmap()
-    phasing: PMap[EntityID, Phasing] = pmap()
-    speed: PMap[EntityID, Speed] = pmap()
-    time_limit: PMap[EntityID, TimeLimit] = pmap()
-    usage_limit: PMap[EntityID, UsageLimit] = pmap()
+    immunity: dict[EntityID, Immunity] = field(default_factory=dict)
+    phasing: dict[EntityID, Phasing] = field(default_factory=dict)
+    speed: dict[EntityID, Speed] = field(default_factory=dict)
+    time_limit: dict[EntityID, TimeLimit] = field(default_factory=dict)
+    usage_limit: dict[EntityID, UsageLimit] = field(default_factory=dict)
     ## Properties
-    agent: PMap[EntityID, Agent] = pmap()
-    appearance: PMap[EntityID, Appearance] = pmap()
-    blocking: PMap[EntityID, Blocking] = pmap()
-    collectible: PMap[EntityID, Collectible] = pmap()
-    collidable: PMap[EntityID, Collidable] = pmap()
-    cost: PMap[EntityID, Cost] = pmap()
-    damage: PMap[EntityID, Damage] = pmap()
-    dead: PMap[EntityID, Dead] = pmap()
-    exit: PMap[EntityID, Exit] = pmap()
-    health: PMap[EntityID, Health] = pmap()
-    inventory: PMap[EntityID, Inventory] = pmap()
-    key: PMap[EntityID, Key] = pmap()
-    lethal_damage: PMap[EntityID, LethalDamage] = pmap()
-    locked: PMap[EntityID, Locked] = pmap()
-    moving: PMap[EntityID, Moving] = pmap()
-    pathfinding: PMap[EntityID, Pathfinding] = pmap()
-    portal: PMap[EntityID, Portal] = pmap()
-    position: PMap[EntityID, Position] = pmap()
-    pushable: PMap[EntityID, Pushable] = pmap()
-    requirable: PMap[EntityID, Requirable] = pmap()
-    rewardable: PMap[EntityID, Rewardable] = pmap()
-    status: PMap[EntityID, Status] = pmap()
+    agent: dict[EntityID, Agent] = field(default_factory=dict)
+    appearance: dict[EntityID, Appearance] = field(default_factory=dict)
+    blocking: dict[EntityID, Blocking] = field(default_factory=dict)
+    collectible: dict[EntityID, Collectible] = field(default_factory=dict)
+    collidable: dict[EntityID, Collidable] = field(default_factory=dict)
+    cost: dict[EntityID, Cost] = field(default_factory=dict)
+    damage: dict[EntityID, Damage] = field(default_factory=dict)
+    dead: dict[EntityID, Dead] = field(default_factory=dict)
+    exit: dict[EntityID, Exit] = field(default_factory=dict)
+    health: dict[EntityID, Health] = field(default_factory=dict)
+    inventory: dict[EntityID, Inventory] = field(default_factory=dict)
+    key: dict[EntityID, Key] = field(default_factory=dict)
+    lethal_damage: dict[EntityID, LethalDamage] = field(default_factory=dict)
+    locked: dict[EntityID, Locked] = field(default_factory=dict)
+    moving: dict[EntityID, Moving] = field(default_factory=dict)
+    pathfinding: dict[EntityID, Pathfinding] = field(default_factory=dict)
+    portal: dict[EntityID, Portal] = field(default_factory=dict)
+    position: dict[EntityID, Position] = field(default_factory=dict)
+    pushable: dict[EntityID, Pushable] = field(default_factory=dict)
+    requirable: dict[EntityID, Requirable] = field(default_factory=dict)
+    rewardable: dict[EntityID, Rewardable] = field(default_factory=dict)
+    status: dict[EntityID, Status] = field(default_factory=dict)
 
     # Status
     step_cost: int = 0
@@ -144,33 +143,47 @@ class State:
     )
 
     def __post_init__(self) -> None:
-        if self.position and not self._position_index:
-            object.__setattr__(
-                self, "_position_index", build_mutable_position_index(self.position)
-            )
+        self._position_index = build_position_index(self.position)
+
+    def clone(self) -> State:
+        cloned_fields: dict[str, Any] = {}
+        for state_field in fields(self):
+            name = state_field.name
+            if name.startswith("_"):
+                continue
+            value = getattr(self, name)
+            if name == "inventory":
+                cloned_fields[name] = {
+                    entity_id: Inventory(set(inventory.item_ids))
+                    for entity_id, inventory in self.inventory.items()
+                }
+            elif name == "status":
+                cloned_fields[name] = {
+                    entity_id: Status(set(status.effect_ids))
+                    for entity_id, status in self.status.items()
+                }
+            elif isinstance(value, dict):
+                cloned_fields[name] = dict(value)
+            else:
+                cloned_fields[name] = value
+        return State(**cloned_fields)
 
     @property
-    def description(self) -> PMap[str, Any]:
+    def description(self) -> dict[str, Any]:
         """
-        Generates a persistent map describing the state's attributes.
-        This includes all fields except for empty persistent maps.
+        Generates a map describing the state's attributes.
+        This includes all fields except empty component stores.
 
         Returns:
-            PMap[str, Any]: Persistent map of state attributes and their values.
+            dict[str, Any]: Map of state attributes and their values.
         """
-        description: PMap[str, Any] = pmap()
-        for state_field in self.__dataclass_fields__:
-            if state_field.startswith("_"):
+        description: dict[str, Any] = {}
+        for state_field in fields(self):
+            name = state_field.name
+            if name.startswith("_"):
                 continue
-            value = getattr(self, state_field)
-            # Skip empty persistent maps to keep output concise. We use a duck
-            # type check because mypy cannot infer concrete key/value types for
-            # every store here; failing len() should just include the value.
-            if isinstance(value, type(pmap())):
-                try:  # pragma: no cover - defensive
-                    if len(value) == 0:  # pyright: ignore[reportUnknownArgumentType]
-                        continue
-                except Exception:
-                    pass
-            description = description.set(state_field, value)
-        return pmap(description)
+            value = getattr(self, name)
+            if isinstance(value, dict) and not value:
+                continue
+            description[name] = value
+        return description

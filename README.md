@@ -1,8 +1,8 @@
 # Grid Universe
 
-> Modular, deterministic, fully *immutable* ECS gridworld for RL research, teaching, and rapid prototyping.
+> Modular, deterministic ECS gridworld for RL research, teaching, and rapid prototyping.
 
-Pure Entity–Component–System with functional systems, procedural generators, Gymnasium wrapper, and extensible movement/objective registries. Build puzzles and action mechanics with portals, powerups, hazards, keys/doors, enemies, and pathfinding – all deterministic and reproducible.
+Entity–Component–System engine with ordered systems, procedural generators, Gymnasium wrapper, and extensible movement/objective registries. Build puzzles and action mechanics with portals, powerups, hazards, keys/doors, enemies, and pathfinding – all deterministic and reproducible.
 
 ---
 
@@ -12,7 +12,7 @@ Pure Entity–Component–System with functional systems, procedural generators,
 </p>
 
 <p align="center">
-    <em>Immutable ECS gridworld with procedural generation, deterministic replay, Gymnasium wrapper, and pluggable movements & objectives.</em>
+    <em>ECS gridworld with procedural generation, deterministic replay, Gymnasium wrapper, and pluggable movements & objectives.</em>
 </p>
 
 <p align="center">
@@ -25,9 +25,9 @@ Pure Entity–Component–System with functional systems, procedural generators,
 
 ## Features
 
-- **Immutable ECS** – Pure `State -> State` transformations for debugging & reproducibility
-- **Deterministic** – All randomness from `(seed, turn)`, bit-perfect reproducibility
-- **Fast iteration** – Mutable `GridState` ↔ immutable `State` conversion
+- **ECS core** – Fast component stores with explicit clone or in-place stepping
+- **Deterministic** – Procedural generation and rendering derive randomness from explicit seeds
+- **Fast iteration** – `GridState` ↔ ECS `State` conversion
 - **Rich mechanics** – Portals, keys/doors, pushables, hazards, enemies, powerups (speed, immunity, phasing)
 - **RL ready** – Gymnasium env with image obs, structured info, 7-action discrete space
 - **Procedural** – Maze generator with configurable density
@@ -115,24 +115,29 @@ obs, info = env.reset()
 obs, reward, term, trunc, info = env.step(0)  # Action.UP
 ```
 
-**Determinism**: All randomness from `hash(seed, turn)` → bit-perfect reproducibility.
+**Determinism**: use explicit seeds for procedural generation and rendering.
 
 ---
 
 ## ECS Tick Order
 
-Each `step()` executes ordered pure systems:
+Each `step()` returns an updated state. By default, it works on a clone of the
+input state. Use `step(..., in_place=True)` to update the input state directly
+on hot paths.
 
-1. `position_system` – snapshot positions
+The action pipeline runs in this order:
+
+1. `snapshot_positions` – capture positions for movement interactions
 2. `moving_system` – autonomous movers
 3. `pathfinding_system` – chasers
 4. **Action** – movement/pickup/use-key with sub-steps: push → move → trail → portal → damage → tile → win/lose
 5. `status_tick_system` – effect timers
 6. `tile_cost_system` – apply costs
 7. `turn_system` – increment turn
-8. `status_gc_system` + `run_garbage_collector` – cleanup
+8. `status_cleanup_system` + `remove_entities` – cleanup
 
-Entities = integer IDs; components = persistent maps; systems = pure `State → State`.
+Entities = integer IDs; components live in plain dict stores; systems update
+`State` and `StepContext` directly.
 
 ---
 
@@ -148,11 +153,12 @@ Entities = integer IDs; components = persistent maps; systems = pure `State → 
 
 - **Movement**: Subclass `BaseMovement` with `name`, `description`, `function` → register in `MOVEMENT_REGISTRY`
 - **Objective**: Subclass `BaseObjective` with `name`, `description`, `functions` → register in `OBJECTIVE_REGISTRY`  
-- **Component**: Add dataclass to `State` + mutable `Entity` + converters
-- **System**: Pure `State → State`; insert in `step()` order
+- **Component**: Add dataclass to `State` + `Entity` + converters
+- **System**: Update `State` and `StepContext` directly; insert in `step()` order
 - **Rendering**: Extend `DEFAULT_IMAGE_MAP` or add recolor rules
 
-**Rules**: Derive RNG from `(seed, turn)` only; batch `PMap` updates; no global state.
+**Rules**: derive randomness from explicit seeds; update positions through
+`set_position_component` / `remove_position_component`; no global state.
 
 
 
@@ -162,13 +168,13 @@ Entities = integer IDs; components = persistent maps; systems = pure `State → 
 
 ```
 grid_universe/
-  state.py, step.py           # Core: immutable State, step reducer
+  state.py, step.py           # Core State, step pipeline
   actions.py                  # Action enum
   movements.py, objectives.py # Registries for movements/objectives
   env.py                      # Gymnasium wrapper
   components/                 # properties/ (Position, Health, etc.), effects/ (Speed, Immunity, etc.)
-  systems/                    # Pure systems (movement, portal, damage, collectible, etc.)
-  grid/                       # Mutable grid representation
+  systems/                    # Systems (movement, portal, damage, collectible, etc.)
+  grid/                       # Grid representation
   renderer/                   # Image renderer, texture loading
   utils/                      # ECS, grid, status, inventory, maze gen, etc.
   examples/                   # maze.py, gameplay_levels.py, cipher_objective_levels.py
@@ -187,7 +193,7 @@ mypy grid_universe        # types
 mkdocs serve              # docs at http://127.0.0.1:8000
 ```
 
-**Principles**: Pure functions, determinism, composable systems, explicit registries.
+**Principles**: determinism, composable systems, explicit registries, clear state-update boundaries.
 
 ---
 

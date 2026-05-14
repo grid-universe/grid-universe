@@ -10,8 +10,8 @@ def step(
     """
     Execute one step with the given action and return a new GridState.
 
-    Converts this GridState to an immutable State, applies the step function,
-    and converts the result back to a mutable GridState.
+    Converts this GridState to a State, applies the step function,
+    and converts the result back to a GridState.
 
     Args:
         action: The action to execute
@@ -20,7 +20,7 @@ def step(
     Returns:
         New GridState after executing the step
     """
-    # Convert to immutable state
+    # Convert to State
     state = to_state(gridstate)
 
     # Find agent if not provided

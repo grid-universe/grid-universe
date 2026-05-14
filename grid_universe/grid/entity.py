@@ -92,7 +92,7 @@ def _empty_objs() -> list["BaseEntity"]:
 @dataclass
 class BaseEntity:
     """
-    Minimal base for mutable grid state entities.
+    Minimal base for grid state entities.
     """
 
     entity_id: EntityID = field(default_factory=new_entity_id)
@@ -141,7 +141,7 @@ class BaseEntity:
 @dataclass(repr=False)
 class Entity(BaseEntity):
     """
-    Generic mutable entity with optional components, nested objects, and references.
+    Generic entity with optional components, nested objects, and references.
 
     Games may subclass BaseEntity directly for tighter types, while this generic Entity
     remains a flexible builder-friendly shape.

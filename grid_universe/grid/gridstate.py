@@ -1,15 +1,15 @@
-"""Mutable grid-based state representation.
+"""Grid-based state representation.
 
 The `grid_universe.grid.gridstate.GridState` dataclass is a first-class,
-mutable representation for building and editing game states. It provides a
-simple grid editing API (add/remove/move) and stores the configuration needed
-for simulation.
+grid-centric representation for building and editing game states. It provides
+a simple grid editing API (add/remove/move) and stores the configuration
+needed for simulation.
 
-GridState and the immutable `grid_universe.state.State` are complementary
+GridState and `grid_universe.state.State` are complementary
 representations optimized for different use cases:
 
-- **GridState**: Mutable, grid-centric, ideal for authoring and editing
-- **State**: Immutable, ECS-based, optimized for simulation and stepping
+- **GridState**: Grid-centric, ideal for authoring and editing
+- **State**: ECS representation optimized for simulation and stepping
 
 Use `grid_universe.grid.factories` to create `grid_universe.grid.entity.BaseEntity`
 objects conveniently, and `grid_universe.grid.convert` to convert between
@@ -32,7 +32,7 @@ Position = tuple[int, int]
 @dataclass
 class GridState:
     """
-    Mutable, grid-centric state representation.
+    Grid-centric state representation.
 
     GridState is a first-class representation for building, editing, and reasoning
     about game states in a spatial, grid-based manner. It stores entities in a 2D grid
@@ -41,7 +41,7 @@ class GridState:
     - ``grid[x][y]`` is a list of `grid_universe.grid.entity.BaseEntity` instances at that cell.
     - Stores configuration such as ``movement``, ``objective``, ``seed``, and metadata
         (turn/score/win/lose/etc.).
-    - Convert to/from the immutable ECS `grid_universe.state.State` using
+    - Convert to/from the ECS `grid_universe.state.State` using
         `grid_universe.grid.convert.to_state` / `grid_universe.grid.convert.from_state`
         when needed for simulation.
     """

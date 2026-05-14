@@ -8,7 +8,6 @@ requires-python = ">=3.11"
 license = { file = "LICENSE" }
 
 dependencies = [
-    "pyrsistent>=0.20.0",     # for immutable dicts/sets
     "Pillow>=11.2.1",         # for image loading/rendering
     "gymnasium>=1.1.1",       # for Gymnasium API
     "numpy>=2.2.0",
@@ -35,6 +34,7 @@ build-backend = "setuptools.build_meta"
 [tool.pytest.ini_options]
 addopts = "--cov=grid_universe --cov-report=term-missing"
 testpaths = ["tests"]
+pythonpath = ["."]
 
 [tool.coverage.run]
 branch = true

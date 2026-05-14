@@ -20,10 +20,8 @@ Damage is only applied once per (target, damager) pair per turn, and
 status effects such as immunity or phasing can prevent damage application.
 """
 
-from dataclasses import replace
-from pyrsistent import PMap, PSet
 from grid_universe.state import State
-from grid_universe.components import Health, Dead, UsageLimit, Position
+from grid_universe.components import Position
 from grid_universe.types import EntityID
 from grid_universe.utils.health import apply_damage_and_check_death
 from grid_universe.utils.status import use_status_effect_if_present
@@ -31,7 +29,7 @@ from grid_universe.runtime import StepContext
 
 
 def _build_trail_cache(
-    trail: PMap[Position, PSet[EntityID]],
+    trail: dict[Position, set[EntityID]],
 ) -> dict[EntityID, set[Position]]:
     """Invert trail mapping into entity -> visited positions set."""
     cache: dict[EntityID, set[Position]] = {}
@@ -89,62 +87,44 @@ DamageHit = tuple[EntityID, EntityID, int]  # (target, damager, turn)
 
 def _apply_single_damage(
     state: State,
+    ctx: StepContext,
     target_id: EntityID,
     damager_id: EntityID,
-    health: PMap[EntityID, Health],
-    dead: PMap[EntityID, Dead],
-    usage_limit: PMap[EntityID, UsageLimit],
-    damage_hits: PSet[DamageHit],
-) -> tuple[
-    PMap[EntityID, Health],
-    PMap[EntityID, Dead],
-    PMap[EntityID, UsageLimit],
-    PSet[DamageHit],
-]:
+) -> None:
     """Apply damage from damager -> target if not already applied this turn."""
     hit_key: DamageHit = (target_id, damager_id, state.turn)
-    if hit_key in damage_hits:
-        return health, dead, usage_limit, damage_hits
+    if hit_key in ctx.damage_hits:
+        return
     # Status-based avoidance (immunity / phasing) consumes effect use.
     if target_id in state.status:
-        usage_limit, effect_id = use_status_effect_if_present(
+        effect_id = use_status_effect_if_present(
             state.status[target_id].effect_ids,
             [state.immunity, state.phasing],
             state.time_limit,
-            usage_limit,
+            state.usage_limit,
         )
         if effect_id is not None:
-            return health, dead, usage_limit, damage_hits
+            return
     damage = state.damage[damager_id].amount if damager_id in state.damage else 0
     if damage < 0:
         raise ValueError(f"Damager {damager_id} has negative damage: {damage}")
-    health, dead = apply_damage_and_check_death(
-        health, dead, target_id, damage, damager_id in state.lethal_damage
+    apply_damage_and_check_death(
+        state.health, state.dead, target_id, damage, damager_id in state.lethal_damage
     )
-    damage_hits = damage_hits.add(hit_key)
-    return health, dead, usage_limit, damage_hits
+    ctx.damage_hits.add(hit_key)
 
 
 def _apply_damage_for_target(
     state: State,
     ctx: StepContext,
     target_id: EntityID,
-    health: PMap[EntityID, Health],
-    dead: PMap[EntityID, Dead],
-    usage_limit: PMap[EntityID, UsageLimit],
-    damage_hits: PSet[DamageHit],
     damager_ids: set[EntityID],
     trail_cache: dict[EntityID, set[Position]],
-) -> tuple[
-    PMap[EntityID, Health],
-    PMap[EntityID, Dead],
-    PMap[EntityID, UsageLimit],
-    PSet[DamageHit],
-]:
+) -> None:
     """Evaluate all damagers against a single target and apply damage if predicates pass."""
     target_pos = state.position.get(target_id)
-    if target_pos is None or target_id in dead:
-        return health, dead, usage_limit, damage_hits
+    if target_pos is None or target_id in state.dead:
+        return
 
     target_prev = ctx.prev_position.get(target_id)
     target_trail = trail_cache.get(target_id, set())
@@ -161,14 +141,11 @@ def _apply_damage_for_target(
         # If either lacks prev position, only overlap is reliable.
         if target_prev is None or damager_prev is None:
             if _overlap(target_pos, damager_pos):
-                health, dead, usage_limit, damage_hits = _apply_single_damage(
+                _apply_single_damage(
                     state,
+                    ctx,
                     target_id,
                     damager_id,
-                    health,
-                    dead,
-                    usage_limit,
-                    damage_hits,
                 )
             continue
 
@@ -195,20 +172,15 @@ def _apply_damage_for_target(
         )
 
         if overlap or swap or trails_intersect or endpoint_cross:
-            health, dead, usage_limit, damage_hits = _apply_single_damage(
+            _apply_single_damage(
                 state,
+                ctx,
                 target_id,
                 damager_id,
-                health,
-                dead,
-                usage_limit,
-                damage_hits,
             )
 
-    return health, dead, usage_limit, damage_hits
 
-
-def damage_system(state: State, ctx: StepContext) -> tuple[State, StepContext]:
+def damage_system(state: State, ctx: StepContext) -> None:
     """Resolve damage / lethal interactions for this turn.
 
     Complexity: O(H * D + T) where
@@ -216,33 +188,15 @@ def damage_system(state: State, ctx: StepContext) -> tuple[State, StepContext]:
         D = # entities with damage/lethal components
         T = total trail entries this action
     """
-    health: PMap[EntityID, Health] = state.health
-    dead: PMap[EntityID, Dead] = state.dead
-    usage_limit: PMap[EntityID, UsageLimit] = state.usage_limit
-    damage_hits: PSet[DamageHit] = ctx.damage_hits
-
     damager_ids = _candidate_damagers(state)
     trail_cache = _build_trail_cache(ctx.trail)
 
     # Iterate over snapshot list to avoid issues if component maps structurally change.
     for target_id in list(state.health.keys()):
-        health, dead, usage_limit, damage_hits = _apply_damage_for_target(
+        _apply_damage_for_target(
             state,
             ctx,
             target_id,
-            health,
-            dead,
-            usage_limit,
-            damage_hits,
             damager_ids,
             trail_cache,
         )
-
-    state = replace(
-        state,
-        health=health,
-        dead=dead,
-        usage_limit=usage_limit,
-    )
-    ctx = replace(ctx, damage_hits=damage_hits)
-    return state, ctx

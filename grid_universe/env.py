@@ -358,12 +358,24 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
         self._render_asset_root = render_asset_root
         self._render_mode = render_mode
 
-        # Rendering setup
-        render_width: int = render_resolution
-        render_height: int = int(self.height / self.width * render_width)
         self._image_renderer: ImageRenderer | None = None
+        self.observation_space = self._build_observation_space()
 
-        # Observation space helpers (Gymnasium has no Integer/Optional)
+        # Actions
+        self.action_space = spaces.Discrete(len(Action))
+
+        # Initialize first episode
+        self.reset()
+
+    def _build_observation_space(self) -> spaces.Space[Any]:
+        if self._observation_type == "gridstate":
+            # GridState is an arbitrary Python object, so Gymnasium cannot
+            # express its full shape as a standard space.
+            return spaces.Discrete(1)
+
+        render_width = self._render_resolution
+        render_height = (self._render_resolution * self.height) // self.width
+
         base_chars = (
             string.ascii_lowercase + string.ascii_uppercase + string.digits + "_"
         )
@@ -377,29 +389,24 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
             max_length=512, min_length=0, charset=string.printable
         )
 
-        def int_box(low: int, high: int) -> spaces.Box:
-            return spaces.Box(
-                low=np.array(low, dtype=np.int64),
-                high=np.array(high, dtype=np.int64),
-                shape=(),
-                dtype=np.int64,
-            )
+        def int_space(low: int, high: int) -> spaces.Discrete[np.int64]:
+            return spaces.Discrete(high - low + 1, start=low, dtype=np.int64)
 
         # Effect entry: use "" for absent strings, -1 for absent numbers
         effect_space = spaces.Dict(
             {
-                "id": int_box(0, 1_000_000_000),
+                "id": int_space(0, 1_000_000_000),
                 "type": text_space_short,  # "", "IMMUNITY", "PHASING", "SPEED"
                 "limit_type": text_space_short,  # "", "TIME", "USAGE"
-                "limit_amount": int_box(-1, 1_000_000_000),  # -1 if none
-                "multiplier": int_box(-1, 1_000_000),  # -1 if N/A (only SPEED)
+                "limit_amount": int_space(-1, 1_000_000_000),  # -1 if none
+                "multiplier": int_space(-1, 1_000_000),  # -1 if N/A (only SPEED)
             }
         )
 
         # Inventory item: type in {"key","core","coin","item"}; empty strings for optional text
         item_space = spaces.Dict(
             {
-                "id": int_box(0, 1_000_000_000),
+                "id": int_space(0, 1_000_000_000),
                 "type": text_space_short,
                 "key_id": text_space_medium,  # "" if not a key
                 "appearance_name": text_space_short,  # "" if unknown
@@ -409,68 +416,53 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
         # Health: -1 to indicate missing
         health_space = spaces.Dict(
             {
-                "current_health": int_box(-1, 1_000_000),
-                "max_health": int_box(-1, 1_000_000),
+                "current_health": int_space(-1, 1_000_000),
+                "max_health": int_space(-1, 1_000_000),
             }
         )
 
-        if self._observation_type == "image":
-            # Full observation space: image + structured info dict
-            self.observation_space = cast(
-                gym.Space[ImageObservation],
-                spaces.Dict(
-                    {
-                        "image": spaces.Box(
-                            low=0,
-                            high=255,
-                            shape=(render_height, render_width, 4),
-                            dtype=np.uint8,
-                        ),
-                        "info": spaces.Dict(
-                            {
-                                "agent": spaces.Dict(
-                                    {
-                                        "health": health_space,
-                                        "effects": spaces.Sequence(effect_space),
-                                        "inventory": spaces.Sequence(item_space),
-                                    }
-                                ),
-                                "status": spaces.Dict(
-                                    {
-                                        "score": int_box(-1_000_000_000, 1_000_000_000),
-                                        "phase": text_space_short,  # "win" / "lose" / "ongoing"
-                                        "turn": int_box(0, 1_000_000_000),
-                                    }
-                                ),
-                                "config": spaces.Dict(
-                                    {
-                                        "movement": text_space_medium,
-                                        "objective": text_space_medium,
-                                        "seed": int_box(
-                                            -1_000_000_000, 1_000_000_000
-                                        ),  # use -1 to represent None if needed
-                                        "width": int_box(1, 10_000),
-                                        "height": int_box(1, 10_000),
-                                        "turn_limit": int_box(-1, 1_000_000_000),
-                                    }
-                                ),
-                                "message": text_space_long,
-                            }
-                        ),
-                    }
-                ),
-            )
-        else:
-            # For GridState observations we cannot define a strict Gym space (arbitrary Python object).
-            # Provide a placeholder space (Discrete(1)) with documented contract that observations are GridState.
-            # Users leveraging RL libraries should stick to observation_type="image".
-            self.observation_space = spaces.Discrete(1)
-
-        # Actions
-        self.action_space = spaces.Discrete(len(Action))
-
-        # Initialize first episode
-        self.reset()
+        return cast(
+            gym.Space[ImageObservation],
+            spaces.Dict(
+                {
+                    "image": spaces.Box(
+                        low=0,
+                        high=255,
+                        shape=(render_height, render_width, 4),
+                        dtype=np.uint8,
+                    ),
+                    "info": spaces.Dict(
+                        {
+                            "agent": spaces.Dict(
+                                {
+                                    "health": health_space,
+                                    "effects": spaces.Sequence(effect_space),
+                                    "inventory": spaces.Sequence(item_space),
+                                }
+                            ),
+                            "status": spaces.Dict(
+                                {
+                                    "score": int_space(-1_000_000_000, 1_000_000_000),
+                                    "phase": text_space_short,
+                                    "turn": int_space(0, 1_000_000_000),
+                                }
+                            ),
+                            "config": spaces.Dict(
+                                {
+                                    "movement": text_space_medium,
+                                    "objective": text_space_medium,
+                                    "seed": int_space(-1_000_000_000, 1_000_000_000),
+                                    "width": int_space(1, 10_000),
+                                    "height": int_space(1, 10_000),
+                                    "turn_limit": int_space(-1, 1_000_000_000),
+                                }
+                            ),
+                            "message": text_space_long,
+                        }
+                    ),
+                }
+            ),
+        )
 
     @property
     def gridstate(self) -> GridState:
@@ -486,13 +478,20 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
         """Start a new episode.
 
         Args:
-            seed (int | None): Currently unused (procedural seed is passed via kwargs on construction).
+            seed (int | None): Override the procedural seed passed to the state factory.
             options (dict | None): Gymnasium options (unused).
 
         Returns:
             Tuple[ImageObservation, dict]: ImageObservation dict and empty info dict per Gymnasium API.
         """
-        self.state = self._initial_state_fn(**self._initial_state_kwargs)
+        super().reset(seed=seed)
+        state_kwargs = self._initial_state_kwargs
+        if seed is not None:
+            state_kwargs = {**state_kwargs, "seed": seed}
+        self.state = self._initial_state_fn(**state_kwargs)
+        self.width = self.state.width
+        self.height = self.state.height
+        self.observation_space = self._build_observation_space()
         try:
             self.agent_id = next(iter(self.state.agent.keys()))
         except StopIteration:
@@ -580,7 +579,7 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
         """Internal helper constructing the observation per observation_type.
 
         observation_type="image": returns ImageObservation (dict with image + info)
-        observation_type="gridstate": returns a mutable ``GridState`` object produced
+        observation_type="gridstate": returns a ``GridState`` object produced
             via grid.convert.from_state(state). This allows algorithms to
             reason over symbolic grid/entity structures directly.
         """
@@ -597,7 +596,7 @@ class GridUniverseEnv(gym.Env[ImageObservation | GridState, np.integer]):
         return cast(ImageObservation, {"image": img_np, "info": info_dict})
 
     def _get_info(self) -> dict[str, object]:
-        """Return the step info (empty placeholder for compatibility)."""
+        """Return per-step metadata."""
         return {}
 
     def _setup_renderer(self) -> None:

@@ -5,7 +5,6 @@ will attempt to push that entity one tile further in the same direction,
 provided the destination tile is unblocked.
 """
 
-from dataclasses import replace
 from grid_universe.movements import wrap_around_move_fn
 from grid_universe.state import State
 from grid_universe.components import Position
@@ -23,7 +22,7 @@ def compute_destination(
     """Compute push destination given current and occupant next positions.
 
     Args:
-        state (State): Current immutable state.
+        state (State): Current state.
         current_pos (Position): Position of the entity initiating the push.
         next_pos (Position): Position of the entity being pushed.
     """
@@ -44,44 +43,38 @@ def compute_destination(
 
 def push_system(
     state: State, ctx: StepContext, eid: EntityID, next_pos: Position
-) -> tuple[State, StepContext]:
+) -> None:
     """Attempt to push all pushable entities at ``next_pos``.
 
     Args:
-        state (State): Current immutable state.
+        state (State): Current state.
         ctx (StepContext): Current step context.
         eid (EntityID): Entity initiating the push (must have a position).
         next_pos (Position): Adjacent position the entity is trying to move into.
-
-    Returns:
-        State: Updated state after applying any pushes.
-        StepContext: Updated step context after applying any pushes.
     """
     current_pos = state.position.get(eid)
     if current_pos is None:
-        return state, ctx
+        return
 
     # Is there a pushable object at next_pos?
     pushable_ids = entities_with_components_at(
         state, next_pos, state.pushable, position_index=ctx.position_index
     )
     if not pushable_ids:
-        return state, ctx  # Nothing to push
+        return
 
     push_to = compute_destination(state, current_pos, next_pos)
     if push_to is None:
-        return state, ctx
+        return
 
     # Destination must be unblocked for the (first) pushable entity.
     # All pushables share the same collision rules.
     if is_entity_blocked_at(
         state, pushable_ids[0], push_to, position_index=ctx.position_index
     ):
-        return state, ctx  # Push not possible
+        return
 
-    new_position = set_position_component(state.position, ctx, eid, next_pos)
+    set_position_component(state, ctx, eid, next_pos)
     for pushable_id in pushable_ids:
-        new_position = set_position_component(new_position, ctx, pushable_id, push_to)
-        ctx = add_trail_position(ctx, pushable_id, push_to)
-
-    return replace(state, position=new_position), ctx
+        set_position_component(state, ctx, pushable_id, push_to)
+        add_trail_position(ctx, pushable_id, push_to)

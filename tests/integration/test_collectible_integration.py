@@ -1,6 +1,5 @@
 from dataclasses import replace
 from typing import Dict, Tuple, Set, Optional
-from pyrsistent import pmap, pset, PSet
 from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.movements import BaseMovement
 from grid_universe.state import State
@@ -34,13 +33,12 @@ def make_agent_with_collectible_state(
 ) -> Tuple[State, EntityID, EntityID]:
     agent_id: EntityID = 1
     collectible_id: EntityID = 2
-
     position_map: Dict[EntityID, Position] = {
         agent_id: Position(*agent_pos),
         collectible_id: Position(*collectible_pos),
     }
     agent_map: Dict[EntityID, Agent] = {agent_id: Agent()}
-    inventory_map: Dict[EntityID, Inventory] = {agent_id: Inventory(pset())}
+    inventory_map: Dict[EntityID, Inventory] = {agent_id: Inventory(set())}
     collectible_map: Dict[EntityID, Collectible] = {collectible_id: Collectible()}
     reward_map: Dict[EntityID, Rewardable] = (
         {collectible_id: Rewardable(amount=reward)} if reward else {}
@@ -48,13 +46,12 @@ def make_agent_with_collectible_state(
     requirable_map: Dict[EntityID, Requirable] = (
         {collectible_id: Requirable()} if required else {}
     )
-    status_map: Dict[EntityID, Status] = {agent_id: Status(effect_ids=pset())}
+    status_map: Dict[EntityID, Status] = {agent_id: Status(effect_ids=set())}
     usage_limit_map: Dict[EntityID, UsageLimit] = {}
     time_limit_map: Dict[EntityID, TimeLimit] = {}
     immunity_map: Dict[EntityID, Immunity] = {}
     phasing_map: Dict[EntityID, Phasing] = {}
     speed_map: Dict[EntityID, Speed] = {}
-
     if effect is not None:
         if isinstance(effect, Immunity):
             immunity_map[collectible_id] = effect
@@ -66,7 +63,6 @@ def make_agent_with_collectible_state(
             usage_limit_map[collectible_id] = UsageLimit(amount=limit_amount)
         if limit_type == "time" and limit_amount is not None:
             time_limit_map[collectible_id] = TimeLimit(amount=limit_amount)
-
     state: State = State(
         width=3,
         height=1,
@@ -76,20 +72,20 @@ def make_agent_with_collectible_state(
             function=lambda s, eid, dir: [Position(position_map[eid].x + 1, 0)],
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(position_map),
-        agent=pmap(agent_map),
-        collectible=pmap(collectible_map),
-        rewardable=pmap(reward_map),
-        requirable=pmap(requirable_map),
-        inventory=pmap(inventory_map),
-        immunity=pmap(immunity_map),
-        phasing=pmap(phasing_map),
-        speed=pmap(speed_map),
-        time_limit=pmap(time_limit_map),
-        usage_limit=pmap(usage_limit_map),
-        status=pmap(status_map),
+        position=dict(position_map),
+        agent=dict(agent_map),
+        collectible=dict(collectible_map),
+        rewardable=dict(reward_map),
+        requirable=dict(requirable_map),
+        inventory=dict(inventory_map),
+        immunity=dict(immunity_map),
+        phasing=dict(phasing_map),
+        speed=dict(speed_map),
+        time_limit=dict(time_limit_map),
+        usage_limit=dict(usage_limit_map),
+        status=dict(status_map),
     )
-    return state, agent_id, collectible_id
+    return (state, agent_id, collectible_id)
 
 
 def move_and_pickup(state: State, agent_id: EntityID, action: Action) -> State:
@@ -155,21 +151,17 @@ def test_agent_picks_up_powerup_speed_unlimited() -> None:
 def test_pickup_powerup_stacks_usage() -> None:
     from grid_universe.components import Immunity, UsageLimit, Status
 
-    # Step 1: Set up agent with Immunity effect and usage=3
     state, agent_id, effect_id1 = make_agent_with_collectible_state(
         (0, 0), (1, 0), effect=Immunity(), limit_type="usage", limit_amount=2
     )
-    # Step 2: Now place a new collectible with the same effect (usage=2) at (1,0)
-    # This simulates picking up a duplicate powerup
     effect_id2 = 999
-    # ADD: make sure to add new effect to entity map using Entity()
     state = replace(
         state,
-        collectible=state.collectible.set(effect_id2, Collectible()),
-        position=state.position.set(effect_id2, Position(1, 0)),
-        immunity=state.immunity.set(effect_id2, Immunity()),
-        status=state.status.set(agent_id, Status(effect_ids=pset([effect_id2]))),
-        usage_limit=state.usage_limit.set(effect_id2, UsageLimit(amount=3)),
+        collectible={**state.collectible, effect_id2: Collectible()},
+        position={**state.position, effect_id2: Position(1, 0)},
+        immunity={**state.immunity, effect_id2: Immunity()},
+        status={**state.status, agent_id: Status(effect_ids=set([effect_id2]))},
+        usage_limit={**state.usage_limit, effect_id2: UsageLimit(amount=3)},
     )
     state2 = move_and_pickup(state, agent_id, Action.RIGHT)
     assert state2.usage_limit[effect_id1].amount == 2
@@ -177,7 +169,6 @@ def test_pickup_powerup_stacks_usage() -> None:
 
 
 def test_pickup_powerup_unlimited_usage() -> None:
-    # Unlimited = no usage_limit entry
     state, agent_id, collectible_id = make_agent_with_collectible_state(
         (0, 0), (1, 0), effect=Immunity()
     )
@@ -206,7 +197,7 @@ def test_agent_picks_up_multiple_types() -> None:
         requirable_id: Position(0, 1),
     }
     agent_map: Dict[EntityID, Agent] = {agent_id: Agent()}
-    inventory_map: Dict[EntityID, Inventory] = {agent_id: Inventory(pset())}
+    inventory_map: Dict[EntityID, Inventory] = {agent_id: Inventory(set())}
     collectible_map: Dict[EntityID, Collectible] = {
         item_id: Collectible(),
         rewardable_id: Collectible(),
@@ -214,7 +205,6 @@ def test_agent_picks_up_multiple_types() -> None:
     }
     rewardable_map: Dict[EntityID, Rewardable] = {rewardable_id: Rewardable(amount=10)}
     requirable_map: Dict[EntityID, Requirable] = {requirable_id: Requirable()}
-
     state: State = State(
         width=3,
         height=2,
@@ -224,12 +214,12 @@ def test_agent_picks_up_multiple_types() -> None:
             function=lambda s, eid, dir: [Position(0, 1)],
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(pos),
-        agent=pmap(agent_map),
-        collectible=pmap(collectible_map),
-        rewardable=pmap(rewardable_map),
-        requirable=pmap(requirable_map),
-        inventory=pmap(inventory_map),
+        position=dict(pos),
+        agent=dict(agent_map),
+        collectible=dict(collectible_map),
+        rewardable=dict(rewardable_map),
+        requirable=dict(requirable_map),
+        inventory=dict(inventory_map),
     )
     state2 = move_and_pickup(state, agent_id, Action.DOWN)
     assert item_id in state2.inventory[agent_id].item_ids
@@ -242,25 +232,29 @@ def test_agent_picks_up_multiple_types() -> None:
 
 
 def test_pickup_defensive_edge_cases() -> None:
-    # No inventory
     state, agent_id, collectible_id = make_agent_with_collectible_state((0, 0), (0, 0))
-    state2 = replace(state, inventory=pmap())
+    state2 = replace(state, inventory=dict())
     state3 = step(state2, Action.PICK_UP, agent_id=agent_id)
     assert collectible_id in state3.collectible
-    # Nothing present
     state4, agent_id2, _ = make_agent_with_collectible_state((0, 0), (1, 0))
     step(state4, Action.PICK_UP, agent_id=agent_id2)
-    # Already collected
     state6, agent_id3, collectible_id3 = make_agent_with_collectible_state(
         (0, 0), (0, 0)
     )
     state7 = replace(
         state6,
-        collectible=state6.collectible.remove(collectible_id3),
-        position=state6.position.remove(collectible_id3),
+        collectible={
+            key: value
+            for key, value in state6.collectible.items()
+            if key != collectible_id3
+        },
+        position={
+            key: value
+            for key, value in state6.position.items()
+            if key != collectible_id3
+        },
     )
     step(state7, Action.PICK_UP, agent_id=agent_id3)
-    # Should do nothing and not crash
 
 
 def test_pickup_required_updates_win_condition() -> None:
@@ -268,7 +262,6 @@ def test_pickup_required_updates_win_condition() -> None:
         (0, 0), (1, 0), required=True
     )
     move_and_pickup(state, agent_id, Action.RIGHT)
-    # Not asserting win here, just verifying that state is valid after required pickup
 
 
 def test_pickup_removes_from_all_relevant_stores() -> None:
@@ -276,15 +269,15 @@ def test_pickup_removes_from_all_relevant_stores() -> None:
         (0, 0), (1, 0), reward=5, required=True
     )
     state2 = move_and_pickup(state, agent_id, Action.RIGHT)
-    for store in [state2.collectible, state2.position]:
-        assert collectible_id not in store
+    assert collectible_id not in state2.collectible
+    assert collectible_id not in state2.position
 
 
 def test_pickup_inventory_not_duplicated() -> None:
     state, agent_id, collectible_id = make_agent_with_collectible_state((0, 0), (1, 0))
     state2 = move_and_pickup(state, agent_id, Action.RIGHT)
     state3 = step(state2, Action.PICK_UP, agent_id=agent_id)
-    items: PSet[EntityID] = state3.inventory[agent_id].item_ids
+    items: set[EntityID] = state3.inventory[agent_id].item_ids
     assert len(items) == len(set(items))
 
 
@@ -300,11 +293,10 @@ def test_pickup_collectible_with_score_cost() -> None:
         cost_id: Position(1, 0),
     }
     agent_map: Dict[EntityID, Agent] = {agent_id: Agent()}
-    inventory_map: Dict[EntityID, Inventory] = {agent_id: Inventory(pset())}
+    inventory_map: Dict[EntityID, Inventory] = {agent_id: Inventory(set())}
     collectible_map: Dict[EntityID, Collectible] = {collectible_id: Collectible()}
     rewardable_map: Dict[EntityID, Rewardable] = {collectible_id: Rewardable(amount=15)}
     cost_map: Dict[EntityID, Cost] = {cost_id: Cost(amount=6)}
-
     state: State = State(
         width=2,
         height=1,
@@ -314,18 +306,14 @@ def test_pickup_collectible_with_score_cost() -> None:
             function=lambda s, eid, dir: [Position(1, 0)],
         ),
         objective=CollectAndExitObjective(),
-        position=pmap(pos),
-        agent=pmap(agent_map),
-        collectible=pmap(collectible_map),
-        rewardable=pmap(rewardable_map),
-        cost=pmap(cost_map),
-        inventory=pmap(inventory_map),
+        position=dict(pos),
+        agent=dict(agent_map),
+        collectible=dict(collectible_map),
+        rewardable=dict(rewardable_map),
+        cost=dict(cost_map),
+        inventory=dict(inventory_map),
     )
-    state2 = step(
-        state,
-        Action.RIGHT,
-        agent_id=agent_id,
-    )
+    state2 = step(state, Action.RIGHT, agent_id=agent_id)
     state3 = step(state2, Action.PICK_UP, agent_id=agent_id)
     assert state3.score == 3
     assert collectible_id in state3.inventory[agent_id].item_ids

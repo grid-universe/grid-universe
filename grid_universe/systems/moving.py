@@ -5,25 +5,21 @@ configured direction by its speed. If the destination tile is out of bounds
 or blocked, it applies the configured ``on_collision`` behavior.
 """
 
-from dataclasses import replace
-
 from grid_universe.components import Position
 from grid_universe.runtime import StepContext
 from grid_universe.state import State
 from grid_universe.utils.grid import is_entity_blocked_at, is_in_bounds
-from grid_universe.utils.position import set_entity_position
+from grid_universe.utils.position import set_position_component
 from grid_universe.utils.trail import add_trail_position
 
 
-def moving_system(state: State, ctx: StepContext) -> tuple[State, StepContext]:
+def moving_system(state: State, ctx: StepContext) -> None:
     """Advance all moving entities for the current step.
 
     Parameters:
         state: Current game state.
         ctx: Current step context.
 
-    Returns:
-        Updated state and context after processing movement.
     """
     for entity_id, mover in sorted(state.moving.items()):
         if entity_id not in state.position:
@@ -44,12 +40,8 @@ def moving_system(state: State, ctx: StepContext) -> tuple[State, StepContext]:
 
             if blocked:
                 if mover.on_collision == "bounce":
-                    state = replace(
-                        state, moving=state.moving.set(entity_id, mover.reversed())
-                    )
+                    state.moving[entity_id] = mover.reversed()
                 break
 
-            state = set_entity_position(state, ctx, entity_id, next_pos)
-            ctx = add_trail_position(ctx, entity_id, next_pos)
-
-    return state, ctx
+            set_position_component(state, ctx, entity_id, next_pos)
+            add_trail_position(ctx, entity_id, next_pos)

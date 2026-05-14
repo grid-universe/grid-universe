@@ -1,5 +1,6 @@
-import pytest
+from dataclasses import replace
 
+import pytest
 from grid_universe.components import (
     Damage,
     Position,
@@ -17,13 +18,11 @@ from grid_universe.movements import BaseMovement
 from grid_universe.objectives import CollectAndExitObjective
 from grid_universe.step import step
 from grid_universe.actions import Action
-from pyrsistent import pmap, pset
 from grid_universe.types import EntityID
 from tests.test_utils import (
     make_agent_box_wall_state,
     make_exit_entity,
     assert_entity_positions,
-    replace_state as replace,
 )
 
 
@@ -50,8 +49,8 @@ def test_move_pushes_box(agent_speed_multiplier: int) -> None:
     )
     if agent_speed_multiplier > 1:
         speed_effect_id: EntityID = 992
-        speed = pmap({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
-        status = pmap({agent_id: Status(effect_ids=pset([speed_effect_id]))})
+        speed = dict({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
+        status = dict({agent_id: Status(effect_ids=set([speed_effect_id]))})
         state = replace(state, speed=speed, status=status)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -70,12 +69,7 @@ def test_move_push_blocked_by_wall_after_box() -> None:
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
     assert_entity_positions(
-        new_state,
-        {
-            agent_id: (0, 0),
-            box_ids[0]: (1, 0),
-            wall_ids[0]: (2, 0),
-        },
+        new_state, {agent_id: (0, 0), box_ids[0]: (1, 0), wall_ids[0]: (2, 0)}
     )
 
 
@@ -97,8 +91,8 @@ def test_move_wrapping_enabled(agent_speed_multiplier: int) -> None:
     )
     if agent_speed_multiplier > 1:
         speed_effect_id: EntityID = 992
-        speed = pmap({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
-        status = pmap({agent_id: Status(effect_ids=pset([speed_effect_id]))})
+        speed = dict({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
+        status = dict({agent_id: Status(effect_ids=set([speed_effect_id]))})
         state = replace(state, speed=speed, status=status)
     state = replace(state, movement=WrapAroundMovement())
     action = Action.RIGHT
@@ -112,11 +106,10 @@ def test_move_ghost_powerup_ignores_wall_box() -> None:
         agent_pos=(0, 0), box_positions=[(2, 0)], wall_positions=[(1, 0)]
     )
     effect_id = 99
-    # Patch in a phasing effect and status to the state
     state = replace(
         state,
-        status=state.status.set(agent_id, Status(effect_ids=pset([effect_id]))),
-        phasing=state.phasing.set(effect_id, Phasing()),
+        status={**state.status, agent_id: Status(effect_ids=set([effect_id]))},
+        phasing={**state.phasing, effect_id: Phasing()},
     )
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -130,12 +123,12 @@ def test_move_onto_portal_teleports_agent(agent_speed_multiplier: int) -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
     if agent_speed_multiplier > 1:
         speed_effect_id: EntityID = 992
-        speed = pmap({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
-        status = pmap({agent_id: Status(effect_ids=pset([speed_effect_id]))})
+        speed = dict({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
+        status = dict({agent_id: Status(effect_ids=set([speed_effect_id]))})
         state = replace(state, speed=speed, status=status)
-    portal1_id, portal2_id = 999, 1000
-    pos = state.position.set(portal1_id, Position(1, 0)).set(portal2_id, Position(3, 0))
-    portal = pmap(
+    portal1_id, portal2_id = (999, 1000)
+    pos = {**{**state.position, portal1_id: Position(1, 0)}, portal2_id: Position(3, 0)}
+    portal = dict(
         {
             portal1_id: Portal(pair_entity=portal2_id),
             portal2_id: Portal(pair_entity=portal1_id),
@@ -151,10 +144,9 @@ def test_move_onto_portal_teleports_agent(agent_speed_multiplier: int) -> None:
 def test_move_onto_hazard_takes_damage() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
     hazard_id = 200
-    pos = state.position.set(hazard_id, Position(1, 0))
-    health = pmap({agent_id: Health(current_health=5, max_health=5)})
-    damage = pmap({hazard_id: Damage(amount=1)})
-    # No "Hazard" class, just use correct damage
+    pos = {**state.position, hazard_id: Position(1, 0)}
+    health = dict({agent_id: Health(current_health=5, max_health=5)})
+    damage = dict({hazard_id: Damage(amount=1)})
     state = replace(state, position=pos, health=health, damage=damage)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -164,9 +156,9 @@ def test_move_onto_hazard_takes_damage() -> None:
 def test_move_onto_enemy_takes_damage() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
     enemy_id = 300
-    pos = state.position.set(enemy_id, Position(1, 0))
-    health = pmap({agent_id: Health(current_health=5, max_health=5)})
-    damage = pmap({enemy_id: Damage(amount=2)})
+    pos = {**state.position, enemy_id: Position(1, 0)}
+    health = dict({agent_id: Health(current_health=5, max_health=5)})
+    damage = dict({enemy_id: Damage(amount=2)})
     state = replace(state, position=pos, health=health, damage=damage)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -175,21 +167,20 @@ def test_move_onto_enemy_takes_damage() -> None:
 
 def test_move_onto_reward_cost_collectible_tile() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
-    reward_id, cost_id, collectible_id = 2, 3, 4
-    pos = (
-        state.position.set(reward_id, Position(1, 0))
-        .set(cost_id, Position(1, 0))
-        .set(collectible_id, Position(1, 0))
-    )
-    rewardable = pmap({reward_id: Rewardable(amount=14)})
-    cost = pmap({cost_id: Cost(amount=6)})
-    collectible = pmap({collectible_id: Collectible()})
+    reward_id, cost_id, collectible_id = (2, 3, 4)
+    pos = {
+        **{**{**state.position, reward_id: Position(1, 0)}, cost_id: Position(1, 0)},
+        collectible_id: Position(1, 0),
+    }
+    rewardable = dict({reward_id: Rewardable(amount=14)})
+    cost = dict({cost_id: Cost(amount=6)})
+    collectible = dict({collectible_id: Collectible()})
     state = replace(
         state, position=pos, rewardable=rewardable, cost=cost, collectible=collectible
     )
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
-    assert new_state.score == 8  # 14 - 6
+    assert new_state.score == 8
 
 
 def test_move_double_speed_powerup_moves_twice_and_blocks_at_wall() -> None:
@@ -199,8 +190,8 @@ def test_move_double_speed_powerup_moves_twice_and_blocks_at_wall() -> None:
     effect_id = 201
     state = replace(
         state,
-        status=state.status.set(agent_id, Status(effect_ids=pset([effect_id]))),
-        speed=state.speed.set(effect_id, Speed(multiplier=2)),
+        status={**state.status, agent_id: Status(effect_ids=set([effect_id]))},
+        speed={**state.speed, effect_id: Speed(multiplier=2)},
     )
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -212,12 +203,12 @@ def test_move_onto_exit_triggers_win(agent_speed_multiplier: int) -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
     if agent_speed_multiplier > 1:
         speed_effect_id: EntityID = 992
-        speed = pmap({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
-        status = pmap({agent_id: Status(effect_ids=pset([speed_effect_id]))})
+        speed = dict({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
+        status = dict({agent_id: Status(effect_ids=set([speed_effect_id]))})
         state = replace(state, speed=speed, status=status)
     exit_id, exit_map, exit_pos = make_exit_entity((1, 0))
-    pos = state.position.update(exit_pos)
-    state = replace(state, exit=pmap(exit_map), position=pos)
+    pos = {**state.position, **exit_pos}
+    state = replace(state, exit=dict(exit_map), position=pos)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
     assert new_state.win
@@ -225,7 +216,7 @@ def test_move_onto_exit_triggers_win(agent_speed_multiplier: int) -> None:
 
 def test_move_dead_agent_does_nothing() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
-    state = replace(state, dead=pmap({agent_id: Dead()}))
+    state = replace(state, dead=dict({agent_id: Dead()}))
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
     assert_entity_positions(new_state, {agent_id: (0, 0)})
@@ -244,13 +235,12 @@ def test_move_after_win_or_lose_does_nothing() -> None:
 
 def test_move_chained_portal_no_loop() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
-    portal_a, portal_b, portal_c = 101, 102, 103
-    pos = (
-        state.position.set(portal_a, Position(1, 0))
-        .set(portal_b, Position(2, 0))
-        .set(portal_c, Position(3, 0))
-    )
-    portal = pmap(
+    portal_a, portal_b, portal_c = (101, 102, 103)
+    pos = {
+        **{**{**state.position, portal_a: Position(1, 0)}, portal_b: Position(2, 0)},
+        portal_c: Position(3, 0),
+    }
+    portal = dict(
         {
             portal_a: Portal(pair_entity=portal_b),
             portal_b: Portal(pair_entity=portal_c),
@@ -270,12 +260,12 @@ def test_move_push_box_onto_portal_box_teleported(agent_speed_multiplier: int) -
     )
     if agent_speed_multiplier > 1:
         speed_effect_id: EntityID = 992
-        speed = pmap({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
-        status = pmap({agent_id: Status(effect_ids=pset([speed_effect_id]))})
+        speed = dict({speed_effect_id: Speed(multiplier=agent_speed_multiplier)})
+        status = dict({agent_id: Status(effect_ids=set([speed_effect_id]))})
         state = replace(state, speed=speed, status=status)
-    portal_a, portal_b = 110, 111
-    pos = state.position.set(portal_a, Position(2, 0)).set(portal_b, Position(4, 0))
-    portal = pmap(
+    portal_a, portal_b = (110, 111)
+    pos = {**{**state.position, portal_a: Position(2, 0)}, portal_b: Position(4, 0)}
+    portal = dict(
         {portal_a: Portal(pair_entity=portal_b), portal_b: Portal(pair_entity=portal_a)}
     )
     state = replace(state, position=pos, portal=portal)
@@ -303,10 +293,10 @@ def test_move_box_chain_blocked() -> None:
 
 def test_move_on_hazard_and_enemy_both_damage() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
-    hazard_id, enemy_id = 201, 202
-    pos = state.position.set(hazard_id, Position(1, 0)).set(enemy_id, Position(1, 0))
-    health = pmap({agent_id: Health(current_health=10, max_health=10)})
-    damage = pmap({hazard_id: Damage(amount=2), enemy_id: Damage(amount=3)})
+    hazard_id, enemy_id = (201, 202)
+    pos = {**{**state.position, hazard_id: Position(1, 0)}, enemy_id: Position(1, 0)}
+    health = dict({agent_id: Health(current_health=10, max_health=10)})
+    damage = dict({hazard_id: Damage(amount=2), enemy_id: Damage(amount=3)})
     state = replace(state, position=pos, health=health, damage=damage)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -324,7 +314,10 @@ def test_move_out_of_bounds_action_negative_index() -> None:
 
 def test_move_agent_not_in_agent_map() -> None:
     state, agent_id, _, _ = make_agent_box_wall_state(agent_pos=(0, 0))
-    state = replace(state, agent=state.agent.remove(agent_id))
+    state = replace(
+        state,
+        agent={key: value for key, value in state.agent.items() if key != agent_id},
+    )
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
     assert agent_id in new_state.position
@@ -356,8 +349,8 @@ def test_move_double_speed_powerup_both_steps_blocked() -> None:
     effect_id = 301
     state = replace(
         state,
-        status=state.status.set(agent_id, Status(effect_ids=pset([effect_id]))),
-        speed=state.speed.set(effect_id, Speed(multiplier=2)),
+        status={**state.status, agent_id: Status(effect_ids=set([effect_id]))},
+        speed={**state.speed, effect_id: Speed(multiplier=2)},
     )
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -374,11 +367,12 @@ def test_move_ghost_and_double_speed_combo() -> None:
     effect_speed = 402
     state = replace(
         state,
-        status=state.status.set(
-            agent_id, Status(effect_ids=pset([effect_ghost, effect_speed]))
-        ),
-        phasing=state.phasing.set(effect_ghost, Phasing()),
-        speed=state.speed.set(effect_speed, Speed(multiplier=2)),
+        status={
+            **state.status,
+            agent_id: Status(effect_ids=set([effect_ghost, effect_speed])),
+        },
+        phasing={**state.phasing, effect_ghost: Phasing()},
+        speed={**state.speed, effect_speed: Speed(multiplier=2)},
     )
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
@@ -390,10 +384,9 @@ def test_push_box_onto_exit_agent_doesnt_win() -> None:
         agent_pos=(0, 0), box_positions=[(1, 0)], width=5, height=1
     )
     exit_id, exit_map, exit_pos = make_exit_entity((2, 0))
-    pos = state.position.update(exit_pos)
-    state = replace(state, exit=pmap(exit_map), position=pos)
+    pos = {**state.position, **exit_pos}
+    state = replace(state, exit=dict(exit_map), position=pos)
     action = Action.RIGHT
     new_state = step(state, action, agent_id=agent_id)
-    # Agent should not win
     assert not new_state.win
     assert_entity_positions(new_state, {agent_id: (1, 0), box_ids[0]: (2, 0)})

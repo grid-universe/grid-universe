@@ -75,7 +75,7 @@ def build_level_basic_movement(seed: int = 100) -> State:
         seed (int): Deterministic seed stored on resulting ``State`` (used by rendering / RNG subsystems).
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 7, 5
     gridstate = GridState(
@@ -103,7 +103,7 @@ def build_level_maze_turns(seed: int = 101) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 9, 7
     gridstate = GridState(
@@ -135,7 +135,7 @@ def build_level_optional_coin(seed: int = 102) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 9, 7
     gridstate = GridState(
@@ -169,7 +169,7 @@ def build_level_required_one(seed: int = 103) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 9, 7
     gridstate = GridState(
@@ -199,7 +199,7 @@ def build_level_required_two(seed: int = 104) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 11, 9
     gridstate = GridState(
@@ -233,7 +233,7 @@ def build_level_key_door(seed: int = 105) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 11, 9
     gridstate = GridState(
@@ -264,7 +264,7 @@ def build_level_hazard_detour(seed: int = 106) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 11, 9
     gridstate = GridState(
@@ -296,7 +296,7 @@ def build_level_portal_shortcut(seed: int = 107) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 11, 9
     gridstate = GridState(
@@ -326,7 +326,7 @@ def build_level_pushable_box(seed: int = 108) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 11, 9
     gridstate = GridState(
@@ -354,7 +354,7 @@ def build_level_enemy_patrol(seed: int = 109) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 13, 9
     gridstate = GridState(
@@ -406,7 +406,7 @@ def build_level_power_shield(seed: int = 110) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 11, 9
     gridstate = GridState(
@@ -440,7 +440,7 @@ def build_level_power_ghost(seed: int = 111) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 13, 9
     gridstate = GridState(
@@ -471,7 +471,7 @@ def build_level_power_boots(seed: int = 112) -> State:
         seed (int): Deterministic seed stored on resulting ``State``.
 
     Returns:
-        State: Authored immutable state.
+        State: Authored state.
     """
     w, h = 13, 9
     gridstate = GridState(
@@ -585,14 +585,14 @@ def generate_task_suite(
     Seeding strategy precedence:
         1. ``seed_list`` if provided (must have length 14)
         2. ``base_seed`` (seeds become ``base_seed + index``)
-        3. Each builder's default seed constant (backwards compatible)
+        3. Each builder's default seed constant
 
     Args:
         base_seed (int | None): Optional base; offsets determine per-level seeds.
         seed_list (list[int] | None): Explicit seeds for each level (length must be 14).
 
     Returns:
-        list[State]: Immutable states for each level.
+        list[State]: States for each level.
     """
     builders = [
         build_level_basic_movement,  # L0

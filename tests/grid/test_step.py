@@ -18,11 +18,6 @@ from grid_universe.movements import CardinalMovement, WrapAroundMovement
 from grid_universe.objectives import CollectAndExitObjective
 
 
-# ============================================================================
-# Helper Functions
-# ============================================================================
-
-
 def find_entity_position(
     gridstate: GridState, entity: Entity
 ) -> tuple[int, int] | None:
@@ -45,11 +40,6 @@ def has_component_at_pos(
     return False
 
 
-# ============================================================================
-# Basic Movement Tests
-# ============================================================================
-
-
 def test_step_move_right() -> None:
     """Agent should move right when Action.RIGHT is applied."""
     gridstate = GridState(
@@ -60,10 +50,7 @@ def test_step_move_right() -> None:
     )
     agent = create_agent()
     gridstate.add((1, 1), agent)
-
     new_grid_state = step(gridstate, Action.RIGHT)
-
-    # Agent should be at (2, 1)
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (2, 1)
 
@@ -78,9 +65,7 @@ def test_step_move_left() -> None:
     )
     agent = create_agent()
     gridstate.add((2, 2), agent)
-
     new_grid_state = step(gridstate, Action.LEFT)
-
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (1, 2)
 
@@ -95,9 +80,7 @@ def test_step_move_up() -> None:
     )
     agent = create_agent()
     gridstate.add((2, 2), agent)
-
     new_grid_state = step(gridstate, Action.UP)
-
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (2, 1)
 
@@ -112,9 +95,7 @@ def test_step_move_down() -> None:
     )
     agent = create_agent()
     gridstate.add((2, 2), agent)
-
     new_grid_state = step(gridstate, Action.DOWN)
-
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (2, 3)
 
@@ -144,16 +125,9 @@ def test_step_all_directions(
     )
     agent = create_agent()
     gridstate.add(start_pos, agent)
-
     new_grid_state = step(gridstate, action)
-
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == expected_pos
-
-
-# ============================================================================
-# Blocking Tests
-# ============================================================================
 
 
 def test_step_blocked_by_wall() -> None:
@@ -168,10 +142,7 @@ def test_step_blocked_by_wall() -> None:
     wall = create_wall()
     gridstate.add((1, 1), agent)
     gridstate.add((2, 1), wall)
-
     new_grid_state = step(gridstate, Action.RIGHT)
-
-    # Agent should stay at (1, 1)
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (1, 1)
 
@@ -195,17 +166,9 @@ def test_step_blocked_by_edge(start_pos: tuple[int, int], action: Action) -> Non
     )
     agent = create_agent()
     gridstate.add(start_pos, agent)
-
     new_grid_state = step(gridstate, action)
-
-    # Agent should stay at original position
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == start_pos
-
-
-# ============================================================================
-# Push Tests
-# ============================================================================
 
 
 def test_step_push_box() -> None:
@@ -220,10 +183,7 @@ def test_step_push_box() -> None:
     box = create_box()
     gridstate.add((1, 1), agent)
     gridstate.add((2, 1), box)
-
     new_grid_state = step(gridstate, Action.RIGHT)
-
-    # Agent should be at (2, 1), box at (3, 1)
     agent_pos = find_entity_position(new_grid_state, agent)
     box_pos = find_entity_position(new_grid_state, box)
     assert agent_pos == (2, 1)
@@ -244,19 +204,11 @@ def test_step_push_box_blocked_by_wall() -> None:
     gridstate.add((1, 1), agent)
     gridstate.add((2, 1), box)
     gridstate.add((3, 1), wall)
-
     new_grid_state = step(gridstate, Action.RIGHT)
-
-    # Nothing should move
     agent_pos = find_entity_position(new_grid_state, agent)
     box_pos = find_entity_position(new_grid_state, box)
     assert agent_pos == (1, 1)
     assert box_pos == (2, 1)
-
-
-# ============================================================================
-# PICK_UP Action Tests
-# ============================================================================
 
 
 def test_step_pickup_coin() -> None:
@@ -271,13 +223,9 @@ def test_step_pickup_coin() -> None:
     coin = create_coin(reward=10)
     gridstate.add((1, 1), agent)
     gridstate.add((1, 1), coin)
-
     new_grid_state = step(gridstate, Action.PICK_UP)
-
-    # Coin should be in agent's inventory (no longer on grid)
     coin_pos = find_entity_position(new_grid_state, coin)
-    assert coin_pos is None  # Not on grid anymore
-    # Score should increase
+    assert coin_pos is None
     assert new_grid_state.score == 10
 
 
@@ -293,12 +241,9 @@ def test_step_pickup_key() -> None:
     key = create_key(key_id="red")
     gridstate.add((1, 1), agent)
     gridstate.add((1, 1), key)
-
     new_grid_state = step(gridstate, Action.PICK_UP)
-
-    # Key should be picked up
     key_pos = find_entity_position(new_grid_state, key)
-    assert key_pos is None  # Not on grid anymore
+    assert key_pos is None
 
 
 def test_step_pickup_core() -> None:
@@ -313,13 +258,9 @@ def test_step_pickup_core() -> None:
     core = create_core(reward=50, required=True)
     gridstate.add((1, 1), agent)
     gridstate.add((1, 1), core)
-
     new_grid_state = step(gridstate, Action.PICK_UP)
-
-    # Core should be picked up
     core_pos = find_entity_position(new_grid_state, core)
     assert core_pos is None
-    # Score should increase
     assert new_grid_state.score == 50
 
 
@@ -333,17 +274,9 @@ def test_step_pickup_nothing() -> None:
     )
     agent = create_agent()
     gridstate.add((1, 1), agent)
-
     new_grid_state = step(gridstate, Action.PICK_UP)
-
-    # Agent should still be at same position
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (1, 1)
-
-
-# ============================================================================
-# USE_KEY Action Tests
-# ============================================================================
 
 
 def test_step_use_key_unlock_door() -> None:
@@ -357,29 +290,20 @@ def test_step_use_key_unlock_door() -> None:
     agent = create_agent()
     key = create_key(key_id="red")
     door = create_door(key_id="red")
-
     gridstate.add((1, 1), agent)
-    gridstate.add((1, 1), key)  # Key at same position
-    gridstate.add((2, 1), door)  # Door to the right
-
-    # First pick up the key
+    gridstate.add((1, 1), key)
+    gridstate.add((2, 1), door)
     gridstate = step(gridstate, Action.PICK_UP)
-
-    # Now use the key
     new_grid_state = step(gridstate, Action.USE_KEY)
-
-    # Door should be unlocked - check by seeing if door still has locked component
     has_locked = has_component_at_pos(new_grid_state, (2, 1), "locked")
     assert has_locked is False
-    # Agent should be able to move through after unlock
     final_state = step(new_grid_state, Action.RIGHT)
-    # Find agent in final state (should be at door position now)
     agent_in_final = None
     for obj in final_state.grid[2][1]:
         if getattr(obj, "agent", None) is not None:
             agent_in_final = obj
             break
-    assert agent_in_final is not None  # Agent successfully moved to (2, 1)
+    assert agent_in_final is not None
 
 
 def test_step_use_key_no_key() -> None:
@@ -394,10 +318,7 @@ def test_step_use_key_no_key() -> None:
     door = create_door(key_id="red")
     gridstate.add((1, 1), agent)
     gridstate.add((2, 1), door)
-
     new_grid_state = step(gridstate, Action.USE_KEY)
-
-    # Door should still be locked
     door_pos = find_entity_position(new_grid_state, door)
     assert door_pos == (2, 1)
 
@@ -413,35 +334,20 @@ def test_step_use_key_wrong_key() -> None:
     agent = create_agent()
     key = create_key(key_id="blue")
     door = create_door(key_id="red")
-
     gridstate.add((1, 1), agent)
     gridstate.add((1, 1), key)
     gridstate.add((2, 1), door)
-
-    # Pick up blue key
     gridstate = step(gridstate, Action.PICK_UP)
-
-    # Try to use it on red door
     new_grid_state = step(gridstate, Action.USE_KEY)
-
-    # Door should still be locked
     has_locked = has_component_at_pos(new_grid_state, (2, 1), "locked")
     assert has_locked is True
-
-    # Agent can't move through (should stay at (1,1))
     final_state = step(new_grid_state, Action.RIGHT)
-    # Find agent in final state (should still be at (1, 1))
     agent_in_final = None
     for obj in final_state.grid[1][1]:
         if getattr(obj, "agent", None) is not None:
             agent_in_final = obj
             break
-    assert agent_in_final is not None  # Still at original position
-
-
-# ============================================================================
-# WAIT Action Tests
-# ============================================================================
+    assert agent_in_final is not None
 
 
 def test_step_wait() -> None:
@@ -454,20 +360,11 @@ def test_step_wait() -> None:
     )
     agent = create_agent()
     gridstate.add((2, 2), agent)
-
     initial_turn = gridstate.turn
     new_grid_state = step(gridstate, Action.WAIT)
-
-    # Agent should stay at same position
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (2, 2)
-    # Turn should advance
     assert new_grid_state.turn == initial_turn + 1
-
-
-# ============================================================================
-# Agent ID Tests
-# ============================================================================
 
 
 def test_step_with_explicit_agent_id() -> None:
@@ -480,14 +377,9 @@ def test_step_with_explicit_agent_id() -> None:
     )
     agent = create_agent()
     gridstate.add((1, 1), agent)
-
-    # Convert to state to get agent ID
     state = to_state(gridstate)
     agent_id = next(iter(state.agent.keys()))
-
-    # Step with explicit agent_id
     new_grid_state = step(gridstate, Action.RIGHT, agent_id=agent_id)
-
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (2, 1)
 
@@ -500,15 +392,8 @@ def test_step_no_agent_raises() -> None:
         movement=CardinalMovement(),
         objective=CollectAndExitObjective(),
     )
-    # No agent added
-
     with pytest.raises(StopIteration):
         step(gridstate, Action.RIGHT)
-
-
-# ============================================================================
-# Terminal State Tests
-# ============================================================================
 
 
 def test_step_win_condition() -> None:
@@ -522,18 +407,11 @@ def test_step_win_condition() -> None:
     agent = create_agent()
     core = create_core(reward=10, required=True)
     exit_tile = create_exit()
-
     gridstate.add((1, 1), agent)
     gridstate.add((1, 1), core)
     gridstate.add((2, 1), exit_tile)
-
-    # Pick up core
     gridstate = step(gridstate, Action.PICK_UP)
-
-    # Move to exit
     new_grid_state = step(gridstate, Action.RIGHT)
-
-    # Should win
     assert new_grid_state.win is True
 
 
@@ -548,39 +426,25 @@ def test_step_terminal_state_no_further_steps() -> None:
     agent = create_agent()
     core = create_core(reward=10, required=True)
     exit_tile = create_exit()
-
     gridstate.add((1, 1), agent)
     gridstate.add((1, 1), core)
     gridstate.add((2, 1), exit_tile)
-
-    # Pick up core and move to exit to win
     gridstate = step(gridstate, Action.PICK_UP)
     gridstate = step(gridstate, Action.RIGHT)
-
     assert gridstate.win is True
-    # Find agent position before trying to move
     agent_found = False
-    for obj in gridstate.grid[2][1]:  # Agent should be at (2, 1)
+    for obj in gridstate.grid[2][1]:
         if getattr(obj, "agent", None) is not None:
             agent_found = True
             break
     assert agent_found
-
-    # Try to take another step - should not move in terminal state
     new_grid_state = step(gridstate, Action.LEFT)
-
-    # Agent should still be at exit (2, 1)
     agent_still_there = False
     for obj in new_grid_state.grid[2][1]:
         if getattr(obj, "agent", None) is not None:
             agent_still_there = True
             break
     assert agent_still_there
-
-
-# ============================================================================
-# Wrap-Around Movement Tests
-# ============================================================================
 
 
 def test_step_wraparound_movement() -> None:
@@ -593,21 +457,13 @@ def test_step_wraparound_movement() -> None:
     )
     agent = create_agent()
     gridstate.add((0, 2), agent)
-
-    # Move left from edge should wrap to right side
     new_grid_state = step(gridstate, Action.LEFT)
-
     agent_pos = find_entity_position(new_grid_state, agent)
     assert agent_pos == (4, 2)
 
 
-# ============================================================================
-# State Preservation Tests
-# ============================================================================
-
-
 def test_step_preserves_original_grid_state() -> None:
-    """Step should not mutate the original GridState."""
+    """Step should not change the original GridState."""
     gridstate = GridState(
         width=5,
         height=5,
@@ -616,18 +472,10 @@ def test_step_preserves_original_grid_state() -> None:
     )
     agent = create_agent()
     gridstate.add((1, 1), agent)
-
-    # Find original position
     original_pos = find_entity_position(gridstate, agent)
     assert original_pos == (1, 1)
-
-    # Take a step
     new_grid_state = step(gridstate, Action.RIGHT)
-
-    # Original should be unchanged (agent still at (1,1))
     assert find_entity_position(gridstate, agent) == (1, 1)
-    # New state should have moved agent to (2,1)
-    # Check by looking for agent component at (2,1)
     agent_found_at_new_pos = False
     for obj in new_grid_state.grid[2][1]:
         if getattr(obj, "agent", None) is not None:
@@ -646,15 +494,10 @@ def test_step_turn_increments() -> None:
     )
     agent = create_agent()
     gridstate.add((1, 1), agent)
-
     initial_turn = gridstate.turn
-
-    # Take multiple steps
     gridstate = step(gridstate, Action.RIGHT)
     assert gridstate.turn == initial_turn + 1
-
     gridstate = step(gridstate, Action.DOWN)
     assert gridstate.turn == initial_turn + 2
-
     gridstate = step(gridstate, Action.LEFT)
     assert gridstate.turn == initial_turn + 3

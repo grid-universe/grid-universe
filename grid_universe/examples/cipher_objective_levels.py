@@ -1,7 +1,7 @@
 from __future__ import annotations
 from collections.abc import Iterable
-import random
 from dataclasses import replace
+import random
 
 from grid_universe.env import GridUniverseEnv, ImageObservation
 from grid_universe.grid.gridstate import GridState
@@ -65,7 +65,7 @@ def to_cipher_level(
         seed: Optional seed for deterministic sampling of the pair.
 
     Returns:
-        State: New immutable state with updated ``objective`` and ``message``.
+        State: New state with updated ``objective`` and ``message``.
 
     Raises:
         ValueError: If no valid pairs are supplied.
@@ -73,7 +73,10 @@ def to_cipher_level(
     rng = random.Random(seed)
     cipher, obj_name = _sample_cipher_pair(rng, cipher_text_pairs)
     new_obj = OBJECTIVE_REGISTRY[obj_name]
-    return replace(base_state, objective=new_obj, message=cipher)
+    state = base_state.clone()
+    state.objective = new_obj
+    state.message = cipher
+    return state
 
 
 def generate(
@@ -93,7 +96,7 @@ def generate(
         seed: Deterministic seed for maze + cipher sampling.
 
     Returns:
-        State: Immutable cipher micro-level state.
+        State: Cipher micro-level state.
     """
     base = maze.generate(
         width=width,

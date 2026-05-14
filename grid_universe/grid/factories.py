@@ -2,13 +2,11 @@
 
 Each helper returns a preconfigured `Entity` with a common pattern
 (agent, wall, coin, key, door, portal, hazards, effects, etc.). These
-are mutable blueprints that can be converted into an immutable ECS
-`grid_universe.state.State` via `grid_universe.grid.convert.to_state`.
+are blueprints that can be converted into an ECS `grid_universe.state.State`
+via `grid_universe.grid.convert.to_state`.
 """
 
 from __future__ import annotations
-
-from pyrsistent import pset
 
 from grid_universe.components.properties import (
     Agent,
@@ -50,8 +48,8 @@ def create_agent(health: int = 5) -> Entity:
         appearance=Appearance(name="human", priority=0),
         health=Health(current_health=health, max_health=health),
         collidable=Collidable(),
-        inventory=Inventory(pset()),
-        status=Status(pset()),
+        inventory=Inventory(set()),
+        status=Status(set()),
     )
 
 

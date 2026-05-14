@@ -42,8 +42,6 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 from PIL import Image
-from pyrsistent import pmap
-from pyrsistent.typing import PMap
 from grid_universe.components.properties.appearance import Appearance
 from grid_universe.state import State
 from grid_universe.types import EntityID
@@ -52,7 +50,6 @@ from grid_universe.utils.image import (
     recolor_image_keep_tone,
 )
 from grid_universe.utils.ds import HashableDict
-from grid_universe.utils.cache import lru_identity_cache
 import os
 import random
 
@@ -230,7 +227,7 @@ def derive_groups(
     using the original image shading).
 
     Args:
-        state (State): Immutable simulation state.
+        state (State): Simulation state.
         rules (List[GroupRule]): Ordered list of functions; first non-None group returned is used.
 
     Returns:
@@ -295,19 +292,17 @@ def load_image(path: str, size: int) -> Image.Image | None:
         return None
 
 
-@lru_identity_cache(maxsize=256)
 def get_eid_properties_map(state: State) -> dict[EntityID, tuple[str, ...]]:
     """Build a mapping from eid to its component store names efficiently."""
     eid_to_props: dict[EntityID, list[str]] = {}
     # Identify component stores once (avoid scanning __dict__ per eid)
     component_store_names: list[str] = []
     for name, value in state.__dict__.items():
-        # Keep only PMap stores (effects + properties)
-        if isinstance(value, type(pmap())):
+        if isinstance(value, dict) and not name.startswith("_"):
             component_store_names.append(name)
 
     for store_name in component_store_names:
-        store: PMap[EntityID, Any] = getattr(state, store_name)
+        store: dict[EntityID, Any] = getattr(state, store_name)
         # Iterate keys once; append store_name to that eid’s props
         for eid in store.keys():
             lst = eid_to_props.get(eid)
@@ -331,7 +326,7 @@ def get_object_renderings(
 ) -> list[ObjectRendering]:
     """Build rendering descriptors for entity IDs in a single cell.
 
-    Inspects component PMaps on the ``State`` to infer property labels,
+    Inspects component stores on the ``State`` to infer property labels,
     movement direction and speed, then packages them in ``ObjectRendering``
     objects for subsequent image lookup and layering decisions.
     """
@@ -556,7 +551,6 @@ def select_image_from_directory(
     return os.path.join(dir, chosen)
 
 
-@lru_cache(maxsize=128)
 def validate_appearance_names(state: State, image_map: ImageMap) -> None:
     """Validate that all appearance names in the state have a corresponding image.
 
@@ -600,13 +594,13 @@ def render(
     """Render a ``State`` into a PIL Image.
 
     Args:
-        state (State): Immutable game state to visualize.
+        state (State): Game state to visualize.
         resolution (int): Output image width in pixels (height derived from aspect ratio).
         subicon_percent (float): Relative size of corner icons compared to a cell's size.
         image_map (ImageMap | None): Mapping from ``(appearance name, property tuple)`` to asset path.
         asset_root (str): Root directory containing the asset hierarchy (e.g. ``"assets"``).
         tex_lookup_fn (TexLookupFn | None): Override for image loading/recoloring/overlay logic.
-        cache (dict | None): Mutable memoization dict keyed by ``(path, size, group, move_dir, speed)``.
+        cache (dict | None): Memoization dict keyed by ``(path, size, group, move_dir, speed)``.
         cell_cache (dict | None): Optional per-cell composition cache (default lookup only).
         base_cache (dict | None): Optional memoization for the floor-filled base image.
 

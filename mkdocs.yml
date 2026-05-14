@@ -53,7 +53,6 @@ nav:
       - moving: api/systems/moving.md
       - pathfinding: api/systems/pathfinding.md
       - portal: api/systems/portal.md
-      - position: api/systems/position.md
       - push: api/systems/push.md
       - status: api/systems/status.md
       - terminal: api/systems/terminal.md
@@ -74,7 +73,7 @@ nav:
       - Objectives: api/objectives.md
     - Utils:
       - ecs: api/utils/ecs.md
-      - gc: api/utils/gc.md
+      - lifetime: api/utils/lifetime.md
       - grid: api/utils/grid.md
       - health: api/utils/health.md
       - image: api/utils/image.md
