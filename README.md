@@ -1,202 +1,161 @@
 # Grid Universe
 
-> Modular, deterministic ECS gridworld for RL research, teaching, and rapid prototyping.
+> A deterministic Entity-Component-System gridworld for games, agents, and rapid
+> research prototypes.
 
-Entity–Component–System engine with ordered systems, procedural generators, Gymnasium wrapper, and extensible movement/objective registries. Build puzzles and action mechanics with portals, powerups, hazards, keys/doors, enemies, and pathfinding – all deterministic and reproducible.
-
----
+Grid Universe is a small, strongly typed Python engine for turn-based grid
+worlds. It combines an ECS simulation core, a grid-centric state representation,
+a Gymnasium environment wrapper, procedural examples, and a Pillow/NumPy
+renderer. Built-in mechanics include movement variants, portals, keys and
+doors, pushable boxes, hazards, enemies, power-ups, rewards, costs, and
+objective registries.
 
 <p align="center">
-    <a href="https://grid-universe.github.io/grid-universe/">Docs</a> •
-    <a href="LICENSE">MIT License</a>
+  <a href="https://grid-universe.github.io/grid-universe/">Docs</a> |
+  <a href="LICENSE">MIT License</a>
 </p>
 
 <p align="center">
-    <em>ECS gridworld with procedural generation, deterministic replay, Gymnasium wrapper, and pluggable movements & objectives.</em>
-</p>
-
-<p align="center">
-    <img alt="Python 3.13+" src="https://img.shields.io/badge/python-3.13%2B-blue" />
-    <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" />
-    <img alt="Type Checked" src="https://img.shields.io/badge/types-mypy_strict-informational" />
-    <img alt="Lint: Ruff" src="https://img.shields.io/badge/lint-ruff-ff69b4" />
-    <img alt="Docs" src="https://img.shields.io/badge/docs-mkdocs%20material-374151" />
+  <img alt="Python 3.13+" src="https://img.shields.io/badge/python-3.13%2B-blue" />
+  <img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green" />
+  <img alt="Types: mypy strict" src="https://img.shields.io/badge/types-mypy%20strict-informational" />
+  <img alt="Lint: Ruff" src="https://img.shields.io/badge/lint-ruff-ff69b4" />
+  <img alt="Docs: MkDocs Material" src="https://img.shields.io/badge/docs-mkdocs%20material-374151" />
 </p>
 
 ## Features
 
-- **ECS core** – Fast component stores with explicit clone or in-place stepping
-- **Deterministic** – Procedural generation and rendering derive randomness from explicit seeds
-- **Fast iteration** – `GridState` ↔ ECS `State` conversion
-- **Rich mechanics** – Portals, keys/doors, pushables, hazards, enemies, powerups (speed, immunity, phasing)
-- **RL ready** – Gymnasium env with image obs, structured info, 7-action discrete space
-- **Procedural** – Maze generator with configurable density
-- **Extensible** – Plugin movement/objectives via registries
-
----
-
-## Contents
-
-[Hello World](#hello-world) • [Installation](#installation) • [Quick Start](#quick-start) • [ECS Tick Order](#ecs-tick-order) • [Extending](#extending) • [Development](#development)
-
----
-
-## Hello World
-
-Minimal procedural usage:
-
-```python
-from grid_universe.examples.maze import generate
-from grid_universe.actions import Action
-from grid_universe.step import step
-
-state = generate(width=6, height=6, seed=0)
-for a in [Action.RIGHT, Action.DOWN, Action.PICK_UP]:
-    state = step(state, a)
-print(state.score, state.turn, state.win, state.lose)
-```
-
-More examples below. Full API documentation is available at https://grid-universe.github.io/grid-universe/.
-
----
+- **Two state models**: use `GridState` for spatial state, `State` for ECS simulation
+- **Deterministic by design**: generation and rendering are driven by explicit seeds
+- **Gymnasium ready**: `Discrete(7)` actions with image or symbolic observations
+- **Composable mechanics**: components plus ordered systems, without inheritance-heavy game objects
+- **Built-in registries**: movements and objectives can be swapped per level
+- **Renderer included**: image maps, grouped recoloring, corner icons, and movement glyphs
 
 ## Installation
 
-**Requires Python 3.13+**
+Grid Universe requires Python 3.13 or newer.
 
 ```bash
-pip install -e .              # base
-pip install -e ".[dev]"       # + tests, lint, mypy
-pip install -e ".[doc]"       # + mkdocs
+pip install -e .
+pip install -e ".[dev]"
+pip install -e ".[doc]"
 ```
-
----
 
 ## Quick Start
 
-**Procedural Maze**
+Run a procedural maze directly through the simulation step function:
+
 ```python
-from grid_universe.examples.maze import generate
 from grid_universe.actions import Action
+from grid_universe.examples.maze import generate
 from grid_universe.step import step
 
 state = generate(width=7, height=7, seed=42)
-state = step(state, Action.UP)
+state = step(state, Action.RIGHT)
+state = step(state, Action.DOWN)
+state = step(state, Action.PICK_UP)
+
+print(state.score, state.turn, state.win, state.lose)
 ```
 
-**Manual Level**
+Build a small grid state, then convert it to ECS state:
+
 ```python
-from grid_universe.grid.gridstate import GridState
-from grid_universe.grid.factories import create_agent, create_exit
 from grid_universe.grid.convert import to_state
+from grid_universe.grid.factories import create_agent, create_exit
+from grid_universe.grid.gridstate import GridState
 from grid_universe.movements import CardinalMovement
 from grid_universe.objectives import ExitObjective
 
-gridstate = GridState(
-  width=5,
-  height=5,
-  movement=CardinalMovement(),
-  objective=ExitObjective(),
-  seed=123,
-  step_cost=1,
+grid = GridState(
+    width=5,
+    height=5,
+    movement=CardinalMovement(),
+    objective=ExitObjective(),
+    seed=123,
+    step_cost=1,
 )
-gridstate.add((1, 1), create_agent())
-gridstate.add((3, 3), create_exit())
-state = to_state(gridstate)
+grid.add((1, 1), create_agent())
+grid.add((3, 3), create_exit())
+
+state = to_state(grid)
 ```
 
-**Gymnasium**
+Use the Gymnasium wrapper for RL-style loops:
+
 ```python
 from grid_universe.env import GridUniverseEnv
 from grid_universe.examples.maze import generate
 
 env = GridUniverseEnv(initial_state_fn=generate, width=7, height=7, seed=7)
 obs, info = env.reset()
-obs, reward, term, trunc, info = env.step(0)  # Action.UP
+obs, reward, terminated, truncated, info = env.step(0)  # Action.UP
 ```
 
-**Determinism**: use explicit seeds for procedural generation and rendering.
+Set `observation_type="gridstate"` to receive a symbolic `GridState` instead of
+an RGBA image observation.
 
----
+## Core Concepts
 
-## ECS Tick Order
+`State` stores component dictionaries keyed by integer entity IDs. Systems
+mutate `State` and a per-step `StepContext`, keeping the reverse position index
+in sync through `set_position_component` and `remove_position_component`.
 
-Each `step()` returns an updated state. By default, it works on a clone of the
-input state. Use `step(..., in_place=True)` to update the input state directly
-on hot paths.
+`step()` clones by default. Use `step(..., in_place=True)` only when the caller
+owns the input state and wants to avoid clone allocation.
 
-The action pipeline runs in this order:
+The step pipeline is:
 
-1. `snapshot_positions` – capture positions for movement interactions
-2. `moving_system` – autonomous movers
-3. `pathfinding_system` – chasers
-4. **Action** – movement/pickup/use-key with sub-steps: push → move → trail → portal → damage → tile → win/lose
-5. `status_tick_system` – effect timers
-6. `tile_cost_system` – apply costs
-7. `turn_system` – increment turn
-8. `status_cleanup_system` + `remove_entities` – cleanup
+1. Snapshot positions and statuses.
+2. Move autonomous `Moving` entities.
+3. Move pathfinding entities.
+4. Apply the requested action.
+5. For each movement substep: push, move, trail, portal, damage, tile reward, win/lose.
+6. Tick status timers, apply tile cost, increment turn, clean expired/removed entities.
 
-Entities = integer IDs; components live in plain dict stores; systems update
-`State` and `StepContext` directly.
+## Built-ins
 
----
+Actions: `UP`, `DOWN`, `LEFT`, `RIGHT`, `USE_KEY`, `PICK_UP`, `WAIT`.
 
-**Movements** (via `MOVEMENT_REGISTRY`): `cardinal`, `wrap`, `slippery`, `windy`, `gravity`, `mirror`
+Movements in `MOVEMENT_REGISTRY`: `cardinal`, `wrap-around`, `mirror`,
+`slippery`, `windy`, `gravity`.
 
-**Objectives** (via `OBJECTIVE_REGISTRY`): `exit`, `collect`, `collect_and_exit`, `unlock`, `push`
+Objectives in `OBJECTIVE_REGISTRY`: `exit`, `collect`, `collect_exit`,
+`unlock`, `push`.
 
-**Gym Env**: `Discrete(7)` actions, `(H,W,4)` RGBA image obs + info dict (agent health/effects/inventory, score, turn). Reward = delta score.
+Texture maps in `IMAGE_MAP_REGISTRY`: `imagen1`, `kenney`, `futurama`.
 
----
+## Project Layout
 
-## Extending
-
-- **Movement**: Subclass `BaseMovement` with `name`, `description`, `function` → register in `MOVEMENT_REGISTRY`
-- **Objective**: Subclass `BaseObjective` with `name`, `description`, `functions` → register in `OBJECTIVE_REGISTRY`  
-- **Component**: Add dataclass to `State` + `Entity` + converters
-- **System**: Update `State` and `StepContext` directly; insert in `step()` order
-- **Rendering**: Extend `DEFAULT_IMAGE_MAP` or add recolor rules
-
-**Rules**: derive randomness from explicit seeds; update positions through
-`set_position_component` / `remove_position_component`; no global state.
-
-
-
----
-
-## Structure
-
-```
+```text
 grid_universe/
-  state.py, step.py           # Core State, step pipeline
-  actions.py                  # Action enum
-  movements.py, objectives.py # Registries for movements/objectives
-  env.py                      # Gymnasium wrapper
-  components/                 # properties/ (Position, Health, etc.), effects/ (Speed, Immunity, etc.)
-  systems/                    # Systems (movement, portal, damage, collectible, etc.)
-  grid/                       # Grid representation
-  renderer/                   # Image renderer, texture loading
-  utils/                      # ECS, grid, status, inventory, maze gen, etc.
-  examples/                   # maze.py, gameplay_levels.py, cipher_objective_levels.py
-  assets/                     # Texture packs
-tests/, docs/, scripts/
+  actions.py                  # action enum
+  state.py, runtime.py        # ECS state and per-step context
+  step.py                     # ordered simulation pipeline
+  movements.py, objectives.py # configurable registries
+  env.py                      # Gymnasium environment
+  components/                 # properties and effects
+  systems/                    # simulation systems
+  grid/                       # grid-centric representation and factories
+  renderer/                   # image renderer
+  utils/                      # shared ECS, grid, status, image, maze helpers
+  examples/                   # procedural and hand-built level suites
 ```
-
----
 
 ## Development
 
 ```bash
-pytest                    # tests
-ruff format . && ruff check . --fix  # lint
-mypy grid_universe        # types
-mkdocs serve              # docs at http://127.0.0.1:8000
+ruff format .
+ruff check . --fix
+mypy
+pytest
+mkdocs serve
 ```
 
-**Principles**: determinism, composable systems, explicit registries, clear state-update boundaries.
-
----
+Docs are built with MkDocs Material and mkdocstrings. The API reference is under
+`docs/api`.
 
 ## License
 
-MIT – see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

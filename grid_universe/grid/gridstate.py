@@ -1,14 +1,14 @@
 """Grid-based state representation.
 
 The `grid_universe.grid.gridstate.GridState` dataclass is a first-class,
-grid-centric representation for building and editing game states. It provides
-a simple grid editing API (add/remove/move) and stores the configuration
-needed for simulation.
+grid-centric representation of game state. It provides a simple spatial API
+(add/remove/move), supports inspection and symbolic observations, and stores
+the configuration needed for simulation.
 
 GridState and `grid_universe.state.State` are complementary
 representations optimized for different use cases:
 
-- **GridState**: Grid-centric, ideal for authoring and editing
+- **GridState**: Grid-centric representation for spatial reasoning and editing
 - **State**: ECS representation optimized for simulation and stepping
 
 Use `grid_universe.grid.factories` to create `grid_universe.grid.entity.BaseEntity`
@@ -34,9 +34,9 @@ class GridState:
     """
     Grid-centric state representation.
 
-    GridState is a first-class representation for building, editing, and reasoning
-    about game states in a spatial, grid-based manner. It stores entities in a 2D grid
-    structure alongside game configuration and metadata.
+    GridState is a first-class representation for reasoning about game states in
+    a spatial, grid-based manner. It stores entities in a 2D grid structure
+    alongside game configuration and metadata.
 
     - ``grid[x][y]`` is a list of `grid_universe.grid.entity.BaseEntity` instances at that cell.
     - Stores configuration such as ``movement``, ``objective``, ``seed``, and metadata

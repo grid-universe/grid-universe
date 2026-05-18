@@ -1,19 +1,21 @@
 # Grid Universe
 
-Grid Universe is a turn-based, grid-based game engine and Gym-compatible environment. It provides two complementary state representations: an ECS `State` for simulation and a `GridState` for authoring/editing. The engine includes built-in systems for movement, push, portals, damage, status, rewards/costs, flexible observations (image or GridState), and an image-based renderer.
+Grid Universe is a deterministic ECS gridworld engine with a Gymnasium wrapper,
+a grid-centric state representation, procedural examples, and an image renderer.
 
-`step()` returns an updated state. By default, it works on a clone of the input state. Use `step(..., in_place=True)` to update the input state directly for performance-sensitive loops.
+Use it to build puzzle games, evaluate agents, teach gridworld mechanics, or
+prototype turn-based systems with a small and explicit state model.
 
-It’s designed for:
-
-- building puzzle/gridworld games with various built-in components.
-- RL / AI agent experiments via a Gymnasium wrapper
-- teaching and prototyping
-
-## Installation 
-
-Grid Universe depends on Python 3.13+.
+## Install
 
 ```bash
 pip install -e .
+```
+
+For development and documentation:
+
+```bash
+pip install -e ".[dev]"
+pip install -e ".[doc]"
+```
 ```

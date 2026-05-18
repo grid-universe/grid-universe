@@ -2,7 +2,7 @@
 
 GridState and State are complementary representations of game state:
 
-- **GridState**: Grid-centric, ideal for authoring and editing
+- **GridState**: Grid-centric representation for spatial reasoning and editing
 - **State**: ECS representation optimized for simulation and stepping
 
 Two primary operations:
